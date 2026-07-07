@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://adminlte.io/blog/shadcn-ui-vs-mui-vs-ant-design",
+    "name": "shadcn/ui vs MUI vs Ant Design (2026): Which Should You Choose?",
+    "snippet": "Head-to-Head Comparison ; Enterprise Components, Tie: MUI X / Ant Design, MUI X data grid is best; Ant Design has more free enterprise components.",
+    "host_name": "adminlte.io",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/codefalconx/design-system-comparison-matrix-562e",
+    "name": "shadcn/ui vs Ant Design vs MUI: A Modern React Design System",
+    "snippet": "Enterprise-grade, clean, and data-heavy dashboard friendly. Google's Material Design — vibrant, motion-driven, and user-friendly.",
+    "host_name": "dev.to",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/nextjs/comments/1su83t6/shad_cnui_vs_ant_design_vs_material_ui",
+    "name": "Shad cn/ui vs Ant design vs Material Ui : r/nextjs - Reddit",
+    "snippet": "Shadcn gives us all source code. Accessability is overall very good as well. My vote is to stick with shadcn :) ant design is the best ... Shadcn/UI just overtook Material UI! : r/reactjs - Reddit Material UI (MUI) vs Ant Design (AntD) - Where to go in 2026? More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://fyonda.io/blog/ui-libraries-2025",
+    "name": "UI Libraries Compared: Shadcn/ui, Tailwind, Ant Design, Chakra",
+    "snippet": "We've analyzed the five most relevant solutions for 2025 — shadcn/ui, Tailwind CSS, Ant Design, Chakra UI, and Material UI — to help you find ...",
+    "host_name": "fyonda.io",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://shadcnstudio.com/blog/shadcn-vs-material-ui",
+    "name": "Shadcn vs Material UI: A Detailed Comparison with Example",
+    "snippet": "If you're building a product that needs to stand out visually or evolve into a scalable design system, Shadcn UI is often the better choice.",
+    "host_name": "shadcnstudio.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=4ettB5JqDps",
+    "name": "React UI Libraries Compared: Which One Should You Choose in 2026?",
+    "snippet": "... Comparison Libraries Covered: • Material-UI (MUI) • Ant Design • DaisyUI • shadcn • Chakra UI • Mantine Want more web development tips ...",
+    "host_name": "www.youtube.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.shadcndesign.com/blog/best-ui-kits-in-2025",
+    "name": "Best UI Kits in 2025: Top 10 Options for Figma and React Design Systems",
+    "snippet": "A practical guide comparing 10 popular UI kits. Dependency libraries: MUI, Ant Design, Chakra, If you want to ship quickly with a standard ...",
+    "host_name": "www.shadcndesign.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.index.dev/skill-vs-skill/shadcn-ui-vs-material-ui-vs-ant-design",
+    "name": "Ant Design vs Material-UI vs Shadcn/ui for Web Development in",
+    "snippet": "Shadcn/ui offers the best runtime performance and smallest production bundles, while Material-UI and Ant. Material-UI and Ant Design reduce initial development ...",
+    "host_name": "www.index.dev",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://thefrontkit.com/blogs/shadcn-ui-vs-material-ui-for-saas",
+    "name": "shadcn/ui vs Material UI for SaaS - thefrontkit",
+    "snippet": "A detailed comparison of shadcn/ui and Material UI for building SaaS products. Covers styling, accessibility, customization, performance.",
+    "host_name": "thefrontkit.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.stow.build/blog/shadcn/shadcn-material-ui",
+    "name": "shadcn/ui vs. Material UI: The Ultimate Battle for React UI in 2025 - Stow",
+    "snippet": "In 2025, shadcn/ui surpassed MUI. We compare the architectures: full ownership (shadcn) vs. full system (MUI). Choose the right foundation to ...",
+    "host_name": "www.stow.build",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
