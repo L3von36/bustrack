@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.linkedin.com/pulse/system-design-bus-booking-service-priyansh-bhardwaj-dl9bf",
+    "name": "System Design Of Bus Booking Service - LinkedIn",
+    "snippet": "In this article, we will outline the design of an online bus booking platform, a scalable system that allows users to search for bus schedules, view trip ...",
+    "host_name": "www.linkedin.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scribd.com/document/877529107/Bus-Ticket-Booking-Project-Report",
+    "name": "Bus Ticket Management System Report | PDF | Databases - Scribd",
+    "snippet": "The Bus Booking System includes functionalities such as user registration and authentication, search for available buses, seat selection, ticket booking, and ...",
+    "host_name": "www.scribd.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arkajainuniversity.ac.in/naac/Criteria%201/1.3.4/1_3_4_DOCUMENTS/MCA/AJU210650.pdf",
+    "name": "[PDF] BUS TICKET BOOKING SYSTEM - ARKA JAIN UNIVERSITY",
+    "snippet": "This system would help customers to book a seat for their journey, book bus. This system would also help the owner to manage the coaches, employees, clients, ...",
+    "host_name": "arkajainuniversity.ac.in",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/390755384_Online_Bus_Booking_System",
+    "name": "(PDF) Online Bus Booking System - ResearchGate",
+    "snippet": "PDF | On Apr 14, 2025, Abhishek Patil and others published Online Bus Booking System | Find, read and cite all the research you need on ...",
+    "host_name": "www.researchgate.net",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/nerd-for-tech/system-design-of-a-bus-booking-system-redbus-5703ce6e02db",
+    "name": "System Design of a bus booking system (RedBus) - Medium",
+    "snippet": "The system should provide services like Payments, Searching, Notifications etc. The system allow a user to book, cancel, search buses, seats etc ...",
+    "host_name": "medium.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/10096250/database-design-for-bus-reservation",
+    "name": "Database design for bus reservation - Stack Overflow",
+    "snippet": "I want to design a table structure for routes and stops in a way that would help easily search for free seats.",
+    "host_name": "stackoverflow.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=jgT5uFYpeXo",
+    "name": "Computer Project BUS BOOKING management system STEP BY",
+    "snippet": "Computer Project ║ BUS BOOKING management system STEP BY STEP GUIDE ║ Microsoft Access Database. @DONGICHAITheComputerguy24 likes1.6K views1 ...",
+    "host_name": "www.youtube.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.phpjabbers.com/bus-reservation-system",
+    "name": "Bus Reservation System | Bus Ticketing System | PHPJabbers",
+    "snippet": "Manage bus types. Manage multiple bus routes. Daily bus schedules. View seats and passangers lists. Preview route timetable. POWERFUL BOOKING MANAGEMENT SYSTEM.",
+    "host_name": "www.phpjabbers.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.academia.edu/118510633/ONLINE_BUS_TICKET_RESERVATION_SYSTEM",
+    "name": "online bus ticket reservation system - Academia.edu",
+    "snippet": "This is SRS document for Online Bus Ticket Reservation System. The objective of Online Bus Ticket Reservation System is to manage buses, their routes, fare ...",
+    "host_name": "www.academia.edu",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.slideshare.net/slideshow/bus-ticket-management-system-documentation/44924800",
+    "name": "Bus Ticket Management System Documentation | DOCX - Slideshare",
+    "snippet": "The application allows users to manage bus data including routes and seats, inquire about seat availability, register and search tickets, cancel tickets, and ...",
+    "host_name": "www.slideshare.net",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

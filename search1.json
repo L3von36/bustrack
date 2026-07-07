@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.linkedin.com/pulse/system-design-bus-booking-service-priyansh-bhardwaj-dl9bf",
+    "name": "System Design Of Bus Booking Service - LinkedIn",
+    "snippet": "In this article, we will outline the design of an online bus booking platform, a scalable system that allows users to search for bus schedules, view trip ...",
+    "host_name": "www.linkedin.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/topics/bus-booking-system",
+    "name": "bus-booking-system · GitHub Topics",
+    "snippet": "The Cross-Border Bus Booking System is a web-based platform that automates bus ticket reservations, seat selection, and payments for local and international ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scribd.com/document/882071606/Editonline-Bus-Booking-Management-System-Repaired",
+    "name": "Online Bus Booking System Case Study | PDF | Computer Security",
+    "snippet": "The document is a project report on the development of an Online Bus Booking Management System for Link Bus Services in Kampala, aimed at addressing ...",
+    "host_name": "www.scribd.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/393843358_Online_Bus_Ticket_Booking_System_Project_Report",
+    "name": "Online Bus Ticket Booking System Project Report - ResearchGate",
+    "snippet": "This study presents a web-based bus ticket booking system designed to address these challenges through digital transformation. The research ...",
+    "host_name": "www.researchgate.net",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/nerd-for-tech/system-design-of-a-bus-booking-system-redbus-5703ce6e02db",
+    "name": "System Design of a bus booking system (RedBus) - Medium",
+    "snippet": "The system should provide services like Payments, Searching, Notifications etc. The system allow a user to book, cancel, search buses, seats etc ...",
+    "host_name": "medium.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ijsdr.org/papers/IJSDR2306043.pdf",
+    "name": "[PDF] Bus Ticket Booking System - IJSDR",
+    "snippet": "The Bus Ticket Booking System using Command Prompt is a convenient and efficient way for users to book bus tickets. It eliminates the need for users to ...",
+    "host_name": "ijsdr.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ijesat.com/ijesat/files/ResearchPaperBusBooking_1780761807.pdf",
+    "name": "[PDF] Design and Implementation of an Online Bus Ticket Booking System",
+    "snippet": "The system provides users with a complete digital booking experience encompassing bus search, real-time seat selection, booking confirmation, digital ticket ...",
+    "host_name": "ijesat.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/ascendixtech/how-to-build-an-online-bus-ticket-booking-and-reservation-system-key-features-and-step-by-step-development-process-5cmi",
+    "name": "How to Build an Online Bus Ticket Booking and Reservation System",
+    "snippet": "We recommend building advanced features dedicated to the creation and management of routes, pickups, drop points, schedules, and other bus tour details.",
+    "host_name": "dev.to",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.multiresearchjournal.com/admin/uploads/archives/archive-1742309569.pdf",
+    "name": "[PDF] Design and Development of an Integrated Online Bus Ticketing",
+    "snippet": "This project also addresses the problems such as illegal bus operations, long wait to purchase a bus ticket, unsafe environment and many more.",
+    "host_name": "www.multiresearchjournal.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arkajainuniversity.ac.in/naac/Criteria%201/1.3.4/1_3_4_DOCUMENTS/MCA/AJU210650.pdf",
+    "name": "[PDF] BUS TICKET BOOKING SYSTEM - ARKA JAIN UNIVERSITY",
+    "snippet": "This system would help customers to book a seat for their journey, book bus. This system would also help the owner to manage the coaches, employees, clients, ...",
+    "host_name": "arkajainuniversity.ac.in",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

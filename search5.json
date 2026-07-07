@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://blog.hidglobal.com/what-ticket-validator-understanding-its-function-and-importance-mass-transit",
+    "name": "What Does a Ticket Validator Do in Mass Transit? - HID Global",
+    "snippet": "Learn how the transit ticket validation process works, from ticket scanning to real-time verification and why workflow design is critical for boarding.",
+    "host_name": "blog.hidglobal.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/terminalbersepaduselatan/posts/bought-your-bus-ticket-from-online-ticketing-agents-or-external-platforms-no-dep/911536864800365",
+    "name": "Bought your bus ticket from online ticketing agents or external",
+    "snippet": "✅️ DEPARTURE GATE NUMBER and ✅️ QR CODE are on the booking document/ticket/boarding pass. Please scan the QR code at the departure gate.",
+    "host_name": "www.facebook.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.taichung-go.tw/en/qr-ticket/index",
+    "name": "About Time-based QR Combo Tickets - Taichung go網站",
+    "snippet": "The QR code can then be used on the fare validation machine (reverse scan) when boarding. Once the [Activate Now] button is pressed and confirmed, the ticket ...",
+    "host_name": "www.taichung-go.tw",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.ijprems.com/ijprems-paper/qr-scan-ride-smart-bus-passenger-ticketing-system",
+    "name": "[PDF] qr scan ride: smart bus passenger ticketing system | ijprems",
+    "snippet": "When scanned at bus entry points to gain admittance to the doors, this QR code serves as the boarding pass. Passengers must rescan the QR code to exit after ...",
+    "host_name": "www.ijprems.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.telpo.com.cn/blog/benefits-deploying-card-readers-metro-ticket-gates",
+    "name": "5 Benefits Of Deploying Card Readers In Metro Ticket Gates - Telpo",
+    "snippet": "Passengers validate their smart cards or tickets using the ticket validators. They can pass the gate if their tickets are verified as valid, or they cannot pass ...",
+    "host_name": "www.telpo.com.cn",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.taptopay.com/application-collections/ttp110",
+    "name": "TTP 110 Validator - TapToPay",
+    "snippet": "Specially designed for ticket validation for mass transit usage, built-in with contactless card reader, QR code scanner, run in Android OS.",
+    "host_name": "www.taptopay.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.randall-travel-award.missouri.edu/ticket-boarding-pass-2500669809.html",
+    "name": "Ultimate Ticket & Boarding Pass Guide: Tips, Tricks & Secrets",
+    "snippet": "Using a dedicated app, the document is stored securely and can be scanned at the gate using a barcode or QR code. This method eliminates the need to visit a ...",
+    "host_name": "www.randall-travel-award.missouri.edu",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.indragroup.com/sites/default/files/afc_automatic_fare_collection_systems.pdf",
+    "name": "[PDF] On-board systems. General architecture - Indra Group",
+    "snippet": "- Control all on-board equipment. - Built-in smart card ticket validator. - TFT colour screen. - Thermal printer. • Flexible communications capabilities: serial ...",
+    "host_name": "www.indragroup.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://webcmstavtech.tav.aero/uploads/59f9875dc0e79a3594308ad3/static-pages/pdf-documents/tdas-products-services.pdf",
+    "name": "[PDF] tdas-products-services.pdf - TAV Airports",
+    "snippet": "A BCBP can be scanned either by the passenger using an e-Gate, or by airport security agents using an HHT. The passengers whose access is validated are allowed ...",
+    "host_name": "webcmstavtech.tav.aero",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developer.samsung.com/wallet/addtosamsungwallet/walletcards/boardingpass.html",
+    "name": "Boarding Pass | Samsung Developer",
+    "snippet": "Depending on the integration level, it can provide status information updates related to flights, and journeys, such as boarding gate changes or cancellations.",
+    "host_name": "developer.samsung.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
