@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://tbugaevsky.medium.com/how-to-choose-a-tech-stack-in-2026-what-the-evidence-says-3e9c32741340",
+    "name": "How to Choose a Tech Stack in 2026 — Scorecard and a Big Surprise - Timofey Bugaevsky",
+    "snippet": "Genuinely good at: real-time applications at massive scale (chat, live dashboards, multiplayer — BEAM handles millions of connections per node) ...",
+    "host_name": "tbugaevsky.medium.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=Xz6zua8t2NE",
+    "name": "Build a Real-Time E-Ticket Booking System | Next.js, Prisma & PostgreSQL Full Stack Project - YouTube",
+    "snippet": "Want to build a real-world booking system like Movie Ticket, Bus Seat, or Restaurant Reservation platforms? 🎟️   In this full-stack project ...",
+    "host_name": "www.youtube.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://hokantan.com/resources/best-tech-stack-startup-2026",
+    "name": "Best Tech Stack for Startups | Hokantan",
+    "snippet": "For most startups in 2026, the best tech stack is React or Vue on the frontend and Node.js or Python (Django/FastAPI) on the backend. This ...",
+    "host_name": "hokantan.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/pulse/tech-stacks-industry-giants-what-2025-really-looks-like-signals-rxxoe",
+    "name": "Tech Stacks of Industry Giants: What 2025 Really Looks Like and What It Signals for 2026",
+    "snippet": "What the giants are actually running on in 2025 · Polyglot backend: Java, Kotlin, Python, Node.js with PostgreSQL, Redis, Kafka, and GCP/AWS ...",
+    "host_name": "www.linkedin.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://levelup.gitconnected.com/how-i-built-a-full-stack-travel-booking-system-using-node-js-and-mongodb-step-by-step-d28c0e87637e",
+    "name": "How I Built a Full-Stack Travel Booking System Using Node.js and MongoDB (Step-by-Step)",
+    "snippet": "How I Built a Full-Stack Travel Booking System Using Node.js and MongoDB (Step-by-Step) Most student projects never go beyond theory.",
+    "host_name": "levelup.gitconnected.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://asd.team/blog/how-to-choose-tech-stack",
+    "name": "How to Choose Tech Stack for Travel Tech Products in 2026 - ASD Team",
+    "snippet": "Node.js and .NET: Node.js is popular for real-time applications like booking systems, while .NET is often chosen for enterprise-grade travel ...",
+    "host_name": "asd.team",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://forum.freecodecamp.org/t/real-time-online-booking-system/282624",
+    "name": "Real time Online Booking System - The freeCodeCamp Forum",
+    "snippet": "I am creating this Booking application in PHP as Backend with SQL as the database and HTML + JS as the front-end, and for understanding purposes this is an ...",
+    "host_name": "forum.freecodecamp.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.technoheaven.com/travel-technology-stack.aspx",
+    "name": "Travel Technology Stack | Tech Stack of Travel Software - Technoheaven",
+    "snippet": "Travel software uses technologies like React.js, .NET, PHP, MySQL, APIs, payment gateways, and CRM tools to manage bookings, pricing, and ...",
+    "host_name": "www.technoheaven.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.techneth.com/services/booking-and-reservation-systems",
+    "name": "Booking and Reservation System Development | Custom Booking Software - Techneth",
+    "snippet": "Custom booking and reservation system development. Build scheduling software, appointment platforms, and online booking tools for any industry. Get a free ...",
+    "host_name": "www.techneth.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://silviglobaltechnology.com/blog/flight-booking-app-tech-stack",
+    "name": "Flight Booking App Tech Stack: Best Technologies for Travel Platforms",
+    "snippet": "Node.js is one of the most suitable backend technologies for flight booking platforms. It handles real-time requests efficiently and works well ...",
+    "host_name": "silviglobaltechnology.com",
+    "rank": 9,
+    "date": "Jul 6, 2026",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.reddit.com/r/node/comments/1i158g4/frontend_javascript_with_thermal_printer_on_a",
+    "name": "Front-end Javascript with thermal printer on a serial port. - Reddit",
+    "snippet": "The idea is to make a POS system, eventually. I asked chatGPT to help already and I'll show that code for now. Can a react app running in browser connect to thermal printer and open ... POS receipt printing directly from webpage? : r/webdev - Reddit More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/Yayi-Dev/esc-pos-printer",
+    "name": "ESC-POS-PRINTER for Javascript / Typescript - GitHub",
+    "snippet": "JavaScript/TypeScript library tailored for working with ESC-POS printers in their React.js and Node.js or any javascript applications.",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=tqZjSY-8N1E",
+    "name": "Receipt Printer with JavaScript - YouTube",
+    "snippet": "Wes unveils his Hack-Week project —a thermal printer controlled by JavaScript that prints out Sentry.io errors in real-time.",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/77735416/how-to-make-connection-with-thermal-printer-from-browser-and-send-escpos-print-c",
+    "name": "How to make connection with Thermal printer from browser and send",
+    "snippet": "Following this Question it is clear that making a printer connection from web is definitely possible (without vendor SDK).Just need to know how? Does node JS support ESC POS printing? - Stack Overflow Print to pos thermal printer using tcp web-application - Stack Overflow More results from stackoverflow.com",
+    "host_name": "stackoverflow.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/359999434098189/posts/2057377857693663",
+    "name": "How can I print into POS printer through nodejs app? - Facebook",
+    "snippet": "Any one have experience with working on direct printing from web browser to a thermal or any printer ? as i was searched there is no method ...",
+    "host_name": "www.facebook.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://apps.apple.com/vn/app/printera-esc-pos-thermal/id6444649599?l=vi",
+    "name": "Ứng dụng PrinterA: ESC/POS Thermal - App Store",
+    "snippet": "Print to ESC/POS thermal printer through bluetooth connection. CS contact: cs@logistara.com Terms of Use: https://www.apple.com/legal/internet-services ...",
+    "host_name": "apps.apple.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/arshidkv12/direct-thermal-printing-from-android-web-using-php-escpos-guide-9kl",
+    "name": "Direct Thermal Printing from Android Web Using PHP (ESC/POS Guide)",
+    "snippet": "Print receipts directly to any ESC/POS thermal printer from your web-based POS system — no SDK, no cloud, no hassle. POS Invoice. The Problem.",
+    "host_name": "dev.to",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://forum.bubble.io/t/esc-pos-printing/116223",
+    "name": "ESC/POS Printing - Questions - Bubble Forum",
+    "snippet": "I found it very easy to work with to interface Bubble with ESC/POS receipt printers and ZPL label printers. You control them via JavaScript!",
+    "host_name": "forum.bubble.io",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://electronics.alibaba.com/buyingguides/thermal-printer-api-guide-how-to-connect-use",
+    "name": "How to Use a Thermal Printer API — Practical Guide",
+    "snippet": "A clear, no-fluff guide on integrating thermal printers via API: what works, what doesn't, and how to choose the right approach for your use ...",
+    "host_name": "electronics.alibaba.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://whizz-tech.com/support/printers/escpos-web-printing-without-drivers-test-page",
+    "name": "ESC/POS Web Printing Without Drivers — Test Page Guide",
+    "snippet": "Want to send ESC/POS commands directly from a web app with no drivers? This guide walks through browser-based printing.",
+    "host_name": "whizz-tech.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

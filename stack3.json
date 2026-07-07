@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.instagram.com/reel/C9dKFyTgTQE/?hl=en",
+    "name": "PostgreSQL is a fantastic database solution for all different types of",
+    "snippet": "What do developers do when they can't decide between MySQL and Mongo DB? They use Post RescueL. Post RescueL stores data in tables, columns, and ...",
+    "host_name": "www.instagram.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/cscareerquestionsEU/comments/1il0vyk/sql_vs_nosql_for_a_hightraffic_booking_system",
+    "name": "SQL vs NoSQL for a High-Traffic Booking System - Reddit",
+    "snippet": "I'm designing a high-traffic booking system (40M+ users) and trying to decide between SQL and NoSQL. ( there's no payment involved), ... MongoDB vs PostgreSQL : r/node A system design question : r/leetcode More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/djeada/Databases-Notes/blob/main/notes/07_concurrency_control/04_double_booking_problem.md",
+    "name": "Handling the Double-Booking Problem in Databases - GitHub",
+    "snippet": "Concurrency Control (OCC) When conflicts are rare, OCC lets you avoid heavy locking by using a version or timestamp column to detect concurrent updates. ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/philip_mcclarence_2ef9475/postgresql-vs-mysql-vs-mongodb-the-definitive-database-comparison-1fan",
+    "name": "PostgreSQL vs MySQL vs MongoDB: The Definitive Database Comparison",
+    "snippet": "MySQL wins at simple operations, MongoDB wins at document-shaped reads, and PostgreSQL wins at everything involving complexity, flexibility, or ...",
+    "host_name": "dev.to",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=k76fhpMzv7E",
+    "name": "MongoDB vs PostgreSQL for AI Workloads - YouTube",
+    "snippet": "... MongoDB against PostgreSQL (with PG Vector) in a head-to-head performance showdown for vector search, ingestion speed, and real-time ...",
+    "host_name": "www.youtube.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@suchirreddy31/%EF%B8%8F-designing-a-concurrency-safe-ticket-booking-system-from-scratch-6922db1b6401",
+    "name": "Designing a Concurrency-Safe Ticket Booking System from Scratch",
+    "snippet": "Cons: Heavy locks block concurrent reads. Lock contention kills performance. PostgreSQL serves as the system of record — the permanent storage ...",
+    "host_name": "medium.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/piyush64bit_systemdesign-backendengineering-mongodb-activity-7432746284257640448-gSBA",
+    "name": "Concurrency Issues in Booking Platforms: Solving Seat Availability",
+    "snippet": "The fix: denormalize early, or shift to NoSQL and handle relationships in application code. Either way, the database stops being a single point ...",
+    "host_name": "www.linkedin.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vercel.com/kb/guide/mysql-vs-postgresql-vs-mongodb",
+    "name": "Comparing MySQL, PostgreSQL, and MongoDB | Vercel Knowledge Base",
+    "snippet": "Concurrency control mechanisms like locking (which restricts multiple users from modifying the same data simultaneously) or optimistic ...",
+    "host_name": "vercel.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/129329/optimistic-vs-pessimistic-locking",
+    "name": "Optimistic vs. Pessimistic locking - Stack Overflow",
+    "snippet": "Optimistic locking is a strategy where you read a record, take note of a version number (other methods to do this involve dates, timestamps or checksums/hashes)",
+    "host_name": "stackoverflow.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://singhajit.com/database-locks-explained",
+    "name": "How Database Locks Work: A Complete Guide - Ajit Singh",
+    "snippet": "Row-level locking gives the best concurrency. Only the specific row being modified is locked. Other transactions can freely read and write other ...",
+    "host_name": "singhajit.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

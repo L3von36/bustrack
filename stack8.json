@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://rajendran22.medium.com/a-complete-guide-to-fastapi-for-machine-learning-35dcdf076616",
+    "name": "A complete guide to FastAPI for Machine Learning | by Rajendran S",
+    "snippet": "In this blog, we shift our focus on how FastAPI helps to build machine learning applications. We we transition a ML model from the notebook to ...\nFastAPI is a modern, fast, web framework for building APIs with python very quickly. It is designed in a way where developers can create RESTful ...",
+    "host_name": "rajendran22.medium.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.udemy.com/course/deploy-ml-model-in-production-with-fastapi-and-docker/?srsltid=AfmBOoqJ0kwhw7vXr0Cmhk8S5fbmhp8cg-W8ZzHcra3-j1TmOWt4pJdZ",
+    "name": "Deploy ML Model in Production with FastAPI and Docker - Udemy",
+    "snippet": "Deploy machine learning models in production using FastAPI and Docker. Create APIs for ML models using FastAPI with optimized endpoints.",
+    "host_name": "www.udemy.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/sanjay-jha-2a425719_fastapi-machinelearning-ai-activity-7382114449446404096-DUPA",
+    "name": "Why FastAPI is a Game-Changer for AI/ML Model Deployment - LinkedIn",
+    "snippet": "This will be a AI-powered full-stack web app that takes an IMO number, fetches real-time vessel AIS data, uses Mapbox for geolocation, decodes ...",
+    "host_name": "www.linkedin.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.firecrawl.dev/blog/15-python-projects-2025",
+    "name": "Top 15 Python Projects to Build in 2025: From Beginner to Production",
+    "snippet": "This project covers the full machine learning operations (MLOps) pipeline from model training through production deployment, demonstrating ...",
+    "host_name": "www.firecrawl.dev",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://northflank.com/blog/how-to-deploy-machine-learning-models-step-by-step-guide-to-ml-model-deployment-in-production",
+    "name": "How to deploy machine learning models: Step-by-step guide to ML",
+    "snippet": "Published 11th June 2025. How to deploy machine learning models: Step-by-step guide to ML model deployment in production. Development · Docker.",
+    "host_name": "northflank.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scribd.com/document/904569989/AI-Engineering-Internship-Assignment",
+    "name": "FastAPI for ML Model Deployment Guide | Intelligence (AI) & Semantics",
+    "snippet": "Prepare a PPT (8–12 slides) that: o Explains FastAPI and its relevance in AI engineering. o Illustrates the steps to deploy a machine learning model as an API.",
+    "host_name": "www.scribd.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.datacamp.com/courses/deploying-ai-into-production-with-fastapi",
+    "name": "Deploying AI into Production with FastAPI Course - DataCamp",
+    "snippet": "FastAPI for AI Model Deployment. FastAPI is a Python web framework ideal for building APIs, especially for deploying machine learning and AI models.\nStart serving your ML model's predictions via FastAPI endpoints. You'll learn to load pre-trained ML models and create API endpoints to serve predictions as ...",
+    "host_name": "www.datacamp.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://talent500.com/blog/full-stack-data-scientist-model-deployment",
+    "name": "Journey to Full-Stack Data Scientist: Deploying Machine Learning Models",
+    "snippet": "This guide explores how to transition from developing models in Jupyter notebooks to deploying them as APIs using FastAPI and Docker.",
+    "host_name": "talent500.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pub.towardsai.net/building-a-production-ready-diabetes-prediction-api-with-fastapi-machine-learning-and-docker-dcebea23db08",
+    "name": "Building a Production-Ready Diabetes Prediction API with FastAPI",
+    "snippet": "A comprehensive guide to deploying a machine learning model as a RESTful API with an automated training and serving pipeline.",
+    "host_name": "pub.towardsai.net",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/armanlaliwala_artificialintelligence-machinelearning-activity-7362815881451569153-Fdzv",
+    "name": "How to Deploy ML Models Fast & Clean with FastAPI, Docker, and",
+    "snippet": "Too many ML models end up as… paperweights. Because training isn't the finish line — deployment is. Here's how to deploy your model, ...",
+    "host_name": "www.linkedin.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

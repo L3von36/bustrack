@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://dev.to/zeeshanali0704/frontend-system-design-offline-support-and-progressive-web-apps-pwas-4k8m",
+    "name": "Offline Support and Progressive Web Apps (PWAs) - DEV Community",
+    "snippet": "Progressive Web Apps (PWAs) bridge the gap between web and native apps by delivering installability, offline support, background sync, and push ...",
+    "host_name": "dev.to",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/pazguille/offline-first",
+    "name": "Everything you need to know to create offline-first web apps. - GitHub",
+    "snippet": "ServiceWorkers: A Service Worker acts like a proxy on the client. For page requests and requests made by pages, you get a fetch event that you can respond to ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=1FMkFc4TIio",
+    "name": "Enhance Offline Experience with Background Sync (PWA) - YouTube",
+    "snippet": "Comments ; Progressive Web Apps (PWA) Explained | Service Workers, Caching & Manifest (Complete Guide). BMR EDUCATION · 1.8K views ; How to make ...",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://tianyaschool.medium.com/pwa-offline-first-strategies-key-steps-to-enhance-user-experience-4c10de780446",
+    "name": "PWA Offline-First Strategies-Key Steps to Enhance User Experience",
+    "snippet": "1. Create a Service Worker File (service-worker. · 2. Register the Service Worker · 3. Update Strategy · 4. Update the Service Worker · 5. Manage ...",
+    "host_name": "tianyaschool.medium.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "http://eprints.umsida.ac.id/16125/1/338%20Building%20Progressive%20Web%20Apps%20%28PWA%29%20with%20Angular%20Enhancing%20Offline%20and%20Mobile%20Experiences.pdf",
+    "name": "[PDF] Building Progressive Web Apps (PWA) with Angular",
+    "snippet": "Service workers serve as programmable network proxies, enabling offline functionality, background synchronization, and fine-grained caching ...",
+    "host_name": "eprints.umsida.ac.id",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Offline_and_background_operation",
+    "name": "Offline and background operation - Progressive web apps | MDN",
+    "snippet": "Offline operation allows a PWA to provide a good user experience even when the device does not have network connectivity.",
+    "host_name": "developer.mozilla.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://void.ma/en/publications/pwa-progressive-web-app-guide-complet-react-2025",
+    "name": "PWA (Progressive Web App): Complete Guide 2025 - VOID Maroc",
+    "snippet": "The Service Worker is a JavaScript script running in the background, independently from the web page. It handles cache, offline mode, push notifications, and ...",
+    "host_name": "void.ma",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://wild.codes/candidate-toolkit-question/how-would-you-architect-a-pwa-for-offline-first-and-real-time-sync",
+    "name": "How would you architect a PWA for offline-first and real-time sync?",
+    "snippet": "Build a production-grade PWA architecture that combines offline-first UX, robust caching strategies, real-time data sync, and safe push notifications.",
+    "host_name": "wild.codes",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/59031717/difference-in-offline-first-approach-and-pwas",
+    "name": "Difference in offline-first approach and PWAs? - Stack Overflow",
+    "snippet": "PWAs, thanks to the Service Worker and caching strategies, are able to implement/provide an offline first approach by caching target assets or data responses.",
+    "host_name": "stackoverflow.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://auth0.com/blog/creating-offline-first-web-apps-with-service-workers",
+    "name": "Creating Offline-First Web Apps with Service Workers - Auth0",
+    "snippet": "In this article, we focus on the service worker API and find out how to use it with a library called UpUp to make our apps offline-first.",
+    "host_name": "auth0.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

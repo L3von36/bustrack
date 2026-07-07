@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://ably.com/compare/pusher-vs-socketio",
+    "name": "Pusher vs Socket.IO - Ably Realtime",
+    "snippet": "See how we compare to Pusher and Socket.IO on key dimensions such as core features, pricing, integrations, QoS, performance, and security and compliance.",
+    "host_name": "ably.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.pkgpulse.com/guides/best-realtime-libraries-2026",
+    "name": "Best Realtime 2026: Socket.io vs Ably vs Pusher - PkgPulse",
+    "snippet": "Socket.io, Ably, and Pusher compared for real-time features. Self-hosted vs managed, scalability, and which realtime library fits your app ...",
+    "host_name": "www.pkgpulse.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/nextjs/comments/1m14k6d/nextts_realtime_recommendations",
+    "name": "NextTS realtime recommendations : r/nextjs - Reddit",
+    "snippet": "Socket.io and Pusher are of course comparable feature-wise, Pusher / Ably: Easier setup, fully managed, great for scaling without managing ...",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.buildmvpfast.com/compare/pusher-vs-ably",
+    "name": "Pusher vs Ably (2026): Realtime Messaging Comparison",
+    "snippet": "Verdict: Choose Pusher for simple realtime needs: it's faster to implement and cheaper at moderate scale. Choose Ably when message delivery guarantees, message ...",
+    "host_name": "www.buildmvpfast.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=e7K9bfB1ZrI",
+    "name": "Socket.io v4 or websockets in 2023 - which should you use? - YouTube",
+    "snippet": "Socket.io v4 or websockets in 2023 - which should you use? - ... Go to channel Ably Realtime · How to scale WebSockets to millions of connections.",
+    "host_name": "www.youtube.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://velt.dev/blog/socketio-vs-websocket-guide-developers",
+    "name": "Socket.IO vs WebSocket Guide for Developers September 2025 | Velt",
+    "snippet": "WebSocket offers better performance while Socket.IO provides easier developer experience; You can setup basic real-time features in less than an ...",
+    "host_name": "velt.dev",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/ably/socketio-vs-websocket-comparing-two-popular-realtime-technologies-3ff3",
+    "name": "Socket.IO vs. WebSocket: Key differences and which to use",
+    "snippet": "Socket.IO is a rich messaging library for JavaScript/NodeJS applications, whereas WebSocket is a lower-level realtime protocol used in libraries such as Socket ...",
+    "host_name": "dev.to",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://websocket.org/comparisons/managed-services",
+    "name": "WebSocket Services Compared: Ably, Pusher, PubNub & More",
+    "snippet": "Compare managed realtime services: Ably, Pusher, PubNub, and Firebase. Protocol guarantees, pricing, scaling, and when to self-host instead.",
+    "host_name": "websocket.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://laracasts.com/discuss/channels/servers/laravel-with-pusher-or-socketio",
+    "name": "Laravel with Pusher or Socket.io? - Laracasts",
+    "snippet": "Are you aware of this new package, called 'Laravel Websockets' which is a free alternative to Pusher? It runs a local websockets server and ...",
+    "host_name": "laracasts.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.cometchat.com/blog/socker-io-vs-pusher",
+    "name": "Socket.io vs pusher: Which is right for you? - CometChat",
+    "snippet": "Socket.io and Pusher are both tools used for building real-time applications like live chat, dashboards and live streaming, but they have different approaches.",
+    "host_name": "www.cometchat.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

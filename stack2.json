@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.facebook.com/groups/274791304282884/posts/1358617202566950",
+    "name": "Should I choose React or Next.js for my project? - Facebook",
+    "snippet": "React is great but Next.js is the upgrade you didn't know you needed. ‎ ‎Sometimes you want more than just building the page.",
+    "host_name": "www.facebook.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.debugbear.com/blog/nuxt-vs-next",
+    "name": "Nuxt vs Next.js: A Practical Comparison - DebugBear",
+    "snippet": "Explore a practical comparison of Nuxt and Next.js, focusing on SSR performance, hybrid rendering, and unique framework features.",
+    "host_name": "www.debugbear.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@toukir.ahamed.pigeon/react-to-next-js-vue-to-nuxt-js-detailed-comparison-benefits-drawbacks-performance-and-real-1c02a40f4dcc",
+    "name": "React to Next JS, Vue to Nuxt JS - by Toukir Ahamed Pigeon - Medium",
+    "snippet": "React to Next JS, Vue to Nuxt JS — Detailed Comparison, Benefits, Drawbacks, Performance, and Real Use Cases 1. Introduction In today's web ...",
+    "host_name": "medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://outplane.com/blog/nextjs-vs-nuxt",
+    "name": "Next.js vs Nuxt: React vs Vue Full-Stack Frameworks  - Out Plane",
+    "snippet": "The most consequential difference between Next.js and Nuxt is the UI library they build on. This is not a matter of framework features — it is a ...",
+    "host_name": "outplane.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://techsy.io/en/blog/nextjs-vs-react-vite",
+    "name": "Next.js vs React + Vite 2026: Need a Framework? - TECHSY",
+    "snippet": "React + Vite is half the cost and twice the speed, sometimes. We compare Next.js vs React + Vite in 2026 on bills, bundle size, and when Next.js earns it.",
+    "host_name": "techsy.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.tatvasoft.com/outsourcing/2025/06/nuxt-vs-next.html",
+    "name": "Nuxt vs Next: A Detailed Comparison - TatvaSoft Blog",
+    "snippet": "The Nuxt vs Next blog differentiates the two JavaScript web frameworks, detailing their features, pros, cons, and usage scenarios.",
+    "host_name": "www.tatvasoft.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://nextjstemplates.com/blog/nextjs-vs-nuxt",
+    "name": "Next.js vs Nuxt: Which one is Better in 2026?",
+    "snippet": "Next.js extends React with framework-level features. In contrast, Nuxt extends Vue.js with a similar application model. As a result, both ...",
+    "host_name": "nextjstemplates.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=9vMSuj3BlG4",
+    "name": "React vs. Next.js: Key Differences, Performance, and Use Cases for",
+    "snippet": "Choosing the right front-end stack is not just a “developer preference” question. For many companies, it directly impacts how fast you ...",
+    "host_name": "www.youtube.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/javascript/comments/1m17h0t/askjs_why_do_teams_still_prefer_nextjsreact_over",
+    "name": "[AskJS] Why do teams still prefer Next.js/React over Nuxt/Vue, even",
+    "snippet": "My personal experience has been that Vue and Nuxt offer a more consistent and less mentally taxing developer experience. Things like file-based ...",
+    "host_name": "www.reddit.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.contentful.com/blog/next-js-vs-react",
+    "name": "Next.js vs. React: The difference and which framework to choose",
+    "snippet": "In this article, we will be talking about two of the most used JavaScript frameworks, React and Next.js, as well as seeing what advantages and disadvantages ...",
+    "host_name": "www.contentful.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

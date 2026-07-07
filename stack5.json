@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.reddit.com/r/nextjs/comments/1p0e5tk/drizzle_vs_prisma_which_one_to_choose",
+    "name": "Drizzle vs Prisma: Which One to Choose? : r/nextjs - Reddit",
+    "snippet": "I know SQL, but I'm faster with Prisma. ORM and autocomplete with TypeScript make everything super fast. I really like defining the data model ... Prisma vs Drizzle, what's the current state? : r/node Prisma 7 vs Drizzle : r/node More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.bytebase.com/blog/drizzle-vs-prisma",
+    "name": "Drizzle ORM vs Prisma: Which TypeScript ORM Should You Use in",
+    "snippet": "Drizzle ORM vs Prisma comparison: type safety, performance, bundle size, serverless support, migrations, and ecosystem. Drizzle ORM · Prisma ORM · Drizzle ORM vs. Prisma ORM",
+    "host_name": "www.bytebase.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://navanathjadhav.medium.com/prisma-vs-drizzle-vs-typeorm-the-modern-orm-battle-618694d6361c",
+    "name": "Prisma vs Drizzle vs TypeORM: The Modern ORM Battle",
+    "snippet": "Performance verdict: Drizzle for serverless, tie for simple ... But in 2026, there's no good reason to choose it over Prisma or Drizzle.",
+    "host_name": "navanathjadhav.medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/pockit_tools/drizzle-orm-vs-prisma-in-2026-the-honest-comparison-nobody-is-making-3n6g",
+    "name": "Drizzle ORM vs Prisma in 2026: The Honest Comparison Nobody Is",
+    "snippet": "In practice, both migration systems work well. Prisma's is more mature with better data loss detection and interactive prompts. Drizzle Kit has ...\nPrisma's is more mature with better data loss detection and interactive prompts. Drizzle Kit has improved significantly (especially heading ...",
+    "host_name": "dev.to",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://techsy.io/en/blog/prisma-vs-drizzle-orm",
+    "name": "Prisma vs Drizzle: What Prisma 7 Changes - TECHSY",
+    "snippet": "The performance gap is narrower than it's ever been, but it hasn't disappeared. Drizzle's 57KB bundle is still roughly 28x smaller than Prisma 7's 1.6MB. On a ...",
+    "host_name": "techsy.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=cTu9-C2rd-0",
+    "name": "Is Drizzle Really Better Than Prisma? - YouTube",
+    "snippet": "In this video I will compare everything about Prisma and Drizzle so you will know once and for all which database ORM is best for your ...",
+    "host_name": "www.youtube.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.prisma.io/docs/orm/more/comparisons/prisma-and-drizzle",
+    "name": "Drizzle vs Prisma ORM",
+    "snippet": "Both Drizzle ORM and Prisma ORM are tools for data access and migrations. Drizzle is focused on being a thin wrapper around a SQL-like syntax while Prisma is ...",
+    "host_name": "www.prisma.io",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.buildmvpfast.com/blog/prisma-vs-drizzle-orm-startup-comparison-2026",
+    "name": "Prisma vs Drizzle ORM for Startups 2026 | Which to Pick",
+    "snippet": "A side-by-side comparison of Prisma and Drizzle ORM for startup founders. Covers schema design, performance benchmarks, edge deployment, ...",
+    "host_name": "www.buildmvpfast.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.13labs.au/compare/prisma-vs-drizzle",
+    "name": "Prisma vs Drizzle: Rich ORM or Lightweight Builder? - 13Labs",
+    "snippet": "Performance is Drizzle's headline advantage. Drizzle's runtime is approximately 35KB (gzipped), compared to Prisma's engine which adds several megabytes to your ...",
+    "host_name": "www.13labs.au",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.prisma.io/blog/convergence",
+    "name": "Plot Twist: We're All Building the Same ORM",
+    "snippet": "Why Drizzle's relational API v2 mirrors Prisma: production database problems at scale lead to similar patterns. A look at ORM convergence.",
+    "host_name": "www.prisma.io",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
