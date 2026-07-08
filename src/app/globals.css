@@ -122,19 +122,12 @@
 }
 
 /* ── Scrollbar ── */
-.bt-scroll::-webkit-scrollbar {
-  width: 5px;
-}
-.bt-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.bt-scroll::-webkit-scrollbar-thumb {
-  background: rgba(120, 113, 108, 0.2);
-  border-radius: 99px;
-}
-.dark .bt-scroll::-webkit-scrollbar-thumb {
-  background: rgba(168, 162, 158, 0.15);
-}
+.bt-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.bt-scroll::-webkit-scrollbar-track { background: transparent; }
+.bt-scroll::-webkit-scrollbar-thumb { background: rgba(120, 113, 108, 0.15); border-radius: 99px; }
+.bt-scroll::-webkit-scrollbar-thumb:hover { background: rgba(120, 113, 108, 0.3); }
+.dark .bt-scroll::-webkit-scrollbar-thumb { background: rgba(168, 162, 158, 0.1); }
+.dark .bt-scroll::-webkit-scrollbar-thumb:hover { background: rgba(168, 162, 158, 0.2); }
 
 /* ── Animations ── */
 @keyframes bt-fade-in {
@@ -165,3 +158,50 @@
 .delay-400 { animation-delay: 320ms; }
 .delay-500 { animation-delay: 400ms; }
 .delay-600 { animation-delay: 480ms; }
+
+/* ── Premium card hover ── */
+.card-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+.dark .card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Subtle gradient backgrounds ── */
+.gradient-emerald {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, transparent 60%);
+}
+.dark .gradient-emerald {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, transparent 60%);
+}
+
+/* ── Glow effect for scan area ── */
+.scan-glow {
+  box-shadow: 0 0 80px 20px rgba(16, 185, 129, 0.06);
+}
+.dark .scan-glow {
+  box-shadow: 0 0 80px 20px rgba(16, 185, 129, 0.04);
+}
+
+/* ── Table row alternating ── */
+.table-row-alt:nth-child(even) {
+  background: rgba(0, 0, 0, 0.02);
+}
+.dark .table-row-alt:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── Shimmer loading effect ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--muted) 25%, var(--accent) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}

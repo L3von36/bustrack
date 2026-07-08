@@ -4,7 +4,6 @@ import React, { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 import { LoginScreen } from '@/components/bus-track/login-screen';
-import { AppHeader } from '@/components/bus-track/app-header';
 import type { StaffUser } from '@/components/bus-track/types';
 
 // Dynamic import dashboards — only loaded after login
@@ -47,7 +46,7 @@ export default function Home() {
     );
   }
 
-  // ── Logged in → show role-based dashboard ──
+  // ── Logged in → show role-based dashboard (each dashboard renders its own header) ──
   const Dashboard = {
     TICKETER: TicketerInterface,
     CASHIER: CashierInterface,
@@ -58,16 +57,13 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <AppHeader user={user} onLogout={handleLogout} />
-      <main className="flex-1 overflow-hidden">
-        {Dashboard ? (
-          <Dashboard user={user} onLogout={handleLogout} toast={toast} />
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            Unknown role: {user.role}
-          </div>
-        )}
-      </main>
+      {Dashboard ? (
+        <Dashboard user={user} onLogout={handleLogout} toast={toast} />
+      ) : (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          Unknown role: {user.role}
+        </div>
+      )}
     </div>
   );
 }

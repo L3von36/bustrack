@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Bus, Plus, MapPin, DollarSign, Users, TrendingUp,
-  LayoutDashboard, Route, UserCog, BarChart3, Car,
+  Bus, Plus, MapPin, DollarSign, Users, TrendingUp, Clock,
+  LayoutDashboard, Route, UserCog, BarChart3, Car, ArrowRight,
+  Activity, BarChart2, PieChart as PieChartIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,32 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 const BUS_TYPES = ['STANDARD', 'EXECUTIVE', 'VIP', 'PREMIUM'] as const;
 const STAFF_ROLES = ['TICKETER', 'CASHIER', 'GATEMAN', 'MANAGER', 'SUPERADMIN'] as const;
+
+const AVATAR_GRADIENTS = [
+  'bg-gradient-to-br from-emerald-400 to-emerald-600',
+  'bg-gradient-to-br from-teal-400 to-teal-600',
+  'bg-gradient-to-br from-amber-400 to-amber-600',
+  'bg-gradient-to-br from-violet-400 to-violet-600',
+  'bg-gradient-to-br from-rose-400 to-rose-600',
+  'bg-gradient-to-br from-cyan-400 to-cyan-600',
+  'bg-gradient-to-br from-orange-400 to-orange-600',
+  'bg-gradient-to-br from-fuchsia-400 to-fuchsia-600',
+];
+
+const ROLE_BADGE_COLORS: Record<string, string> = {
+  TICKETER: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  CASHIER: 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-400',
+  GATEMAN: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  MANAGER: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400',
+  SUPERADMIN: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400',
+};
+
+const BUS_TYPE_BADGE_COLORS: Record<string, string> = {
+  STANDARD: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-500/15 dark:text-zinc-300',
+  EXECUTIVE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  VIP: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  PREMIUM: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400',
+};
 
 /* ─── Component ─── */
 export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfaceProps) {
@@ -211,47 +238,47 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   /* ─── Derived data ─── */
   const kpis = stats ? [
     {
-      label: 'Revenue',
+      label: 'Total Revenue',
       value: `KES ${(stats.totalRevenue || 0).toLocaleString()}`,
-      icon: <DollarSign className="h-4 w-4" />,
-      accent: 'text-emerald-500',
+      icon: <DollarSign className="h-5 w-5" />,
+      gradient: 'from-emerald-500 to-emerald-600',
+      shadowColor: 'shadow-emerald-500/20',
     },
     {
-      label: 'Passengers',
+      label: 'Total Passengers',
       value: (stats.totalPassengers || 0).toLocaleString(),
-      icon: <Users className="h-4 w-4" />,
-      accent: 'text-teal-500',
+      icon: <Users className="h-5 w-5" />,
+      gradient: 'from-teal-500 to-teal-600',
+      shadowColor: 'shadow-teal-500/20',
     },
     {
-      label: 'Buses',
-      value: `${stats.busesDeparted || 0}/${stats.totalBuses || 0}`,
-      icon: <Bus className="h-4 w-4" />,
-      accent: 'text-amber-500',
+      label: 'Fleet Deployed',
+      value: `${stats.busesDeparted || 0} / ${stats.totalBuses || 0}`,
+      icon: <Bus className="h-5 w-5" />,
+      gradient: 'from-amber-500 to-amber-600',
+      shadowColor: 'shadow-amber-500/20',
     },
     {
-      label: 'On-Time',
+      label: 'On-Time Rate',
       value: `${stats.onTimeRate || 0}%`,
-      icon: <TrendingUp className="h-4 w-4" />,
-      accent: 'text-orange-500',
+      icon: <TrendingUp className="h-5 w-5" />,
+      gradient: 'from-orange-500 to-orange-600',
+      shadowColor: 'shadow-orange-500/20',
     },
   ] : [];
 
-  const initials = user.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
-  /* ─── Render helpers ─── */
+  /* ─── Render: KPI Cards ─── */
   const renderKPIs = () => {
     if (loading) {
       return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="border border-border/60 bg-card rounded-xl p-5">
-              <Skeleton className="h-3 w-16 mb-3" />
-              <Skeleton className="h-8 w-28" />
+            <div key={i} className="bg-card rounded-2xl p-5 border border-border/50 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <Skeleton className="h-3 w-24 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-xl" />
+              </div>
+              <Skeleton className="h-8 w-32 rounded-md" />
             </div>
           ))}
         </div>
@@ -262,131 +289,220 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
         {kpis.map((kpi, i) => (
           <div
             key={i}
-            className={`border border-border/60 bg-card rounded-xl p-5 group animate-bt-fade-in delay-${(i + 1) * 100}`}
+            className="bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 animate-bt-fade-in group"
+            style={{ animationDelay: `${(i + 1) * 80}ms` }}
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{kpi.label}</span>
-              <div className={`${kpi.accent} opacity-60 group-hover:opacity-100 transition-opacity`}>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                {kpi.label}
+              </span>
+              <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${kpi.gradient} flex items-center justify-center text-white shadow-md ${kpi.shadowColor} group-hover:scale-110 transition-transform duration-200`}>
                 {kpi.icon}
               </div>
             </div>
-            <p className="text-3xl font-bold tracking-tight text-foreground">{kpi.value}</p>
+            <p className="text-3xl font-bold tracking-tight text-foreground leading-none">
+              {kpi.value}
+            </p>
           </div>
         ))}
       </div>
     );
   };
 
-  const renderDeparturesTable = () => (
-    <div className="border border-border/60 bg-card rounded-xl overflow-hidden animate-bt-fade-in delay-200">
-      <div className="px-5 py-3.5 border-b border-border/60">
-        <h3 className="text-sm font-semibold text-foreground">Today&apos;s departures</h3>
-      </div>
-      <div className="overflow-x-auto bt-scroll">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-border/40">
-              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Route</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden sm:table-cell">Bus</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Gate</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Time</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Status</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 text-right">Occ.</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {departures.length === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground text-sm">
-                  No departures scheduled
-                </TableCell>
+  /* ─── Render: Departures Table ─── */
+  const renderDeparturesTable = () => {
+    if (loading) {
+      return (
+        <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden animate-bt-fade-in" style={{ animationDelay: '300ms' }}>
+          <div className="px-6 py-4 border-b border-border/50">
+            <Skeleton className="h-4 w-40 rounded" />
+            <Skeleton className="h-3 w-56 rounded mt-1.5" />
+          </div>
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden animate-bt-fade-in" style={{ animationDelay: '300ms' }}>
+        <div className="px-6 py-4 border-b border-border/50">
+          <div className="flex items-center gap-2.5">
+            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+              <Activity className="h-3.5 w-3.5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Live Departures</h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{departures.length} scheduled today</p>
+            </div>
+          </div>
+        </div>
+        <div className="overflow-x-auto bt-scroll">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Route</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Bus</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Gate</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Time</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right">Occupancy</TableHead>
               </TableRow>
-            ) : (
-              departures.map((d: any) => (
-                <TableRow key={d.id} className="h-10 border-border/30">
-                  <TableCell className="text-sm font-medium text-foreground">{d.routeName}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground font-mono hidden sm:table-cell">{d.busPlate}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{d.gateNumber || '—'}</TableCell>
-                  <TableCell className="text-sm font-mono text-foreground">{d.departureTime}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className={`text-[11px] px-2 py-0.5 rounded-md font-medium ${STATUS_COLORS[d.status] || ''}`}>
-                      {d.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Progress value={d.occupancy} className="w-14 h-1.5" />
-                      <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{d.occupancy}%</span>
+            </TableHeader>
+            <TableBody>
+              {departures.length === 0 ? (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="h-28 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                        <Bus className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">No departures scheduled today</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
+              ) : (
+                departures.map((d: any) => {
+                  const statusColor = d.status === 'SCHEDULED'
+                    ? 'bg-emerald-500'
+                    : d.status === 'BOARDING'
+                    ? 'bg-amber-500'
+                    : d.status === 'DEPARTED'
+                    ? 'bg-zinc-400'
+                    : d.status === 'CANCELLED'
+                    ? 'bg-red-500'
+                    : d.status === 'DELAYED'
+                    ? 'bg-orange-500'
+                    : 'bg-zinc-400';
 
+                  return (
+                    <TableRow
+                      key={d.id}
+                      className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-medium text-foreground">{d.routeName?.split(' → ')[0] || d.routeName}</span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground/40 hidden sm:inline" />
+                          <span className="text-sm text-muted-foreground hidden sm:inline">{d.routeName?.split(' → ')[1]}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground font-mono hidden sm:table-cell">{d.busPlate}</TableCell>
+                      <TableCell className="text-sm font-medium text-foreground">{d.gateNumber || '—'}</TableCell>
+                      <TableCell className="text-sm font-mono text-foreground tabular-nums">{d.departureTime}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${statusColor}`} />
+                          <span className="text-xs font-medium text-foreground capitalize">{d.status.toLowerCase()}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2.5">
+                          <Progress value={d.occupancy} className="w-20 h-2 rounded-full" />
+                          <span className="text-xs font-semibold text-foreground tabular-nums w-10 text-right">{d.occupancy}%</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
+
+  /* ─── Render: Routes Tab ─── */
   const renderRoutesTab = () => (
     <div className="space-y-5 animate-bt-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Routes</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{routes.length} routes configured</p>
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md shadow-emerald-500/20">
+            <Route className="h-4.5 w-4.5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Route Management</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{routes.length} routes configured</p>
+          </div>
         </div>
         <Button
           size="sm"
           onClick={() => setAddRouteOpen(true)}
-          className="gap-1.5"
+          className="gap-1.5 rounded-full px-4 shadow-sm"
         >
           <Plus className="h-3.5 w-3.5" />
-          <span>Add route</span>
+          <span>Add Route</span>
         </Button>
       </div>
 
-      <div className="border border-border/60 bg-card rounded-xl overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
         <div className="overflow-x-auto bt-scroll">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/40">
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Origin</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Destination</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden sm:table-cell">Distance</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Fare</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden md:table-cell">Est.</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 text-right">Schedules</TableHead>
+              <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Origin</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Destination</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Distance</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Fare</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden md:table-cell">Est. Time</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right">Schedules</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {routes.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground text-sm">
-                    No routes yet
+                  <TableCell colSpan={6} className="h-28 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                        <MapPin className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">No routes configured yet</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAddRouteOpen(true)}
+                        className="mt-1 gap-1.5 text-xs rounded-full"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Add your first route
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 routes.map((r: any) => (
-                  <TableRow key={r.id} className="h-10 border-border/30">
+                  <TableRow
+                    key={r.id}
+                    className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
+                  >
                     <TableCell className="text-sm">
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3 text-muted-foreground/50" />
+                      <span className="flex items-center gap-2">
+                        <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                         <span className="font-medium text-foreground">{r.origin}</span>
                       </span>
                     </TableCell>
                     <TableCell className="text-sm">
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3 text-muted-foreground/50" />
-                        <span className="text-foreground">{r.destination}</span>
+                      <span className="flex items-center gap-2">
+                        <MapPin className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                        <span className="font-medium text-foreground">{r.destination}</span>
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{r.distanceKm} km</TableCell>
-                    <TableCell className="text-sm font-medium text-foreground tabular-nums">KES {r.baseFare?.toLocaleString()}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{r.estimatedMin} min</TableCell>
+                    <TableCell className="text-sm font-bold text-foreground tabular-nums">KES {r.baseFare?.toLocaleString()}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="h-3 w-3" />
+                        {r.estimatedMin} min
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Badge variant="secondary" className="text-[11px] px-2 py-0.5 rounded-md font-mono">
+                      <span className="inline-flex items-center justify-center h-6 min-w-[28px] rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
                         {r._count?.schedules || 0}
-                      </Badge>
+                      </span>
                     </TableCell>
                   </TableRow>
                 ))
@@ -398,77 +514,77 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
 
       {/* Add Route Dialog */}
       <Dialog open={addRouteOpen} onOpenChange={setAddRouteOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Add new route</DialogTitle>
+            <DialogTitle className="text-foreground text-lg">Add New Route</DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm">
               Define a new route with origin, destination, and fare details.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Origin</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Origin</Label>
               <Input
                 value={newRoute.origin}
                 onChange={(e) => setNewRoute({ ...newRoute, origin: e.target.value })}
                 placeholder="e.g. Nairobi"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Destination</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Destination</Label>
               <Input
                 value={newRoute.destination}
                 onChange={(e) => setNewRoute({ ...newRoute, destination: e.target.value })}
                 placeholder="e.g. Mombasa"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Distance (km)</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Distance (km)</Label>
               <Input
                 type="number"
                 value={newRoute.distanceKm}
                 onChange={(e) => setNewRoute({ ...newRoute, distanceKm: e.target.value })}
                 placeholder="480"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Base fare (KES)</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Base fare (KES)</Label>
               <Input
                 type="number"
                 value={newRoute.baseFare}
                 onChange={(e) => setNewRoute({ ...newRoute, baseFare: e.target.value })}
                 placeholder="1200"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Estimated time (min)</Label>
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Estimated time (min)</Label>
               <Input
                 type="number"
                 value={newRoute.estimatedMin}
                 onChange={(e) => setNewRoute({ ...newRoute, estimatedMin: e.target.value })}
                 placeholder="360"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 pt-2">
+          <DialogFooter className="gap-2 pt-3">
             <Button
               variant="ghost"
               onClick={() => setAddRouteOpen(false)}
-              className="text-sm"
+              className="text-sm rounded-lg"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAddRoute}
               disabled={submittingRoute || !newRoute.origin || !newRoute.destination || !newRoute.distanceKm || !newRoute.baseFare || !newRoute.estimatedMin}
-              className="text-sm"
+              className="text-sm rounded-lg shadow-sm"
             >
-              {submittingRoute ? 'Creating...' : 'Create route'}
+              {submittingRoute ? 'Creating...' : 'Create Route'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -476,63 +592,92 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     </div>
   );
 
+  /* ─── Render: Buses Tab ─── */
   const renderBusesTab = () => (
     <div className="space-y-5 animate-bt-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Buses</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{buses.length} buses in fleet</p>
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/20">
+            <Car className="h-4.5 w-4.5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Fleet Management</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{buses.length} buses in fleet</p>
+          </div>
         </div>
         <Button
           size="sm"
           onClick={() => setAddBusOpen(true)}
-          className="gap-1.5"
+          className="gap-1.5 rounded-full px-4 shadow-sm"
         >
           <Plus className="h-3.5 w-3.5" />
-          <span>Add bus</span>
+          <span>Add Bus</span>
         </Button>
       </div>
 
-      <div className="border border-border/60 bg-card rounded-xl overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
         <div className="overflow-x-auto bt-scroll">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/40">
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Plate</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Type</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Seats</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden sm:table-cell">Layout</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 text-right hidden sm:table-cell">Schedules</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Status</TableHead>
+              <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Plate Number</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Type</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Seats</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Layout</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right hidden sm:table-cell">Schedules</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {buses.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground text-sm">
-                    No buses registered
+                  <TableCell colSpan={6} className="h-28 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                        <Bus className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">No buses registered yet</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAddBusOpen(true)}
+                        className="mt-1 gap-1.5 text-xs rounded-full"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Register your first bus
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 buses.map((b: any) => (
-                  <TableRow key={b.id} className="h-10 border-border/30">
-                    <TableCell className="text-sm font-mono font-medium text-foreground">{b.plateNumber}</TableCell>
+                  <TableRow
+                    key={b.id}
+                    className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
+                  >
+                    <TableCell className="text-sm font-mono font-semibold text-foreground tracking-wide">
+                      {b.plateNumber}
+                    </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-[11px] px-2 py-0.5 rounded-md font-medium">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${BUS_TYPE_BADGE_COLORS[b.busType] || ''}`}>
                         {b.busType}
-                      </Badge>
+                      </span>
                     </TableCell>
-                    <TableCell className="text-sm tabular-nums text-foreground">{b.totalSeats}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{b.rows}×{b.cols}</TableCell>
+                    <TableCell className="text-sm tabular-nums font-semibold text-foreground">{b.totalSeats}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                      <span className="inline-flex items-center gap-1 font-mono">
+                        {b.rows} <span className="text-muted-foreground/50">&times;</span> {b.cols}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right hidden sm:table-cell">
-                      <Badge variant="secondary" className="text-[11px] px-2 py-0.5 rounded-md font-mono">
+                      <span className="inline-flex items-center justify-center h-6 min-w-[28px] rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
                         {b._count?.schedules || 0}
-                      </Badge>
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${b.active ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2.5 w-2.5 rounded-full ${b.active ? 'bg-emerald-500' : 'bg-zinc-400 dark:bg-zinc-500'}`} />
+                        <span className="text-xs font-medium text-foreground">
                           {b.active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
@@ -547,27 +692,27 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
 
       {/* Add Bus Dialog */}
       <Dialog open={addBusOpen} onOpenChange={setAddBusOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Add new bus</DialogTitle>
+            <DialogTitle className="text-foreground text-lg">Add New Bus</DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm">
               Register a new bus with its seat configuration.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Plate number</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Plate Number</Label>
               <Input
                 value={newBus.plateNumber}
                 onChange={(e) => setNewBus({ ...newBus, plateNumber: e.target.value })}
                 placeholder="KBA 123A"
-                className="h-9 text-sm font-mono"
+                className="h-10 text-sm font-mono rounded-lg"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Bus Type</Label>
               <Select value={newBus.busType} onValueChange={(v) => setNewBus({ ...newBus, busType: v })}>
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger className="h-10 text-sm rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -579,51 +724,51 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total seats</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Total Seats</Label>
               <Input
                 type="number"
                 value={newBus.totalSeats}
                 onChange={(e) => setNewBus({ ...newBus, totalSeats: e.target.value })}
                 placeholder="36"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Rows</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Rows</Label>
               <Input
                 type="number"
                 value={newBus.rows}
                 onChange={(e) => setNewBus({ ...newBus, rows: e.target.value })}
                 placeholder="9"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Columns</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Columns</Label>
               <Input
                 type="number"
                 value={newBus.cols}
                 onChange={(e) => setNewBus({ ...newBus, cols: e.target.value })}
                 placeholder="4"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 pt-2">
+          <DialogFooter className="gap-2 pt-3">
             <Button
               variant="ghost"
               onClick={() => setAddBusOpen(false)}
-              className="text-sm"
+              className="text-sm rounded-lg"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAddBus}
               disabled={submittingBus || !newBus.plateNumber || !newBus.totalSeats || !newBus.rows || !newBus.cols}
-              className="text-sm"
+              className="text-sm rounded-lg shadow-sm"
             >
-              {submittingBus ? 'Adding...' : 'Add bus'}
+              {submittingBus ? 'Adding...' : 'Add Bus'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -631,72 +776,104 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     </div>
   );
 
+  /* ─── Render: Staff Tab ─── */
   const renderStaffTab = () => (
     <div className="space-y-5 animate-bt-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Staff</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{staff.length} team members</p>
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-md shadow-violet-500/20">
+            <UserCog className="h-4.5 w-4.5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Team Management</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{staff.length} team members</p>
+          </div>
         </div>
         <Button
           size="sm"
           onClick={() => setAddStaffOpen(true)}
-          className="gap-1.5"
+          className="gap-1.5 rounded-full px-4 shadow-sm"
         >
           <Plus className="h-3.5 w-3.5" />
-          <span>Add staff</span>
+          <span>Add Staff</span>
         </Button>
       </div>
 
-      <div className="border border-border/60 bg-card rounded-xl overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
         <div className="overflow-x-auto bt-scroll">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/40">
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Name</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden sm:table-cell">Email</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Role</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 text-right hidden sm:table-cell">Bookings</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Status</TableHead>
+              <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Name</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Email</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Role</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right hidden sm:table-cell">Bookings</TableHead>
+                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {staff.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground text-sm">
-                    No staff members
+                  <TableCell colSpan={5} className="h-28 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">No staff members yet</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAddStaffOpen(true)}
+                        className="mt-1 gap-1.5 text-xs rounded-full"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Add your first team member
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                staff.map((s: any) => (
-                  <TableRow key={s.id} className="h-10 border-border/30">
-                    <TableCell>
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
-                          {s.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                staff.map((s: any, idx: number) => {
+                  const staffInitials = s.name
+                    ?.split(' ')
+                    .map((n: string) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2) || '??';
+
+                  return (
+                    <TableRow
+                      key={s.id}
+                      className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 shadow-sm ${AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]}`}>
+                            {staffInitials}
+                          </div>
+                          <span className="text-sm font-medium text-foreground">{s.name}</span>
                         </div>
-                        <span className="text-sm font-medium text-foreground">{s.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{s.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[11px] px-2 py-0.5 rounded-md font-medium">
-                        {s.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm tabular-nums text-muted-foreground text-right hidden sm:table-cell">
-                      {s._count?.bookings || 0}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
-                        <span className="text-xs text-muted-foreground">
-                          {s.active ? 'Active' : 'Inactive'}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{s.email}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${ROLE_BADGE_COLORS[s.role] || ''}`}>
+                          {s.role}
                         </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className="text-sm tabular-nums font-semibold text-foreground text-right hidden sm:table-cell">
+                        {s._count?.bookings || 0}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2.5 w-2.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-zinc-400 dark:bg-zinc-500'}`} />
+                          <span className="text-xs font-medium text-foreground">
+                            {s.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -705,37 +882,37 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
 
       {/* Add Staff Dialog */}
       <Dialog open={addStaffOpen} onOpenChange={setAddStaffOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Add new staff</DialogTitle>
+            <DialogTitle className="text-foreground text-lg">Add New Staff</DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm">
               Invite a new team member. They can reset their password on first login.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Full name</Label>
+          <div className="space-y-5 pt-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Full Name</Label>
               <Input
                 value={newStaff.name}
                 onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
                 placeholder="John Doe"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Email</Label>
               <Input
                 type="email"
                 value={newStaff.email}
                 onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
                 placeholder="john@bustrack.com"
-                className="h-9 text-sm"
+                className="h-10 text-sm rounded-lg"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Role</Label>
               <Select value={newStaff.role} onValueChange={(v) => setNewStaff({ ...newStaff, role: v })}>
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger className="h-10 text-sm rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -748,20 +925,20 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               </Select>
             </div>
           </div>
-          <DialogFooter className="gap-2 pt-2">
+          <DialogFooter className="gap-2 pt-3">
             <Button
               variant="ghost"
               onClick={() => setAddStaffOpen(false)}
-              className="text-sm"
+              className="text-sm rounded-lg"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAddStaff}
               disabled={submittingStaff || !newStaff.name || !newStaff.email}
-              className="text-sm"
+              className="text-sm rounded-lg shadow-sm"
             >
-              {submittingStaff ? 'Adding...' : 'Add staff'}
+              {submittingStaff ? 'Adding...' : 'Add Staff'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -769,132 +946,179 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     </div>
   );
 
+  /* ─── Render: Analytics Tab ─── */
   const renderAnalyticsTab = () => {
     if (loading || !analytics) {
       return (
         <div className="space-y-5 animate-bt-fade-in">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">Analytics</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Revenue and passenger metrics</p>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="border border-border/60 bg-card rounded-xl p-5">
-              <Skeleton className="h-3 w-32 mb-4" />
-              <Skeleton className="h-[300px] w-full" />
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
+              <BarChart3 className="h-4.5 w-4.5 text-white" />
             </div>
-            <div className="border border-border/60 bg-card rounded-xl p-5">
-              <Skeleton className="h-3 w-32 mb-4" />
-              <Skeleton className="h-[300px] w-full" />
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-foreground">Analytics</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Revenue and passenger metrics</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-6">
+              <Skeleton className="h-4 w-36 rounded mb-5" />
+              <Skeleton className="h-[300px] w-full rounded-xl" />
+            </div>
+            <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-6">
+              <Skeleton className="h-4 w-36 rounded mb-5" />
+              <Skeleton className="h-[300px] w-full rounded-xl" />
             </div>
           </div>
         </div>
       );
     }
 
+    const hasRevenueData = analytics.revenueByRoute && analytics.revenueByRoute.length > 0;
+    const hasOccupancyData = analytics.seatOccupancy && analytics.seatOccupancy.length > 0;
+
     return (
       <div className="space-y-5 animate-bt-fade-in">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Analytics</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Revenue and passenger metrics</p>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Revenue Bar Chart */}
-          <div className="border border-border/60 bg-card rounded-xl p-5">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Revenue by route</h3>
-            {analytics.revenueByRoute?.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.revenueByRoute} barCategoryGap="20%">
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--border)"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="routeName"
-                    tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
-                    axisLine={{ stroke: 'var(--border)' }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <RTooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--popover)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      fontSize: '12px',
-                      color: 'var(--popover-foreground)',
-                    }}
-                    formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Revenue']}
-                  />
-                  <Bar
-                    dataKey="revenue"
-                    radius={[4, 4, 0, 0]}
-                    fill="var(--primary)"
-                    opacity={0.85}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
-                No revenue data yet
-              </div>
-            )}
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
+            <BarChart3 className="h-4.5 w-4.5 text-white" />
           </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Analytics</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Revenue and passenger metrics</p>
+          </div>
+        </div>
 
-          {/* Passengers Pie Chart */}
-          <div className="border border-border/60 bg-card rounded-xl p-5">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Passengers by route</h3>
-            {analytics.seatOccupancy?.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={analytics.seatOccupancy}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    dataKey="value"
-                    nameKey="name"
-                    strokeWidth={2}
-                    stroke="var(--card)"
-                    label={({ name, percentage }: any) =>
-                      `${name.split('→')[1]?.trim() || name} ${percentage}%`
-                    }
-                  >
-                    {analytics.seatOccupancy.map((_: any, index: number) => (
-                      <Cell
-                        key={index}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <RTooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--popover)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      fontSize: '12px',
-                      color: 'var(--popover-foreground)',
-                    }}
-                  />
-                  <Legend
-                    iconType="circle"
-                    iconSize={8}
-                    wrapperStyle={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
-                No passenger data yet
+        {!hasRevenueData && !hasOccupancyData ? (
+          <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-12">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center">
+                <PieChartIcon className="h-7 w-7 text-muted-foreground" />
               </div>
-            )}
+              <h3 className="text-sm font-semibold text-foreground">No Analytics Data</h3>
+              <p className="text-xs text-muted-foreground text-center max-w-xs">
+                Analytics will appear once routes are configured and bookings are processed.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Revenue Bar Chart */}
+            <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-6">
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                  <BarChart2 className="h-3.5 w-3.5 text-white" />
+                </div>
+                <h3 className="text-sm font-bold text-foreground">Revenue by Route</h3>
+              </div>
+              {hasRevenueData ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={analytics.revenueByRoute} barCategoryGap="20%">
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--border)"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="routeName"
+                      tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                      axisLine={{ stroke: 'var(--border)' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <RTooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--popover)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.75rem',
+                        fontSize: '12px',
+                        color: 'var(--popover-foreground)',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                      }}
+                      formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Revenue']}
+                    />
+                    <Bar
+                      dataKey="revenue"
+                      radius={[6, 6, 0, 0]}
+                      fill="var(--primary)"
+                      opacity={0.9}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex flex-col items-center justify-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <BarChart2 className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">No revenue data yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* Passengers Pie Chart */}
+            <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-6">
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center">
+                  <PieChartIcon className="h-3.5 w-3.5 text-white" />
+                </div>
+                <h3 className="text-sm font-bold text-foreground">Passengers by Route</h3>
+              </div>
+              {hasOccupancyData ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={analytics.seatOccupancy}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      dataKey="value"
+                      nameKey="name"
+                      strokeWidth={3}
+                      stroke="var(--card)"
+                      label={({ name, percentage }: any) =>
+                        `${name.split('→')[1]?.trim() || name} ${percentage}%`
+                      }
+                    >
+                      {analytics.seatOccupancy.map((_: any, index: number) => (
+                        <Cell
+                          key={index}
+                          fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <RTooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--popover)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.75rem',
+                        fontSize: '12px',
+                        color: 'var(--popover-foreground)',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                      }}
+                    />
+                    <Legend
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex flex-col items-center justify-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <PieChartIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">No passenger data yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -904,26 +1128,29 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     <div className="h-full flex flex-col bg-background animate-bt-fade-in">
       <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
 
-      {/* Tab Navigation */}
-      <nav className="shrink-0 border-b border-border/60 bg-card">
+      {/* Tab Navigation — Premium Pill Style */}
+      <nav className="shrink-0 border-b border-border/60 bg-card/60 backdrop-blur-sm">
         <div className="px-4 sm:px-6 max-w-6xl mx-auto">
-          <div className="flex gap-0 overflow-x-auto bt-scroll -mb-px">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 px-3.5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors duration-150
-                  ${activeTab === tab.id
-                    ? 'border-primary text-foreground'
-                    : 'border-transparent text-muted-foreground hover:text-foreground/70'
-                  }
-                `}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-              </button>
-            ))}
+          <div className="flex gap-1.5 overflow-x-auto bt-scroll py-2.5">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200
+                    ${isActive
+                      ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
+                      : 'text-muted-foreground hover:text-foreground/80 hover:bg-muted/60'
+                    }
+                  `}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </nav>
@@ -933,10 +1160,10 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
         <div className="h-full overflow-y-auto bt-scroll">
           <div className="p-4 sm:p-6 max-w-6xl mx-auto">
             {activeTab === 'overview' && (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight text-foreground">Overview</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">Real-time station performance</p>
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">Command Center</h2>
+                  <p className="text-xs text-muted-foreground mt-1">Real-time station performance overview</p>
                 </div>
                 {renderKPIs()}
                 {renderDeparturesTable()}

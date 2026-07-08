@@ -12,6 +12,13 @@ import {
   CreditCard,
   QrCode,
   X,
+  TrendingUp,
+  Users,
+  Hash,
+  CircleDollarSign,
+  Receipt,
+  Sparkles,
+  Inbox,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +56,50 @@ interface CashierInterfaceProps {
   user: StaffUser;
   onLogout: () => void;
   toast: any;
+}
+
+/* ─── Helper: get initials from name ────────────────────────── */
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+/* ─── Helper: generate a consistent pastel color from string ── */
+function getAvatarColor(name: string): string {
+  const colors = [
+    'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+    'bg-teal-500/15 text-teal-600 dark:text-teal-400',
+    'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+    'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+    'bg-sky-500/15 text-sky-600 dark:text-sky-400',
+    'bg-orange-500/15 text-orange-600 dark:text-orange-400',
+    'bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
+/* ─── Helper: get method color for activity feed ────────────── */
+function getMethodColor(method: string): string {
+  switch (method) {
+    case 'CASH':
+      return 'bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400';
+    case 'MOBILE_MONEY':
+      return 'bg-sky-500/15 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400';
+    case 'CARD':
+      return 'bg-violet-500/15 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400';
+    case 'QR_CODE':
+      return 'bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400';
+    default:
+      return 'bg-zinc-500/15 text-zinc-600 dark:bg-zinc-500/20 dark:text-zinc-400';
+  }
 }
 
 /* ─── Component ─────────────────────────────────────────────── */
@@ -99,6 +150,9 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
 
   /* ─── Derived ─────────────────────────────────────────────── */
   const todayTotal = recentPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+  const paymentCount = recentPayments.length;
+  const averageFare = paymentCount > 0 ? Math.round(todayTotal / paymentCount) : 0;
+  const pendingCount = pendingBookings.length;
   const cashReceivedNum = parseFloat(cashReceived) || 0;
   const fareAmount = payingBooking?.fare || 0;
   const changeAmount = cashReceived > 0 ? cashReceivedNum - fareAmount : 0;
@@ -169,156 +223,301 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
 
   /* ─── Render ──────────────────────────────────────────────── */
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-background">
       <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
 
       <main className="flex-1 overflow-hidden">
         <div className="flex h-full">
-          {/* ─── Main content ─────────────────────────────────── */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* KPI Bar */}
-            <div className="px-6 pt-6 pb-4">
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                    Today&apos;s Revenue
-                  </p>
-                  <p className="text-3xl font-bold tracking-tight text-foreground">
-                    KES {todayTotal.toLocaleString()}
-                  </p>
+          {/* ─── Main content area ────────────────────────────── */}
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+
+            {/* ═══ REVENUE HERO SECTION ═══ */}
+            <section className="relative overflow-hidden">
+              {/* Subtle gradient backdrop */}
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-emerald-500/[0.02] to-transparent pointer-events-none" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative px-6 pt-8 pb-6 lg:px-10">
+                <div className="animate-bt-fade-in">
+                  {/* Station badge + title */}
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/15">
+                      <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                        Payment Terminal
+                      </span>
+                    </div>
+                    {user.station && (
+                      <Badge variant="secondary" className="rounded-full px-3 py-1 text-[11px] font-medium border-border/60">
+                        {user.station.name}, {user.station.city}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Big revenue number */}
+                  <div className="flex flex-col gap-1 mb-6">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
+                      Today&apos;s Revenue
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-none">
+                        KES {todayTotal.toLocaleString()}
+                      </span>
+                      <TrendingUp className="h-6 w-6 text-emerald-500 mt-1" />
+                    </div>
+                  </div>
+
+                  {/* Stat chips row */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-border/60 shadow-sm">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-medium text-muted-foreground leading-none">
+                          Payments
+                        </span>
+                        <span className="text-sm font-bold text-foreground leading-tight mt-0.5">
+                          {paymentCount}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-border/60 shadow-sm">
+                      <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center">
+                        <CircleDollarSign className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-medium text-muted-foreground leading-none">
+                          Avg Fare
+                        </span>
+                        <span className="text-sm font-bold text-foreground leading-tight mt-0.5">
+                          KES {averageFare.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-border/60 shadow-sm">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                        <Hash className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-medium text-muted-foreground leading-none">
+                          Pending
+                        </span>
+                        <span className={`text-sm font-bold leading-tight mt-0.5 ${pendingCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {pendingCount}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <Badge
-                  variant="secondary"
-                  className="rounded-full px-3 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/40"
-                >
-                  {pendingBookings.length} pending
-                </Badge>
               </div>
-            </div>
+            </section>
 
             <Separator />
 
-            {/* Pending payments grid */}
-            <div className="flex-1 overflow-y-auto p-6 bt-scroll">
-              {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-[152px] w-full rounded-xl" />
-                  ))}
+            {/* ═══ PENDING PAYMENTS QUEUE ═══ */}
+            <section className="flex-1 overflow-hidden flex flex-col">
+              <div className="px-6 lg:px-10 py-4 flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Pending Payments
+                  </h2>
+                  {!loading && pendingBookings.length > 0 && (
+                    <Badge className="rounded-full h-5 min-w-5 px-1.5 text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-0">
+                      {pendingCount}
+                    </Badge>
+                  )}
                 </div>
-              ) : pendingBookings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center animate-bt-fade-in">
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
-                    <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-6 lg:px-10 pb-6 bt-scroll">
+                {loading ? (
+                  <div className="flex flex-col gap-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-20 w-full rounded-xl" />
+                    ))}
                   </div>
-                  <p className="text-sm font-medium text-foreground">All caught up</p>
-                  <p className="text-xs text-muted-foreground mt-1">No pending payments right now</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {pendingBookings.map((booking, i) => (
-                    <div
-                      key={booking.id}
-                      className={`animate-bt-fade-in ${STAGGER_DELAYS[i % STAGGER_DELAYS.length]} border border-border/60 bg-card rounded-xl p-5 flex flex-col gap-3.5 hover:border-border transition-colors`}
-                    >
-                      {/* Top row: ref + fare */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono text-sm font-semibold text-foreground tracking-tight">
-                            {booking.reference}
-                          </span>
-                          <span className="text-sm font-medium text-foreground">
-                            {booking.passengerName}
-                          </span>
-                          <span className="text-xs text-muted-foreground">{booking.passengerPhone}</span>
-                        </div>
-                        <div className="text-right flex flex-col items-end gap-1.5">
-                          <span className="text-xl font-bold tracking-tight text-foreground">
-                            KES {booking.fare.toLocaleString()}
-                          </span>
-                          <span
-                            className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${STATUS_COLORS[booking.status] || 'bg-muted text-muted-foreground'}`}
-                          >
-                            {booking.status.replace(/_/g, ' ')}
-                          </span>
-                        </div>
+                ) : pendingBookings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center animate-bt-fade-in">
+                    <div className="relative mb-6">
+                      <div className="w-20 h-20 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                        <CheckCircle2 className="h-10 w-10 text-emerald-500" />
                       </div>
-
-                      <Separator className="bg-border/60" />
-
-                      {/* Route info */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
-                          <span className="truncate font-medium">
-                            {booking.schedule.route.origin}
-                          </span>
-                          <ArrowRight className="h-3 w-3 shrink-0" />
-                          <span className="truncate font-medium">
-                            {booking.schedule.route.destination}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0 ml-2">
-                          <span className="font-medium">Seat {booking.seatNumber}</span>
-                          <span className="w-px h-3 bg-border" />
-                          <span>{booking.schedule.departureTime}</span>
-                        </div>
+                      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center animate-bt-scale-in delay-300">
+                        <span className="text-[10px] font-bold text-white">✓</span>
                       </div>
-
-                      {/* Pay button */}
-                      <Button
-                        size="sm"
-                        className="w-full mt-auto h-9 text-sm font-medium"
-                        onClick={() => openPayment(booking)}
-                      >
-                        <Wallet className="h-3.5 w-3.5 mr-1.5" />
-                        Process Payment
-                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <p className="text-base font-semibold text-foreground mb-1">
+                      All caught up!
+                    </p>
+                    <p className="text-sm text-muted-foreground max-w-[280px]">
+                      No pending payments right now. New bookings will appear here automatically.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {pendingBookings.map((booking, i) => {
+                      const initials = getInitials(booking.passengerName);
+                      const avatarColor = getAvatarColor(booking.passengerName);
+
+                      return (
+                        <div
+                          key={booking.id}
+                          className={`
+                            animate-bt-slide-up ${STAGGER_DELAYS[i % STAGGER_DELAYS.length]}
+                            group relative flex items-center gap-4
+                            bg-card border border-border/60 rounded-xl
+                            px-5 py-4
+                            hover:border-emerald-500/20 hover:bg-emerald-500/[0.02]
+                            transition-all duration-200 cursor-default
+                          `}
+                        >
+                          {/* Left accent bar */}
+                          <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-emerald-500 group-hover:bg-emerald-400 transition-colors" />
+
+                          {/* Avatar */}
+                          <div className={`w-11 h-11 rounded-xl ${avatarColor} flex items-center justify-center shrink-0 font-bold text-sm`}>
+                            {initials}
+                          </div>
+
+                          {/* Passenger info */}
+                          <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-sm font-semibold text-foreground truncate">
+                                {booking.passengerName}
+                              </span>
+                              <span className="font-mono text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded shrink-0">
+                                {booking.reference}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                              <span className="truncate font-medium">
+                                {booking.schedule.route.origin}
+                              </span>
+                              <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                              <span className="truncate font-medium">
+                                {booking.schedule.route.destination}
+                              </span>
+                              <span className="w-px h-3 bg-border shrink-0" />
+                              <span className="font-medium shrink-0">
+                                Seat {booking.seatNumber}
+                              </span>
+                              <span className="w-px h-3 bg-border shrink-0 hidden sm:block" />
+                              <span className="font-medium shrink-0 hidden sm:inline">
+                                {booking.schedule.departureTime}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Fare + Action */}
+                          <div className="flex items-center gap-4 shrink-0">
+                            <div className="text-right">
+                              <span className="text-lg font-bold text-foreground tabular-nums leading-none">
+                                KES {booking.fare.toLocaleString()}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              className="h-10 px-5 text-sm font-semibold rounded-lg gap-2"
+                              onClick={() => openPayment(booking)}
+                            >
+                              <Wallet className="h-4 w-4" />
+                              <span className="hidden sm:inline">Process</span>
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
 
-          {/* ─── Sidebar: Recent Activity ─────────────────────── */}
-          <aside className="hidden md:flex flex-col w-72 border-l border-border bg-card/50 shrink-0">
-            <div className="px-5 py-4 flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Recent Activity
-              </p>
-              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          {/* ─── Right Sidebar: Recent Activity ───────────────── */}
+          <aside className="hidden lg:flex flex-col w-80 border-l border-border bg-card/30 shrink-0">
+            <div className="px-5 pt-6 pb-4 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold text-foreground">
+                  Recent Activity
+                </h2>
+              </div>
+              {recentPayments.length > 0 && (
+                <Badge variant="secondary" className="rounded-full text-[10px] font-medium px-2 py-0.5">
+                  {recentPayments.length}
+                </Badge>
+              )}
             </div>
             <Separator />
+
             <div className="flex-1 overflow-y-auto bt-scroll">
               {recentPayments.length === 0 ? (
-                <div className="flex items-center justify-center py-16">
-                  <p className="text-xs text-muted-foreground">No transactions yet</p>
+                <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center mb-4">
+                    <Inbox className="h-7 w-7 text-muted-foreground/60" />
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No transactions yet
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    Processed payments will appear here
+                  </p>
                 </div>
               ) : (
                 <div className="flex flex-col">
-                  {recentPayments.map((p: any, i: number) => (
-                    <div
-                      key={p.id}
-                      className="animate-bt-fade-in flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors"
-                      style={{ animationDelay: `${i * 60}ms` }}
-                    >
-                      {/* Method icon */}
-                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
-                        {PAYMENT_METHOD_ICONS[p.method] || <Banknote className="h-3.5 w-3.5" />}
-                      </div>
-                      <div className="flex-1 min-w-0 flex flex-col gap-px">
-                        <span className="text-xs font-medium text-foreground truncate">
-                          {p.booking?.schedule?.route?.origin} → {p.booking?.schedule?.route?.destination}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {formatTime(p.createdAt)}
-                        </span>
-                      </div>
-                      <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">
-                        {p.amount.toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
+                  {recentPayments.map((p: any, i: number) => {
+                    const methodColor = getMethodColor(p.method);
+
+                    return (
+                      <React.Fragment key={p.id}>
+                        <div
+                          className={`
+                            animate-bt-fade-in flex items-start gap-3.5 px-5 py-3.5
+                            hover:bg-muted/30 transition-colors
+                          `}
+                          style={{ animationDelay: `${i * 60}ms` }}
+                        >
+                          {/* Method icon in colored circle */}
+                          <div className={`
+                            w-10 h-10 rounded-xl ${methodColor} flex items-center justify-center shrink-0 mt-0.5
+                            shadow-sm
+                          `}>
+                            {PAYMENT_METHOD_ICONS[p.method] || <Banknote className="h-4 w-4" />}
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0 flex flex-col gap-1 py-0.5">
+                            <span className="text-sm font-medium text-foreground truncate leading-tight">
+                              {p.booking?.schedule?.route?.origin} → {p.booking?.schedule?.route?.destination}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3 w-3 text-muted-foreground/60" />
+                              <span className="text-[11px] text-muted-foreground">
+                                {formatTime(p.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Amount */}
+                          <div className="flex flex-col items-end shrink-0 pt-0.5">
+                            <span className="text-sm font-bold text-foreground tabular-nums leading-tight">
+                              KES {p.amount.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                              Completed
+                            </span>
+                          </div>
+                        </div>
+                        {i < recentPayments.length - 1 && (
+                          <div className="mx-5 border-t border-border/40" />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -328,52 +527,63 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
 
       {/* ─── Payment Dialog ──────────────────────────────────── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[440px] p-0 gap-0 overflow-hidden rounded-xl border border-border/60 bg-card [&>button]:hidden">
+        <DialogContent
+          className="sm:max-w-[520px] p-0 gap-0 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl shadow-black/10 [&>button]:hidden"
+        >
           {payingBooking && dialogOpen && (
             <div className="flex flex-col animate-bt-scale-in">
-              {/* Dialog header */}
-              <div className="px-6 pt-6 pb-5">
-                <div className="flex items-center justify-between mb-5">
-                  <DialogHeader className="space-y-0 gap-1">
-                    <DialogTitle className="text-base font-semibold text-foreground">
-                      Process Payment
-                    </DialogTitle>
-                    <DialogDescription className="text-xs text-muted-foreground">
-                      {payingBooking.reference} · {payingBooking.passengerName}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-foreground"
-                    onClick={() => setDialogOpen(false)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+              {/* ── Dialog header with gradient accent ── */}
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
+                <div className="relative px-7 pt-7 pb-0">
+                  <div className="flex items-start justify-between mb-6">
+                    <DialogHeader className="space-y-1">
+                      <DialogTitle className="text-lg font-bold text-foreground">
+                        Process Payment
+                      </DialogTitle>
+                      <DialogDescription className="text-xs text-muted-foreground font-normal">
+                        {payingBooking.reference} · {payingBooking.passengerName}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 -mt-1 -mr-1"
+                      onClick={() => setDialogOpen(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-                {/* Amount due */}
-                <div className="flex flex-col items-center py-5">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                    Amount Due
-                  </span>
-                  <span className="text-3xl font-bold tracking-tight text-foreground">
-                    KES {payingBooking.fare.toLocaleString()}
-                  </span>
-                  <span className="text-xs text-muted-foreground mt-2">
-                    {payingBooking.schedule.route.origin} → {payingBooking.schedule.route.destination}
-                  </span>
+                  {/* ── Big amount display ── */}
+                  <div className="flex flex-col items-center py-7">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                      Amount Due
+                    </span>
+                    <span className="text-5xl font-extrabold tracking-tight text-foreground leading-none">
+                      KES {payingBooking.fare.toLocaleString()}
+                    </span>
+                    <div className="flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full bg-muted/60">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {payingBooking.schedule.route.origin} → {payingBooking.schedule.route.destination}
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Seat {payingBooking.seatNumber}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <Separator className="bg-border/60" />
+              <Separator className="bg-border/50" />
 
-              {/* Payment method selector */}
-              <div className="px-6 pt-5 pb-4">
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+              {/* ── Payment method selector ── */}
+              <div className="px-7 pt-6 pb-5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 block">
                   Payment Method
                 </Label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-3">
                   {PAYMENT_METHODS.map((method) => {
                     const isActive = paymentMethod === method.key;
                     const Icon = method.icon;
@@ -382,32 +592,35 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                         key={method.key}
                         onClick={() => setPaymentMethod(method.key)}
                         className={`
-                          flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg
-                          border transition-all duration-150 cursor-pointer
+                          flex flex-col items-center justify-center gap-2.5 py-4 rounded-xl
+                          border-2 transition-all duration-200 cursor-pointer
+                          shadow-sm
                           ${isActive
-                            ? 'border-primary/30 bg-primary/5 text-primary'
-                            : 'border-border/60 bg-transparent text-muted-foreground hover:border-border hover:text-foreground'
+                            ? 'border-emerald-500/40 bg-emerald-500/8 text-emerald-600 dark:text-emerald-400 shadow-emerald-500/5'
+                            : 'border-border/60 bg-card text-muted-foreground hover:border-border hover:text-foreground hover:shadow-md'
                           }
                         `}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span className="text-[11px] font-medium">{method.label}</span>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-emerald-500/15' : 'bg-muted/60'}`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-xs font-semibold">{method.label}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Cash calculator (only for CASH) */}
+              {/* ── Cash calculator (only for CASH) ── */}
               {paymentMethod === 'CASH' && (
                 <div>
-                  <Separator className="bg-border/60" />
-                  <div className="px-6 pt-5 pb-4 space-y-4">
-                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block">
+                  <Separator className="bg-border/50" />
+                  <div className="px-7 pt-6 pb-5 space-y-5">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
                       Cash Received
                     </Label>
                     <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium pointer-events-none">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold pointer-events-none">
                         KES
                       </span>
                       <Input
@@ -415,20 +628,21 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                         placeholder="0"
                         value={cashReceived}
                         onChange={(e) => setCashReceived(e.target.value)}
-                        className="h-12 pl-12 text-right text-lg font-semibold tabular-nums bg-transparent border-border/60 focus-visible:ring-ring/30 rounded-lg"
+                        className="h-14 pl-14 pr-4 text-right text-2xl font-bold tabular-nums bg-card border-border/60 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40 rounded-xl"
                         autoFocus
                       />
                     </div>
-                    <div className="grid grid-cols-4 gap-1.5">
+                    <div className="grid grid-cols-4 gap-2.5">
                       {QUICK_AMOUNTS.map((amt) => (
                         <button
                           key={amt}
                           onClick={() => setCashReceived(String(amt))}
                           className={`
-                            h-9 rounded-lg text-xs font-medium transition-all duration-100 cursor-pointer border
+                            h-12 rounded-xl text-sm font-bold transition-all duration-150 cursor-pointer border-2
+                            shadow-sm
                             ${cashReceived === String(amt)
-                              ? 'border-primary/30 bg-primary/5 text-primary'
-                              : 'border-border/60 bg-transparent text-muted-foreground hover:border-border hover:text-foreground'
+                              ? 'border-emerald-500/40 bg-emerald-500/8 text-emerald-600 dark:text-emerald-400 shadow-emerald-500/5'
+                              : 'border-border/60 bg-card text-muted-foreground hover:border-border hover:text-foreground hover:shadow-md'
                             }
                           `}
                         >
@@ -437,11 +651,18 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                       ))}
                     </div>
 
-                    {/* Change display */}
+                    {/* Change display - prominent green card */}
                     {cashReceivedNum >= fareAmount && cashReceivedNum > 0 && (
-                      <div className="flex items-center justify-between rounded-lg bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200/60 dark:border-emerald-800/30 px-4 py-3 animate-bt-fade-in">
-                        <span className="text-xs font-medium text-muted-foreground">Change</span>
-                        <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/15 dark:to-emerald-500/5 border border-emerald-500/20 dark:border-emerald-500/15 px-5 py-4 animate-bt-fade-in shadow-sm shadow-emerald-500/5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                            <Banknote className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            Change Due
+                          </span>
+                        </div>
+                        <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">
                           KES {changeAmount.toLocaleString()}
                         </span>
                       </div>
@@ -449,37 +670,42 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
 
                     {/* Insufficient warning */}
                     {cashReceivedNum > 0 && cashReceivedNum < fareAmount && (
-                      <p className="text-xs text-destructive text-center animate-bt-fade-in">
-                        Insufficient amount
-                      </p>
+                      <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-destructive/5 border border-destructive/15 animate-bt-fade-in">
+                        <span className="text-sm font-medium text-destructive">
+                          Insufficient amount — need KES {(fareAmount - cashReceivedNum).toLocaleString()} more
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
               )}
 
-              <Separator className="bg-border/60" />
+              <Separator className="bg-border/50" />
 
-              {/* Footer */}
-              <DialogFooter className="px-6 py-4 flex-row gap-2">
+              {/* ── Footer with large buttons ── */}
+              <DialogFooter className="px-7 py-5 flex-row gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
-                  className="flex-1 h-9 text-sm font-medium border-border/60 rounded-lg"
+                  className="flex-1 h-12 text-sm font-semibold border-border/60 rounded-xl hover:bg-muted/60"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={processPayment}
                   disabled={processing || !canCompleteCash}
-                  className="flex-1 h-9 text-sm font-medium rounded-lg"
+                  className="flex-1 h-12 text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-shadow"
                 >
                   {processing ? (
                     <>
-                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                      Processing
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
                     </>
                   ) : (
-                    'Complete Payment'
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Complete Payment
+                    </>
                   )}
                 </Button>
               </DialogFooter>

@@ -54,4 +54,4 @@ server.log
 /skills/
 
 # Research downloads (may contain scraped CSS that poisons Tailwind scanning)
-/download/
+/download/tool-results/

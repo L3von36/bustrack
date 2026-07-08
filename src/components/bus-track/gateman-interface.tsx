@@ -11,7 +11,8 @@ import {
   Check,
   X,
   AlertTriangle,
-  QrCode,
+  ScanLine,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,40 +42,16 @@ interface GatemanInterfaceProps {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Result visual config                                               */
+/*  Validation result type                                              */
 /* ------------------------------------------------------------------ */
 
-type ResultKey = 'VALID' | 'INVALID' | 'WRONG_GATE' | 'ALREADY_BOARDED' | 'CANCELLED';
-
-const RESULT_CONFIG: Record<
-  ResultKey,
-  { color: string; icon: React.ReactNode; label: string }
-> = {
-  VALID: {
-    color: 'text-emerald-500',
-    icon: <Check className="h-10 w-10 sm:h-14 sm:w-14" strokeWidth={2.5} />,
-    label: 'Valid',
-  },
-  INVALID: {
-    color: 'text-red-500',
-    icon: <X className="h-10 w-10 sm:h-14 sm:w-14" strokeWidth={2.5} />,
-    label: 'Invalid',
-  },
-  WRONG_GATE: {
-    color: 'text-amber-500',
-    icon: <AlertTriangle className="h-10 w-10 sm:h-14 sm:w-14" strokeWidth={2.5} />,
-    label: 'Wrong Gate',
-  },
-  ALREADY_BOARDED: {
-    color: 'text-orange-500',
-    icon: <AlertTriangle className="h-10 w-10 sm:h-14 sm:w-14" strokeWidth={2.5} />,
-    label: 'Already Boarded',
-  },
-  CANCELLED: {
-    color: 'text-red-500',
-    icon: <X className="h-10 w-10 sm:h-14 sm:w-14" strokeWidth={2.5} />,
-    label: 'Cancelled',
-  },
+type ValidationResult = {
+  result: 'VALID' | 'INVALID' | 'WRONG_GATE' | 'ALREADY_BOARDED' | 'CANCELLED';
+  passengerName?: string;
+  seatNumber?: string;
+  routeName?: string;
+  reason?: string;
+  reference?: string;
 };
 
 /* ------------------------------------------------------------------ */
@@ -86,43 +63,149 @@ function ProgressRing({
   size = 100,
   strokeWidth = 5,
 }: {
-  value: number; // 0-1
+  value: number;
   size?: number;
   strokeWidth?: number;
 }) {
   const r = (size - strokeWidth) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - Math.min(value, 1));
-
   return (
     <svg width={size} height={size} className="-rotate-90" viewBox={`0 0 ${size} ${size}`}>
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        className="text-border"
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeDasharray={circ}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        className="text-emerald-500 transition-all duration-700 ease-out"
-      />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-border" />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" className="text-emerald-500 transition-all duration-700 ease-out" />
     </svg>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Component                                                          */
+/*  Validation Result Display                                           */
+/* ------------------------------------------------------------------ */
+
+function ValidationDisplay({ result }: { result: ValidationResult }) {
+  const { result: status } = result;
+
+  /* ── VALID ── */
+  if (status === 'VALID') {
+    return (
+      <div className="animate-bt-scale-in flex flex-col items-center gap-4">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-emerald-500/10 blur-2xl scale-150" />
+          <div className="relative w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center">
+            <Check className="h-10 w-10 text-emerald-500" strokeWidth={2.5} />
+          </div>
+        </div>
+        <div className="animate-bt-slide-up text-center space-y-2">
+          <span className="block text-sm font-bold tracking-widest uppercase text-emerald-500">
+            Valid
+          </span>
+          <p className="text-2xl font-semibold tracking-tight text-foreground">
+            {result.passengerName}
+          </p>
+          <p className="text-sm text-muted-foreground font-mono">
+            {result.routeName}
+          </p>
+          <Badge className="mt-2 font-mono text-sm px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/15">
+            Seat {result.seatNumber}
+          </Badge>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── INVALID ── */
+  if (status === 'INVALID') {
+    return (
+      <div className="animate-bt-scale-in flex flex-col items-center gap-4">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-red-500/10 blur-2xl scale-150" />
+          <div className="relative w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
+            <X className="h-10 w-10 text-red-500" strokeWidth={2.5} />
+          </div>
+        </div>
+        <div className="animate-bt-slide-up text-center space-y-2">
+          <span className="block text-sm font-bold tracking-widest uppercase text-red-500">
+            Invalid
+          </span>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            {result.reason || 'This booking reference could not be verified.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── CANCELLED ── */
+  if (status === 'CANCELLED') {
+    return (
+      <div className="animate-bt-scale-in flex flex-col items-center gap-4">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-red-500/10 blur-2xl scale-150" />
+          <div className="relative w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
+            <X className="h-10 w-10 text-red-500" strokeWidth={2.5} />
+          </div>
+        </div>
+        <div className="animate-bt-slide-up text-center space-y-2">
+          <span className="block text-sm font-bold tracking-widest uppercase text-red-500">
+            Cancelled
+          </span>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            {result.reason || 'This booking has been cancelled.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── WRONG_GATE ── */
+  if (status === 'WRONG_GATE') {
+    return (
+      <div className="animate-bt-scale-in flex flex-col items-center gap-4">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-amber-500/10 blur-2xl scale-150" />
+          <div className="relative w-20 h-20 rounded-full bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center">
+            <AlertTriangle className="h-10 w-10 text-amber-500" strokeWidth={2.5} />
+          </div>
+        </div>
+        <div className="animate-bt-slide-up text-center space-y-2">
+          <span className="block text-sm font-bold tracking-widest uppercase text-amber-500">
+            Wrong Gate
+          </span>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            {result.reason || 'This ticket is assigned to a different gate. Please direct the passenger to the correct gate.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── ALREADY_BOARDED ── */
+  if (status === 'ALREADY_BOARDED') {
+    return (
+      <div className="animate-bt-scale-in flex flex-col items-center gap-4">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-amber-500/10 blur-2xl scale-150" />
+          <div className="relative w-20 h-20 rounded-full bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center">
+            <AlertTriangle className="h-10 w-10 text-amber-500" strokeWidth={2.5} />
+          </div>
+        </div>
+        <div className="animate-bt-slide-up text-center space-y-2">
+          <span className="block text-sm font-bold tracking-widest uppercase text-amber-500">
+            Already Boarded
+          </span>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            {result.reason || 'This passenger has already boarded the vehicle.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Component                                                     */
 /* ------------------------------------------------------------------ */
 
 export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProps) {
@@ -132,13 +215,19 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
   const [reference, setReference] = useState('');
-  const [validationResult, setValidationResult] = useState<any>(null);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [validating, setValidating] = useState(false);
-  const [boardingInfo, setBoardingInfo] = useState<any>(null);
+  const [boardingInfo, setBoardingInfo] = useState<{
+    boardedCount: number;
+    totalActive: number;
+    boarded: { id: string; passengerName: string; seatNumber: string }[];
+  } | null>(null);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   /* ---- data fetching ---- */
   const fetchSchedules = useCallback(async () => {
+    setLoadingSchedules(true);
     try {
       const res = await fetch('/api/schedules/today');
       const data = await res.json();
@@ -154,6 +243,8 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoadingSchedules(false);
     }
   }, [selectedSchedule]);
 
@@ -182,7 +273,6 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
     }
   }, [selectedSchedule, fetchBoardingInfo, joinGate]);
 
-  // Real-time gate events from other gatemen
   useEffect(() => {
     const off = on('gate:scan-result', (data: { scheduleId: string }) => {
       if (selectedSchedule?.id === data.scheduleId) {
@@ -196,6 +286,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   const handleValidate = async () => {
     if (!reference.trim() || !selectedSchedule) return;
     setValidating(true);
+    setValidationResult(null);
     try {
       const res = await fetch('/api/gate/validate', {
         method: 'POST',
@@ -220,7 +311,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
         });
       }
     } catch {
-      setValidationResult({ result: 'INVALID', reason: 'Network error' });
+      setValidationResult({ result: 'INVALID', reason: 'Network error. Please try again.' });
     } finally {
       setValidating(false);
       setReference('');
@@ -229,303 +320,315 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   };
 
   /* ---- derived ---- */
-  const config = validationResult
-    ? RESULT_CONFIG[validationResult.result as ResultKey]
-    : null;
-
   const boardingCount = boardingInfo?.boardedCount ?? 0;
   const boardingTotal = boardingInfo?.totalActive ?? 1;
   const boardingPct = Math.round((boardingCount / Math.max(boardingTotal, 1)) * 100);
   const progressValue = boardingCount / Math.max(boardingTotal, 1);
+  const remainingCount = Math.max(boardingTotal - boardingCount, 0);
 
   /* ================================================================ */
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-background">
       {/* ── Header ── */}
       <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
 
       {/* ── Body ── */}
       <main className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto bt-scroll">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-5">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col gap-4 sm:gap-5">
 
-            {/* ── Schedule Selector ── */}
-            <div className="animate-bt-fade-in flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Schedule</span>
-                <Select
-                  value={selectedSchedule?.id ?? ''}
-                  onValueChange={(v) => {
-                    const s = schedules.find((x) => x.id === v);
-                    if (s) {
-                      setSelectedSchedule(s);
-                      setValidationResult(null);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-64 h-9 text-[13px] font-mono border-border/60 bg-card">
-                    <SelectValue placeholder="Select schedule…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schedules.map((s) => (
-                      <SelectItem key={s.id} value={s.id} className="text-[13px] font-mono">
-                        <span className="flex items-center gap-2">
-                          {s.routeName} — {s.departureTime}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* ═══════════════════════════════════════════════════════════ */}
+            {/* ── TOP BAR: Schedule Info Strip ──                       */}
+            {/* ═══════════════════════════════════════════════════════════ */}
+            <div className="animate-bt-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 bg-card border border-border/60 rounded-xl px-4 py-3 sm:py-0">
 
-              {selectedSchedule && (
-                <div className="hidden sm:flex items-center gap-5 ml-auto text-[12px] text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <Car className="h-3.5 w-3.5" />
-                    {selectedSchedule.busPlate}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <DoorOpen className="h-3.5 w-3.5" />
-                    Gate {selectedSchedule.gateNumber || 'TBD'}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    {selectedSchedule.departureTime}
-                  </span>
-                  {selectedSchedule.status && (
-                    <Badge
-                      variant="secondary"
-                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium border-0 ${STATUS_COLORS[selectedSchedule.status] || ''}`}
+                {/* Left: Schedule Selector */}
+                <div className="flex items-center gap-3 sm:border-r sm:border-border/40 sm:pr-4 sm:py-3">
+                  <ScanLine className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                  {loadingSchedules ? (
+                    <Skeleton className="h-8 w-56 rounded-md" />
+                  ) : (
+                    <Select
+                      value={selectedSchedule?.id ?? ''}
+                      onValueChange={(v) => {
+                        const s = schedules.find((x) => x.id === v);
+                        if (s) {
+                          setSelectedSchedule(s);
+                          setValidationResult(null);
+                        }
+                      }}
                     >
-                      {selectedSchedule.status}
-                    </Badge>
+                      <SelectTrigger className="w-full sm:w-60 h-8 text-[13px] font-mono border-border/40 bg-background/50 hover:bg-background transition-colors">
+                        <SelectValue placeholder="Select schedule…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {schedules.map((s) => (
+                          <SelectItem key={s.id} value={s.id} className="text-[13px] font-mono">
+                            <span className="flex items-center gap-2">
+                              {s.routeName} — {s.departureTime}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
                 </div>
-              )}
+
+                {/* Right: Schedule Details (only shown when schedule is selected) */}
+                {selectedSchedule && !loadingSchedules && (
+                  <div className="flex items-center gap-4 sm:gap-5 sm:ml-auto sm:py-3 flex-wrap">
+                    {/* Bus Plate */}
+                    <div className="flex items-center gap-1.5">
+                      <Car className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-[13px] font-mono font-medium text-foreground">
+                        {selectedSchedule.busPlate}
+                      </span>
+                    </div>
+
+                    {/* Gate Number */}
+                    <div className="flex items-center gap-1.5">
+                      <DoorOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-[13px] font-medium text-foreground">
+                        Gate {selectedSchedule.gateNumber || 'TBD'}
+                      </span>
+                    </div>
+
+                    {/* Departure Time */}
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-[13px] font-mono text-foreground">
+                        {selectedSchedule.departureTime}
+                      </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    {selectedSchedule.status && (
+                      <Badge
+                        variant="secondary"
+                        className={`text-[11px] px-2.5 py-0.5 rounded-md font-semibold border-0 ${STATUS_COLORS[selectedSchedule.status] || ''}`}
+                      >
+                        {selectedSchedule.status}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                {/* Empty state for right side when no schedule */}
+                {!selectedSchedule && !loadingSchedules && (
+                  <div className="sm:ml-auto sm:py-3">
+                    <span className="text-[13px] text-muted-foreground">
+                      Select a schedule to begin
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* ── Mobile schedule details ── */}
-            {selectedSchedule && (
-              <div className="sm:hidden flex items-center gap-3 text-[11px] text-muted-foreground animate-bt-fade-in">
-                <span className="flex items-center gap-1">
-                  <Car className="h-3 w-3" />
-                  {selectedSchedule.busPlate}
-                </span>
-                <span className="flex items-center gap-1">
-                  <DoorOpen className="h-3 w-3" />
-                  Gate {selectedSchedule.gateNumber || 'TBD'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {selectedSchedule.departureTime}
-                </span>
-              </div>
-            )}
+            {/* ═══════════════════════════════════════════════════════════ */}
+            {/* ── MAIN AREA: Scan Zone + Boarding Progress ──            */}
+            {/* ═══════════════════════════════════════════════════════════ */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5 flex-1 min-h-0">
 
-            {/* ── KPI Strip ── */}
-            {selectedSchedule && boardingInfo && (
-              <div className="animate-bt-slide-up grid grid-cols-3 gap-3 sm:gap-4">
-                <div className="border border-border/60 bg-card rounded-xl p-4 flex flex-col">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Boarded</span>
-                  <span className="text-3xl font-bold tracking-tight text-foreground">{boardingCount}</span>
-                  <span className="text-[11px] text-muted-foreground mt-0.5">of {boardingTotal} passengers</span>
-                </div>
-                <div className="border border-border/60 bg-card rounded-xl p-4 flex flex-col">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Remaining</span>
-                  <span className="text-3xl font-bold tracking-tight text-foreground">{Math.max(boardingTotal - boardingCount, 0)}</span>
-                  <span className="text-[11px] text-muted-foreground mt-0.5">to board</span>
-                </div>
-                <div className="border border-border/60 bg-card rounded-xl p-4 flex flex-col">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Progress</span>
-                  <span className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">{boardingPct}%</span>
-                  <div className="mt-2 h-1.5 rounded-full bg-border overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
-                      style={{ width: `${boardingPct}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── Two-column grid ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 flex-1 min-h-0">
-              {/* ─── Left: Scan Ticket (3 cols) ─── */}
+              {/* ────────────────────────────────────────────────────── */}
+              {/* ─── LEFT PANEL (60%): Scan Zone ───                    */}
+              {/* ────────────────────────────────────────────────────── */}
               <div className="lg:col-span-3 animate-bt-slide-up delay-100">
-                <div className="border border-border/60 bg-card rounded-xl p-5 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center gap-2.5 mb-5">
-                    <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
-                      <QrCode className="h-4 w-4 text-muted-foreground" />
+                <div
+                  className="relative border border-border/60 rounded-2xl overflow-hidden flex flex-col"
+                  style={{
+                    background: selectedSchedule
+                      ? 'radial-gradient(ellipse at center 30%, rgba(16,185,129,0.03) 0%, transparent 60%)'
+                      : undefined,
+                  }}
+                >
+                  {/* Panel Header */}
+                  <div className="flex items-center gap-2.5 px-5 pt-5 pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <ShieldCheck className="h-4 w-4 text-emerald-500" />
                     </div>
                     <div>
-                      <h2 className="text-sm font-semibold tracking-tight">Scan Ticket</h2>
-                      <p className="text-[11px] text-muted-foreground">Enter or scan a booking reference to validate</p>
+                      <h2 className="text-sm font-semibold tracking-tight">Scan Zone</h2>
+                      <p className="text-[11px] text-muted-foreground">
+                        Enter or scan a booking reference
+                      </p>
                     </div>
                   </div>
 
-                  {/* Input row */}
-                  <div className="flex gap-2.5">
-                    <Input
-                      ref={inputRef}
-                      placeholder="Type or scan reference…"
-                      value={reference}
-                      onChange={(e) => setReference(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleValidate()}
-                      className="h-12 text-lg font-mono tracking-widest text-center flex-1 bg-background border-border/60"
-                      autoFocus
-                      disabled={validating}
-                    />
-                    <Button
-                      className="h-12 px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
-                      onClick={handleValidate}
-                      disabled={validating || !reference.trim()}
-                    >
-                      {validating ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ShieldCheck className="h-4 w-4" />
-                      )}
-                      <span className="ml-2 text-[13px] font-medium hidden sm:inline">Validate</span>
-                    </Button>
-                  </div>
+                  <Separator className="opacity-50" />
 
-                  {/* Result area */}
-                  <div className="mt-6 flex-1 min-h-[140px] flex items-center justify-center">
-                    {validationResult && config && (
-                      <div
-                        key={validationResult.result + (validationResult.reference ?? '')}
-                        className="animate-bt-scale-in flex flex-col items-center gap-3 w-full"
-                      >
-                        <div className={`${config.color}`}>{config.icon}</div>
-                        <span
-                          className={`text-sm font-semibold tracking-wide ${config.color}`}
-                        >
-                          {config.label.toUpperCase()}
-                        </span>
-
-                        {/* Passenger details (valid only) */}
-                        {validationResult.result === 'VALID' && (
-                          <div className="animate-bt-fade-in text-center space-y-1.5 mt-1">
-                            <p className="text-foreground font-medium text-base">
-                              {validationResult.passengerName}
-                            </p>
-                            <p className="text-muted-foreground text-[13px] font-mono">
-                              {validationResult.routeName}
-                            </p>
-                            <Badge
-                              variant="secondary"
-                              className="mt-1.5 font-mono text-[12px] px-2.5 py-0.5"
-                            >
-                              Seat {validationResult.seatNumber}
-                            </Badge>
+                  {/* Scan Input Row */}
+                  <div className="px-5 pt-5 pb-4">
+                    <div className="flex gap-3">
+                      <div className="relative flex-1">
+                        <Input
+                          ref={inputRef}
+                          placeholder="Type or scan reference…"
+                          value={reference}
+                          onChange={(e) => setReference(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleValidate()}
+                          className="h-16 text-2xl font-mono tracking-widest text-center bg-background border-border/60 focus:border-emerald-500/50 focus:ring-emerald-500/10 placeholder:text-muted-foreground/30 placeholder:text-lg placeholder:tracking-normal placeholder:font-sans"
+                          autoFocus
+                          disabled={validating || !selectedSchedule}
+                        />
+                        {!reference && !validating && (
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <ScanLine className="h-5 w-5 text-muted-foreground/20" />
                           </div>
                         )}
-
-                        {/* Reason (non-valid) */}
-                        {validationResult.result !== 'VALID' && validationResult.reason && (
-                          <p className="text-[12px] text-muted-foreground mt-1">
-                            {validationResult.reason}
-                          </p>
+                      </div>
+                      <Button
+                        className="h-16 w-20 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-sm font-semibold flex-shrink-0 transition-all duration-150 hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-40 disabled:hover:shadow-none"
+                        onClick={handleValidate}
+                        disabled={validating || !reference.trim() || !selectedSchedule}
+                      >
+                        {validating ? (
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                        ) : (
+                          <ShieldCheck className="h-7 w-7" />
                         )}
-                      </div>
-                    )}
+                      </Button>
+                    </div>
+                  </div>
 
-                    {/* Empty state */}
-                    {!validationResult && !validating && (
-                      <div className="flex flex-col items-center gap-2.5 text-muted-foreground/30 select-none">
-                        <Bus className="h-10 w-10" />
-                        <span className="text-[12px]">Waiting for scan…</span>
+                  {/* Validation Result Area */}
+                  <div className="flex-1 px-5 pb-5 flex items-center justify-center" style={{ minHeight: 250 }}>
+                    {validating ? (
+                      <div className="animate-bt-fade-in flex flex-col items-center gap-3">
+                        <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
+                        <span className="text-sm text-muted-foreground">Validating ticket…</span>
                       </div>
-                    )}
-
-                    {/* Loading state */}
-                    {validating && (
-                      <div className="animate-bt-fade-in flex flex-col items-center gap-2.5 text-muted-foreground">
-                        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-                        <span className="text-[12px]">Validating…</span>
+                    ) : validationResult ? (
+                      <ValidationDisplay result={validationResult} />
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground/20 select-none">
+                        <Bus className="h-16 w-16" strokeWidth={1} />
+                        <span className="text-sm font-medium">Waiting for scan…</span>
+                        <span className="text-[12px]">Scan a booking reference to validate</span>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* ─── Right: Boarding (2 cols) ─── */}
+              {/* ────────────────────────────────────────────────────── */}
+              {/* ─── RIGHT PANEL (40%): Boarding Progress ───           */}
+              {/* ────────────────────────────────────────────────────── */}
               <div className="lg:col-span-2 animate-bt-slide-up delay-200">
-                <div className="border border-border/60 bg-card rounded-xl p-5 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center gap-2.5 mb-5">
-                    <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
-                      <DoorOpen className="h-4 w-4 text-muted-foreground" />
+                <div className="border border-border/60 bg-card rounded-2xl flex flex-col h-full min-h-[480px] lg:min-h-0">
+
+                  {/* Panel Header */}
+                  <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
+                        <DoorOpen className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-semibold tracking-tight">Boarding Progress</h2>
+                        <p className="text-[11px] text-muted-foreground">
+                          Real-time passenger status
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-sm font-semibold tracking-tight">Boarding</h2>
-                      <p className="text-[11px] text-muted-foreground">Real-time passenger boarding status</p>
-                    </div>
+                    {boardingInfo && (
+                      <Badge variant="outline" className="font-mono text-[11px] h-6 px-2 border-border/60 text-muted-foreground">
+                        {boardingCount}/{boardingTotal}
+                      </Badge>
+                    )}
                   </div>
 
-                  {!boardingInfo ? (
-                    <div className="flex flex-col gap-3">
-                      <Skeleton className="h-24 w-24 rounded-full mx-auto" />
-                      <Skeleton className="h-4 w-20 mx-auto" />
-                      <Separator className="my-2" />
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                  <Separator className="opacity-50" />
+
+                  {/* Content */}
+                  {!selectedSchedule ? (
+                    <div className="flex-1 flex flex-col items-center justify-center px-5 gap-3 text-center">
+                      <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center">
+                        <Users className="h-6 w-6 text-muted-foreground/40" />
+                      </div>
+                      <p className="text-[13px] text-muted-foreground">
+                        Select a schedule to view boarding progress
+                      </p>
+                    </div>
+                  ) : !boardingInfo ? (
+                    <div className="flex-1 px-5 py-4 flex flex-col gap-4">
+                      <div className="flex flex-col items-center gap-3">
+                        <Skeleton className="h-[120px] w-[120px] rounded-full" />
+                        <Skeleton className="h-5 w-24" />
+                      </div>
+                      <Skeleton className="h-2 w-full rounded-full" />
+                      <Separator className="my-1" />
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-11 w-full rounded-lg" />
                       ))}
                     </div>
                   ) : (
                     <>
-                      {/* Progress ring + count */}
-                      <div className="flex flex-col items-center mb-4">
+                      {/* Progress Ring Section */}
+                      <div className="flex flex-col items-center pt-5 pb-4">
                         <div className="relative flex items-center justify-center">
-                          <ProgressRing value={progressValue} size={88} strokeWidth={5} />
+                          <ProgressRing value={progressValue} size={120} strokeWidth={6} />
                           <div className="absolute flex flex-col items-center">
-                            <span className="text-3xl font-bold tracking-tight text-foreground leading-none">
+                            <span className="text-4xl font-bold tracking-tight text-foreground leading-none tabular-nums">
                               {boardingCount}
                             </span>
-                            <span className="text-[11px] text-muted-foreground mt-0.5 font-mono">
-                              /{boardingTotal}
+                            <span className="text-[13px] text-muted-foreground mt-1 font-mono tabular-nums">
+                              of {boardingTotal}
                             </span>
                           </div>
                         </div>
-                        <span className="text-[12px] text-muted-foreground mt-2 font-medium">
-                          {boardingPct}% boarded
+
+                        {/* Stats row */}
+                        <div className="flex items-center gap-4 mt-4 text-[12px] text-muted-foreground">
+                          <span>
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{boardingPct}%</span>{' '}
+                            boarded
+                          </span>
+                          <span className="text-border">|</span>
+                          <span>
+                            <span className="font-semibold text-foreground tabular-nums">{remainingCount}</span>{' '}
+                            remaining
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="px-5">
+                        <div className="h-2 rounded-full bg-border overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
+                            style={{ width: `${boardingPct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <Separator className="my-4 opacity-50" />
+
+                      {/* Passengers List */}
+                      <div className="flex items-center justify-between px-5 mb-2">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Passengers
                         </span>
                       </div>
 
-                      {/* Progress bar (compact) */}
-                      <div className="h-1.5 rounded-full bg-border mb-4 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
-                          style={{ width: `${boardingPct}%` }}
-                        />
-                      </div>
-
-                      <Separator className="mb-4" />
-
-                      {/* Boarded list */}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Passengers</span>
-                        <span className="text-[11px] text-muted-foreground font-mono">
-                          {boardingCount} of {boardingTotal}
-                        </span>
-                      </div>
-
-                      <div className="flex-1 max-h-72 overflow-y-auto bt-scroll pr-1">
+                      <div className="flex-1 max-h-[280px] lg:max-h-96 overflow-y-auto bt-scroll px-3 pb-4">
                         {boardingInfo.boarded?.length > 0 ? (
                           <div className="flex flex-col gap-1">
-                            {boardingInfo.boarded.map((b: any, i: number) => (
+                            {boardingInfo.boarded.map((b, i) => (
                               <div
                                 key={b.id}
-                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/40 transition-colors"
+                                className="animate-bt-fade-in flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/40 transition-colors group"
+                                style={{ animationDelay: `${i * 30}ms` }}
                               >
-                                <span className="text-[11px] text-muted-foreground font-mono w-4 text-right tabular-nums">
+                                <span className="text-[11px] text-muted-foreground/60 font-mono w-5 text-right tabular-nums flex-shrink-0">
                                   {i + 1}
                                 </span>
-                                <span className="flex-1 text-[13px] text-foreground truncate">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                                <span className="flex-1 text-[13px] text-foreground truncate font-medium">
                                   {b.passengerName}
                                 </span>
                                 <Badge
                                   variant="outline"
-                                  className="font-mono text-[11px] h-5 px-1.5 border-border/60"
+                                  className="font-mono text-[11px] h-6 min-w-[42px] justify-center px-2 border-border/60 text-muted-foreground group-hover:border-emerald-500/30 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"
                                 >
                                   {b.seatNumber}
                                 </Badge>
@@ -533,9 +636,17 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
                             ))}
                           </div>
                         ) : (
-                          <p className="text-[12px] text-muted-foreground/50 text-center py-8">
-                            No passengers boarded yet
-                          </p>
+                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                              <Users className="h-5 w-5 text-muted-foreground/30" />
+                            </div>
+                            <p className="text-[13px] text-muted-foreground/50 font-medium">
+                              No passengers boarded yet
+                            </p>
+                            <p className="text-[11px] text-muted-foreground/30 mt-1">
+                              Validated tickets will appear here
+                            </p>
+                          </div>
                         )}
                       </div>
                     </>
