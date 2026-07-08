@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://vercel.com/blog/ai-powered-prototyping-with-design-systems",
+    "name": "AI-powered prototyping with design systems - Vercel",
+    "snippet": "Begin by applying your existing design tokens. Colors, radius, spacing, fonts and so on to a shadcn/ui theme to help your get started quickly.",
+    "host_name": "vercel.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://linear.app/now/behind-the-latest-design-refresh",
+    "name": "A calmer interface for a product in motion - Linear",
+    "snippet": "Internal theme editor interface used to adjust color values, contrast, and design tokens for. Missing: Vercel dashboard CSS",
+    "host_name": "linear.app",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.ui-skills.com/skills/dammyjay93/interface-design",
+    "name": "Interface Design - Dammyjay93 - UI Skills",
+    "snippet": "Specialized skill for interface design: dashboards, admin panels, and SaaS apps. Focused on craft and consistency. Install from Dammyjay93 in one command.",
+    "host_name": "www.ui-skills.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://hermes-agent.nousresearch.com/docs/user-guide/skills/bundled/creative/creative-popular-web-designs",
+    "name": "Popular Web Designs — 54 real design systems (Stripe, Linear",
+    "snippet": "54 real-world design systems ready for use when generating HTML/CSS. Each template captures a site's complete visual language: color palette, typography ...",
+    "host_name": "hermes-agent.nousresearch.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://thefrontkit.com/docs/finance-dashboard-kit/design-tokens",
+    "name": "Design Tokens | Finance Dashboard Kit Docs - thefrontkit",
+    "snippet": "The Finance Dashboard Kit uses oklch color tokens defined as CSS custom properties in app/globals.css . All components reference these ...",
+    "host_name": "thefrontkit.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://next.jqueryscript.net/shadcn-ui/design-systems-better",
+    "name": "Better Design: 30+ shadcn/ui Design Systems for SaaS Dashboards",
+    "snippet": "An open-source collection of 30+ design systems for shadcn/ui, including Linear, Stripe, Vercel, Notion, and more.",
+    "host_name": "next.jqueryscript.net",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vercel.com/geist/introduction",
+    "name": "Geist - Vercel",
+    "snippet": "Vercel's design system called Geist. Made for building consistent and delightful web experiences. Missing: CSS | Show results with: CSS",
+    "host_name": "vercel.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mintlify.com/blog/design-matters",
+    "name": "Design matters: Mintlify's dashboard glow-up",
+    "snippet": "Mintlify's dashboard redesign focuses on creating delightful user experiences inspired by industry leaders like Linear and Vercel, ...",
+    "host_name": "www.mintlify.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://linear.app/integrations/vercel",
+    "name": "Vercel Integration – Linear",
+    "snippet": "The Vercel Comments Linear Integration allows Vercel users to convert feedback from comments on Preview Deployments to actionable Linear issues.",
+    "host_name": "linear.app",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vercel.com/blog/working-with-figma-and-custom-design-systems-in-v0",
+    "name": "Working with Figma and custom design systems in v0 - Vercel",
+    "snippet": "Learn best practices on importing your designs from Figma, working with shadcn/ui, and leveraging public npm packages. Missing: CSS | Show results with: CSS",
+    "host_name": "vercel.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

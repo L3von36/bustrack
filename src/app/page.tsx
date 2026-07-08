@@ -14,7 +14,6 @@ import type { StaffUser } from '@/components/bus-track/types';
 export default function Home() {
   const { toast } = useToast();
 
-  // ─── Auth State ──────────────────────────────────────────────
   const [user, setUser] = useState<StaffUser | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');

@@ -1,20 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   DollarSign, Users, Bus, TrendingUp, Activity, AlertTriangle,
-  Zap, Clock, BarChart3, Brain,
+  Zap, Clock, BarChart3, Brain, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { AppHeader } from './app-header';
-import { STATUS_COLORS } from './constants';
 import { useRealtimeSocket, useActivityFeed } from '@/hooks/use-realtime';
 import type { StaffUser } from './types';
+
+// ─── Types ───────────────────────────────────────────────────────
 
 interface ManagerInterfaceProps {
   user: StaffUser;
@@ -22,63 +24,117 @@ interface ManagerInterfaceProps {
   toast: any;
 }
 
+interface KpiData {
+  label: string;
+  value: string;
+  raw: number;
+  icon: React.ReactNode;
+  change: string | null;
+  changeDirection: 'up' | 'down' | 'neutral';
+}
+
+interface DepartureRow {
+  id: string;
+  routeName: string;
+  busPlate: string;
+  busType: string;
+  gateNumber: string | null;
+  departureTime: string;
+  status: string;
+  occupancy: number;
+  bookedCount?: number;
+  totalSeats?: number;
+}
+
+// ─── Status Config ───────────────────────────────────────────────
+
+const STATUS_DOT_COLOR: Record<string, string> = {
+  SCHEDULED: 'bg-zinc-500',
+  BOARDING: 'bg-amber-400',
+  DEPARTED: 'bg-emerald-400',
+  DELAYED: 'bg-orange-400',
+  CANCELLED: 'bg-red-400',
+};
+
+const STATUS_LABEL_COLOR: Record<string, string> = {
+  SCHEDULED: 'text-zinc-400',
+  BOARDING: 'text-amber-400',
+  DEPARTED: 'text-emerald-400',
+  DELAYED: 'text-orange-400',
+  CANCELLED: 'text-red-400',
+};
+
+// ─── AI Insights (Static) ───────────────────────────────────────
+
 const AI_INSIGHTS = [
   {
-    icon: <AlertTriangle className="h-5 w-5" />,
+    accent: 'bg-amber-500',
     title: 'High Demand Predicted',
-    description: 'Nairobi → Mombasa route shows 40% higher booking rate than usual for this time. Consider scheduling an additional bus at 11:00 and 14:00 to prevent overcrowding and maximize revenue capture.',
-    color: 'border-primary/20 bg-primary/5',
-    iconColor: 'text-primary bg-primary/10',
-    tag: 'Demand AI',
+    description: 'Nairobi → Mombasa shows 40% higher booking rate. Consider adding buses at 11:00 and 14:00.',
+    tag: 'Demand',
   },
   {
-    icon: <TrendingUp className="h-5 w-5" />,
-    title: 'Revenue Tracking Above Average',
-    description: 'Today\'s revenue is tracking 12% above the 7-day rolling average. Payment processing time has improved by 0.8s per transaction since the morning shift change.',
-    color: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10',
-    iconColor: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30',
-    tag: 'Revenue AI',
+    accent: 'bg-emerald-500',
+    title: 'Revenue Above Average',
+    description: "Today's revenue is tracking 12% above the 7-day rolling average. Payment processing improved by 0.8s.",
+    tag: 'Revenue',
   },
   {
-    icon: <Clock className="h-5 w-5" />,
+    accent: 'bg-orange-500',
     title: 'Departure Delay Risk',
-    description: 'The 09:30 Kisumu bus has only 45% boarding completion with 12 minutes to departure. The gate team may need to make PA announcements to accelerate boarding.',
-    color: 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10',
-    iconColor: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30',
-    tag: 'Operations AI',
+    description: 'The 09:30 Kisumu bus has 45% boarding with 12 min to departure. PA announcements may help.',
+    tag: 'Operations',
   },
   {
-    icon: <Zap className="h-5 w-5" />,
+    accent: 'bg-zinc-400',
     title: 'Staff Utilization Optimal',
-    description: 'All 3 tills are active with balanced queue lengths (avg 2.3 customers waiting). No reallocation needed at this time.',
-    color: 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10',
-    iconColor: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30',
-    tag: 'Staff AI',
+    description: 'All 3 tills active with balanced queues (avg 2.3 waiting). No reallocation needed.',
+    tag: 'Staff',
   },
 ];
+
+// ─── Activity type colors ────────────────────────────────────────
+
+const ACTIVITY_TYPE_COLOR: Record<string, string> = {
+  'booking-created': 'text-blue-400 border-blue-400/20 bg-blue-400/5',
+  'payment-completed': 'text-emerald-400 border-emerald-400/20 bg-emerald-400/5',
+  'gate-event': 'text-amber-400 border-amber-400/20 bg-amber-400/5',
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────
+
+function formatRelativeTime(timestamp: string): string {
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const secs = Math.floor(diff / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Component ───────────────────────────────────────────────────
 
 export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProps) {
   const { isConnected, on, joinDashboard } = useRealtimeSocket();
   const activities = useActivityFeed();
+
   const [stats, setStats] = useState<any>(null);
-  const [departures, setDepartures] = useState<any[]>([]);
-  const [staffList, setStaffList] = useState<any[]>([]);
+  const [departures, setDepartures] = useState<DepartureRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Data fetch (15s poll) ──
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, depRes, staffRes] = await Promise.all([
+      const [statsRes, depRes] = await Promise.all([
         fetch('/api/dashboard/stats'),
         fetch('/api/dashboard/departures'),
-        fetch('/api/admin/staff'),
       ]);
       setStats(await statsRes.json());
       const depData = await depRes.json();
       setDepartures(depData.departures || []);
-      const staffData = await staffRes.json();
-      setStaffList(staffData.staff || []);
     } catch (err) {
-      console.error(err);
+      console.error('Dashboard fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -91,7 +147,8 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
     return () => clearInterval(interval);
   }, [fetchData, joinDashboard]);
 
-  // Real-time updates
+  // ── Real-time event listeners ──
+
   useEffect(() => {
     const offs = [
       on('dashboard:booking-created', () => fetchData()),
@@ -101,171 +158,342 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
     return () => offs.forEach(off => off());
   }, [on, fetchData]);
 
-  const kpis = stats ? [
-    { label: 'Revenue', value: `KES ${(stats.totalRevenue || 0).toLocaleString()}`, icon: <DollarSign className="h-5 w-5" />, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30', change: '+12%' },
-    { label: 'Passengers', value: stats.totalPassengers || 0, icon: <Users className="h-5 w-5" />, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30', change: '+8%' },
-    { label: 'Buses Departed', value: `${stats.busesDeparted || 0}/${stats.totalBuses || 0}`, icon: <Bus className="h-5 w-5" />, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30', change: 'On Track' },
-    { label: 'On-Time Rate', value: `${stats.onTimeRate || 0}%`, icon: <TrendingUp className="h-5 w-5" />, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30', change: 'vs 94% yesterday' },
-  ] : [];
+  // ── Derive KPIs ──
+
+  const kpis: KpiData[] = stats
+    ? [
+        {
+          label: 'Revenue',
+          value: `KES ${Math.round((stats.totalRevenue || 0) / 1000)}K`,
+          raw: stats.totalRevenue || 0,
+          icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
+          change: '+8%',
+          changeDirection: 'up',
+        },
+        {
+          label: 'Passengers',
+          value: `${stats.totalPassengers || 0}`,
+          raw: stats.totalPassengers || 0,
+          icon: <Users className="h-4 w-4 text-muted-foreground" />,
+          change: '+3',
+          changeDirection: 'up',
+        },
+        {
+          label: 'Buses',
+          value: `${stats.busesDeparted || 0}`,
+          raw: stats.busesDeparted || 0,
+          icon: <Bus className="h-4 w-4 text-muted-foreground" />,
+          change: null,
+          changeDirection: 'neutral',
+        },
+        {
+          label: 'On-Time',
+          value: `${stats.onTimeRate || 0}%`,
+          raw: stats.onTimeRate || 0,
+          icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
+          change: '-1%',
+          changeDirection: 'down',
+        },
+      ]
+    : [];
+
+  // ── Render ──
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.25 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
       className="h-screen flex flex-col bg-background"
     >
-      <AppHeader user={user} onLogout={onLogout} iconBgColor="bg-purple-600" isConnected={isConnected} />
+      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
 
-      <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
-        <main className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* KPI Cards */}
+      <main className="flex-1 overflow-y-auto btr-scroll">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          {/* ─── KPI Row ─── */}
           {loading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-[104px] rounded-lg" />
+              ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {kpis.map((kpi, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                  <Card className="h-full">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-muted-foreground">{kpi.label}</span>
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${kpi.color}`}>{kpi.icon}</div>
+                <motion.div
+                  key={kpi.label}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06, duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                >
+                  <div className="btr-card p-4 h-full">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="btr-label text-muted-foreground">{kpi.label}</span>
+                      <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
+                        {kpi.icon}
                       </div>
-                      <p className="text-xl sm:text-2xl font-bold">{kpi.value}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{kpi.change}</p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <span className="btr-kpi text-foreground">{kpi.value}</span>
+                      {kpi.change && (
+                        <span
+                          className={`flex items-center gap-0.5 text-xs font-medium pb-0.5 ${
+                            kpi.changeDirection === 'up'
+                              ? 'text-emerald-400'
+                              : kpi.changeDirection === 'down'
+                                ? 'text-red-400'
+                                : 'text-muted-foreground'
+                          }`}
+                        >
+                          {kpi.changeDirection === 'up' ? (
+                            <ArrowUpRight className="h-3 w-3" />
+                          ) : kpi.changeDirection === 'down' ? (
+                            <ArrowDownRight className="h-3 w-3" />
+                          ) : null}
+                          {kpi.change}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               ))}
             </div>
           )}
 
-          {/* Live Departure Board */}
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-                <Activity className="h-4 w-4" /> Live Departure Board
-              </h2>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Route</TableHead>
-                      <TableHead className="hidden sm:table-cell">Bus</TableHead>
-                      <TableHead>Gate</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Occupancy</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {departures.map((d: any) => (
-                      <TableRow key={d.id}>
-                        <TableCell className="font-medium">{d.routeName}</TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <span className="text-xs">{d.busPlate}</span>
-                          <Badge variant="outline" className="ml-1 text-[10px]">{d.busType}</Badge>
-                        </TableCell>
-                        <TableCell>{d.gateNumber || '—'}</TableCell>
-                        <TableCell className="font-mono">{d.departureTime}</TableCell>
-                        <TableCell><Badge className={STATUS_COLORS[d.status] || ''}>{d.status}</Badge></TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={d.occupancy} className="w-16 h-2" />
-                            <span className="text-xs text-muted-foreground">{d.occupancy}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* AI Insights */}
-          <div>
-            <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-              <Brain className="h-4 w-4" /> AI Insights
-              <Badge variant="outline" className="text-[10px] bg-primary/5 border-primary/20 text-primary">Live</Badge>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {AI_INSIGHTS.map((insight, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                >
-                  <Card className={`border ${insight.color}`}>
-                    <CardContent className="p-4 flex gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${insight.iconColor}`}>
-                        {insight.icon}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-medium">{insight.title}</p>
-                          <Badge variant="outline" className="text-[9px] h-4 shrink-0">{insight.tag}</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{insight.description}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+          {/* ─── Live Departure Board ─── */}
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="btr-label text-muted-foreground">Live Departures</span>
+              <div className="flex-1 h-px bg-border" />
+              {isConnected && (
+                <div className="flex items-center gap-1.5">
+                  <div className="btr-dot bg-emerald-400 animate-pulse" />
+                  <span className="text-[11px] text-muted-foreground">Live</span>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Real-Time Activity Feed */}
-          {activities.length > 0 && (
-            <Card>
-              <CardContent className="pt-6">
-                <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Live Activity Feed
-                </h2>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {activities.slice(0, 10).map((a, i) => (
-                    <div key={i} className="flex items-center gap-3 text-xs p-1.5 rounded-lg hover:bg-muted/50">
-                      <Badge variant="outline" className="text-[9px] h-4 shrink-0">{a.type}</Badge>
-                      <span className="flex-1 truncate">{a.message}</span>
-                      <span className="text-muted-foreground shrink-0">
-                        {new Date(a.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
+            {loading ? (
+              <div className="btr-card">
+                <div className="p-4 space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </main>
-
-        {/* Right - Staff Activity */}
-        <aside className="w-full lg:w-64 border-t lg:border-t-0 lg:border-l bg-card p-4 overflow-y-auto shrink-0 max-h-48 lg:max-h-none">
-          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-            <Users className="h-4 w-4" /> Staff Activity
-          </h3>
-          <div className="space-y-2">
-            {staffList.filter((s: any) => s.active).map((s: any) => (
-              <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                <div className="relative">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                    {s.name.split(' ').map((n: string) => n[0]).join('')}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-card" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{s.name}</p>
-                  <Badge variant="outline" className="text-[10px] h-4">{s.role}</Badge>
+              </div>
+            ) : departures.length === 0 ? (
+              <div className="btr-card">
+                <div className="p-8 flex flex-col items-center gap-2 text-muted-foreground">
+                  <Activity className="h-5 w-5" />
+                  <span className="text-xs">No departures scheduled</span>
                 </div>
               </div>
-            ))}
+            ) : (
+              <div className="btr-card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-border/50">
+                        <TableHead className="btr-label text-muted-foreground h-9">
+                          Route
+                        </TableHead>
+                        <TableHead className="btr-label text-muted-foreground h-9 text-center">
+                          Time
+                        </TableHead>
+                        <TableHead className="btr-label text-muted-foreground h-9 text-center hidden sm:table-cell">
+                          Gate
+                        </TableHead>
+                        <TableHead className="btr-label text-muted-foreground h-9">
+                          Status
+                        </TableHead>
+                        <TableHead className="btr-label text-muted-foreground h-9 text-right">
+                          Boarded
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {departures.map((d: DepartureRow, i: number) => (
+                        <motion.tr
+                          key={d.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.15 + i * 0.04, duration: 0.25 }}
+                          className="border-border/30 hover:bg-muted/30 transition-colors"
+                        >
+                          <TableCell className="py-3">
+                            <div className="flex items-center gap-3">
+                              <Bus className="h-3.5 w-3.5 text-muted-foreground shrink-0 hidden sm:block" />
+                              <div className="min-w-0">
+                                <span className="text-sm font-medium text-foreground block truncate">
+                                  {d.routeName}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground hidden sm:block">
+                                  {d.busPlate} · {d.busType}
+                                </span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 text-center">
+                            <span className="text-sm font-mono text-foreground tabular-nums">
+                              {d.departureTime}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3 text-center hidden sm:table-cell">
+                            <span className="text-sm text-muted-foreground">
+                              {d.gateNumber || '—'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`btr-dot ${STATUS_DOT_COLOR[d.status] || 'bg-zinc-500'}`} />
+                              <span
+                                className={`text-xs font-medium capitalize ${STATUS_LABEL_COLOR[d.status] || 'text-muted-foreground'}`}
+                              >
+                                {d.status}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <div className="flex items-center justify-end gap-3">
+                              <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full bg-foreground/40"
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${d.occupancy}%` }}
+                                  transition={{ duration: 0.6, delay: 0.2 + i * 0.04, ease: 'easeOut' }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground tabular-nums w-16 text-right">
+                                {d.bookedCount ?? '—'}/{d.totalSeats ?? '—'}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* ─── Insights + Activity ─── */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* AI Insights — 3/5 width */}
+            <section className="lg:col-span-3">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="btr-label text-muted-foreground">AI Insights</span>
+                <div className="flex-1 h-px bg-border" />
+                <Badge
+                  variant="outline"
+                  className="text-[10px] h-5 px-1.5 border-foreground/10 text-muted-foreground bg-transparent font-normal"
+                >
+                  4 active
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {AI_INSIGHTS.map((insight, i) => (
+                  <motion.div
+                    key={insight.title}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      delay: 0.3 + i * 0.06,
+                      duration: 0.3,
+                      ease: [0.25, 0.1, 0.25, 1],
+                    }}
+                  >
+                    <div className="btr-card p-4 h-full group">
+                      <div className="flex gap-3">
+                        {/* Left accent */}
+                        <div
+                          className={`w-0.5 rounded-full shrink-0 self-stretch ${insight.accent} opacity-50 group-hover:opacity-100 transition-opacity`}
+                        />
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground truncate">
+                              {insight.title}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {insight.description}
+                          </p>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] h-5 px-1.5 border-foreground/10 text-muted-foreground bg-transparent font-normal"
+                          >
+                            {insight.tag}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+
+            {/* Activity Feed — 2/5 width */}
+            <section className="lg:col-span-2">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="btr-label text-muted-foreground">Activity</span>
+                <div className="flex-1 h-px bg-border" />
+                {activities.length > 0 && (
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {activities.length}
+                  </span>
+                )}
+              </div>
+
+              <div className="btr-card overflow-hidden">
+                <div className="max-h-[340px] overflow-y-auto btr-scroll">
+                  {activities.length === 0 ? (
+                    <div className="p-8 flex flex-col items-center gap-2 text-muted-foreground">
+                      <BarChart3 className="h-5 w-5" />
+                      <span className="text-xs">No activity yet</span>
+                    </div>
+                  ) : (
+                    <AnimatePresence mode="popLayout">
+                      {activities.slice(0, 20).map((a, i) => (
+                        <motion.div
+                          key={`${a.timestamp}-${i}`}
+                          initial={{ opacity: 0, x: -4 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                          className="flex items-start gap-3 px-4 py-2.5 border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors"
+                        >
+                          {/* Type badge */}
+                          <span
+                            className={`shrink-0 mt-0.5 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded border ${
+                              ACTIVITY_TYPE_COLOR[a.type] || 'text-zinc-400 border-zinc-400/20 bg-zinc-400/5'
+                            }`}
+                          >
+                            {a.type
+                              .replace('dashboard:', '')
+                              .replace(/-/g, ' ')}
+                          </span>
+
+                          {/* Message + time */}
+                          <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                            <span className="text-xs text-foreground leading-relaxed truncate">
+                              {a.message}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground tabular-nums">
+                              {formatRelativeTime(a.timestamp)}
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  )}
+                </div>
+              </div>
+            </section>
           </div>
-        </aside>
-      </div>
+        </div>
+      </main>
     </motion.div>
   );
 }

@@ -2,31 +2,76 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Loader2, Check, Wallet, Activity } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle2,
+  Wallet,
+  ArrowRight,
+  Clock,
+  Banknote,
+  Smartphone,
+  CreditCard,
+  QrCode,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { AppHeader } from './app-header';
-import { STATUS_COLORS, PAYMENT_METHOD_ICONS } from './constants';
+import { PAYMENT_METHOD_ICONS } from './constants';
 import { useRealtimeSocket } from '@/hooks/use-realtime';
 import type { StaffUser, BookingItem } from './types';
 
+/* ─── Payment method config ─────────────────────────────────── */
+const PAYMENT_METHODS = [
+  { key: 'CASH', label: 'Cash', icon: Banknote },
+  { key: 'MOBILE_MONEY', label: 'M-Pesa', icon: Smartphone },
+  { key: 'CARD', label: 'Card', icon: CreditCard },
+  { key: 'QR_CODE', label: 'QR', icon: QrCode },
+] as const;
+
+const QUICK_AMOUNTS = [100, 200, 500, 1000, 1500, 2000, 3000, 5000] as const;
+
+/* ─── Props ─────────────────────────────────────────────────── */
 interface CashierInterfaceProps {
   user: StaffUser;
   onLogout: () => void;
   toast: any;
 }
 
+/* ─── Animation variants ────────────────────────────────────── */
+const cardVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.04, duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] },
+  }),
+  exit: { opacity: 0, y: -4, transition: { duration: 0.2 } },
+};
+
+const dialogVariants = {
+  hidden: { opacity: 0, scale: 0.96, y: 8 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] } },
+  exit: { opacity: 0, scale: 0.97, y: 4, transition: { duration: 0.15 } },
+};
+
+/* ─── Component ─────────────────────────────────────────────── */
 export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProps) {
   const { isConnected, emit, on } = useRealtimeSocket();
+
+  /* State */
   const [pendingBookings, setPendingBookings] = useState<BookingItem[]>([]);
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +81,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
   const [processing, setProcessing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  /* ─── Data fetching ──────────────────────────────────────── */
   const fetchData = useCallback(async () => {
     try {
       const [bookingsRes, paymentsRes] = await Promise.all([
@@ -59,7 +105,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Real-time: new booking notification
+  /* Real-time: new booking notification */
   useEffect(() => {
     const off = on('dashboard:booking-created', () => {
       fetchData();
@@ -67,8 +113,14 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
     return off;
   }, [on, fetchData]);
 
+  /* ─── Derived ─────────────────────────────────────────────── */
   const todayTotal = recentPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+  const cashReceivedNum = parseFloat(cashReceived) || 0;
+  const fareAmount = payingBooking?.fare || 0;
+  const changeAmount = cashReceived > 0 ? cashReceivedNum - fareAmount : 0;
+  const canCompleteCash = paymentMethod === 'CASH' ? cashReceivedNum >= fareAmount : true;
 
+  /* ─── Actions ─────────────────────────────────────────────── */
   const openPayment = (booking: BookingItem) => {
     setPayingBooking(booking);
     setPaymentMethod('CASH');
@@ -85,7 +137,11 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
       const change = cashR ? cashR - amount : null;
 
       if (paymentMethod === 'CASH' && cashR < amount) {
-        toast({ title: 'Insufficient cash', description: 'Amount received is less than fare', variant: 'destructive' });
+        toast({
+          title: 'Insufficient cash',
+          description: 'Amount received is less than fare',
+          variant: 'destructive',
+        });
         setProcessing(false);
         return;
       }
@@ -103,10 +159,11 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
         }),
       });
       const data = await res.json();
+
       if (data.payment) {
         toast({
-          title: 'Payment Complete!',
-          description: `${payingBooking.reference} — KES ${amount.toLocaleString()} via ${paymentMethod}${change ? ` (Change: KES ${change.toLocaleString()})` : ''}`,
+          title: 'Payment Complete',
+          description: `${payingBooking.reference} — KES ${amount.toLocaleString()} via ${paymentMethod.replace('_', ' ')}${change ? ` · Change: KES ${change.toLocaleString()}` : ''}`,
         });
         emit('payment:completed', {
           bookingRef: payingBooking.reference,
@@ -127,172 +184,370 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
     }
   };
 
-  const change = cashReceived ? parseFloat(cashReceived) - (payingBooking?.fare || 0) : 0;
+  /* ─── Time formatter ──────────────────────────────────────── */
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
+  /* ─── Render ──────────────────────────────────────────────── */
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.25 }}
-      className="h-screen flex flex-col bg-background"
-    >
-      <AppHeader user={user} onLogout={onLogout} iconBgColor="bg-emerald-600" isConnected={isConnected} />
-      <div className="h-10 border-b flex items-center px-4 bg-card">
-        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-          Today: KES {todayTotal.toLocaleString()}
-        </Badge>
-      </div>
+    <div className="h-screen flex flex-col bg-background">
+      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
 
-      <div className="flex-1 flex overflow-hidden flex-col md:flex-row">
-        {/* Main - Pending Bookings */}
-        <main className="flex-1 p-4 overflow-y-auto">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Clock className="h-5 w-5" /> Pending Payments
-            <Badge variant="secondary" className="ml-1">{pendingBookings.length}</Badge>
-          </h2>
+      <div className="flex-1 flex overflow-hidden">
+        {/* ─── Main content ─────────────────────────────────── */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* KPI Bar */}
+          <div className="px-4 pt-4 pb-2 flex items-end justify-between gap-4">
+            <div>
+              <p className="btr-label text-muted-foreground mb-1">Today&apos;s Revenue</p>
+              <p className="btr-kpi text-foreground">
+                KES {todayTotal.toLocaleString()}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 pb-1">
+              <Badge
+                variant="secondary"
+                className="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground border-0"
+              >
+                {pendingBookings.length} pending
+              </Badge>
+            </div>
+          </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
-            </div>
-          ) : pendingBookings.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <Check className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>All caught up! No pending payments.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {pendingBookings.map((b) => (
-                <Card key={b.id} className="hover:shadow-sm transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-mono text-sm font-bold">{b.reference}</p>
-                        <p className="text-sm font-medium">{b.passengerName}</p>
-                        <p className="text-xs text-muted-foreground">{b.passengerPhone}</p>
+          <Separator className="mx-4 bg-border" />
+
+          {/* Pending payments grid */}
+          <div className="flex-1 overflow-y-auto p-4 btr-scroll">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[140px] w-full rounded-lg" />
+                ))}
+              </div>
+            ) : pendingBookings.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-24 text-center"
+              >
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
+                  <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">All caught up</p>
+                <p className="text-xs text-zinc-600 mt-1">No pending payments right now</p>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <AnimatePresence mode="popLayout">
+                  {pendingBookings.map((booking, i) => (
+                    <motion.div
+                      key={booking.id}
+                      custom={i}
+                      variants={cardVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      layout
+                      className="btr-card p-4 flex flex-col gap-3 group"
+                    >
+                      {/* Top row: ref + fare */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-mono text-[13px] font-semibold text-foreground tracking-tight">
+                            {booking.reference}
+                          </span>
+                          <span className="text-[13px] font-medium text-foreground">
+                            {booking.passengerName}
+                          </span>
+                          <span className="text-[11px] text-zinc-600">{booking.passengerPhone}</span>
+                        </div>
+                        <div className="text-right flex flex-col items-end gap-0.5">
+                          <span className="btr-kpi text-[1.25rem] text-foreground">
+                            KES {booking.fare.toLocaleString()}
+                          </span>
+                          <Badge
+                            variant="secondary"
+                            className="rounded-full px-2 py-0 text-[10px] font-medium bg-muted text-muted-foreground border-0"
+                          >
+                            {booking.status.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-primary">KES {b.fare.toLocaleString()}</p>
+
+                      <Separator className="bg-border" />
+
+                      {/* Route info */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground min-w-0">
+                          <span className="truncate">
+                            {booking.schedule.route.origin}
+                          </span>
+                          <ArrowRight className="h-3 w-3 shrink-0 text-zinc-600" />
+                          <span className="truncate">
+                            {booking.schedule.route.destination}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-zinc-600 shrink-0 ml-2">
+                          <span>Seat {booking.seatNumber}</span>
+                          <span className="w-px h-3 bg-border" />
+                          <span>{booking.schedule.departureTime}</span>
+                        </div>
                       </div>
-                    </div>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
-                      <span>{b.schedule.route.origin} → {b.schedule.route.destination}</span>
-                      <span>Seat {b.seatNumber} · {b.schedule.departureTime}</span>
-                    </div>
-                    <Button size="sm" className="w-full" onClick={() => openPayment(b)}>
-                      <Wallet className="h-4 w-4 mr-2" /> Process Payment
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+
+                      {/* Pay button */}
+                      <Button
+                        size="sm"
+                        className="w-full mt-auto btr-press h-9 text-[13px] font-medium"
+                        onClick={() => openPayment(booking)}
+                      >
+                        <Wallet className="h-3.5 w-3.5 mr-1.5" />
+                        Process Payment
+                      </Button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
         </main>
 
-        {/* Right - Recent Transactions */}
-        <aside className="w-full md:w-80 border-t md:border-t-0 md:border-l bg-card p-4 overflow-y-auto shrink-0 max-h-48 md:max-h-none">
-          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-            <Activity className="h-4 w-4" /> Recent Transactions
-          </h3>
-          <div className="space-y-2">
+        {/* ─── Sidebar: Recent Activity ─────────────────────── */}
+        <aside className="hidden md:flex flex-col w-64 border-l border-border bg-card/50 shrink-0">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <p className="btr-label text-muted-foreground">Recent Activity</p>
+            <Clock className="h-3.5 w-3.5 text-zinc-600" />
+          </div>
+          <Separator className="bg-border" />
+          <div className="flex-1 overflow-y-auto btr-scroll">
             {recentPayments.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">No transactions yet</p>
+              <div className="flex items-center justify-center py-12">
+                <p className="text-[12px] text-zinc-600">No transactions yet</p>
+              </div>
             ) : (
-              recentPayments.map((p: any) => (
-                <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shrink-0">
-                    {PAYMENT_METHOD_ICONS[p.method]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{p.booking?.schedule?.route?.origin} → {p.booking?.schedule?.route?.destination}</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(p.createdAt).toLocaleTimeString()}</p>
-                  </div>
-                  <span className="text-sm font-semibold">KES {p.amount.toLocaleString()}</span>
-                </div>
-              ))
+              <div className="flex flex-col">
+                {recentPayments.map((p: any, i: number) => (
+                  <motion.div
+                    key={p.id}
+                    initial={{ opacity: 0, x: 8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03, duration: 0.2 }}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40 transition-colors group"
+                  >
+                    {/* Method icon — muted circle, NO colored bg */}
+                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
+                      {PAYMENT_METHOD_ICONS[p.method] || <Banknote className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col gap-px">
+                      <span className="text-[12px] font-medium text-foreground truncate">
+                        {p.booking?.schedule?.route?.origin} → {p.booking?.schedule?.route?.destination}
+                      </span>
+                      <span className="text-[11px] text-zinc-600">
+                        {formatTime(p.createdAt)}
+                      </span>
+                    </div>
+                    <span className="text-[13px] font-semibold text-foreground tabular-nums shrink-0">
+                      {p.amount.toLocaleString()}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
             )}
           </div>
         </aside>
       </div>
 
-      {/* Payment Dialog */}
+      {/* ─── Payment Dialog ──────────────────────────────────── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Process Payment</DialogTitle>
-            <DialogDescription>
-              {payingBooking?.reference} — {payingBooking?.passengerName}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground">Amount Due</p>
-            <p className="text-4xl font-bold text-primary">
-              KES {payingBooking?.fare.toLocaleString()}
-            </p>
-          </div>
-          <div className="space-y-3">
-            <Label className="text-xs font-medium">Payment Method</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {(['CASH', 'MOBILE_MONEY', 'CARD', 'QR_CODE'] as const).map((method) => (
-                <Button
-                  key={method}
-                  variant={paymentMethod === method ? 'default' : 'outline'}
-                  className="justify-start gap-2 h-11"
-                  onClick={() => setPaymentMethod(method)}
-                >
-                  {PAYMENT_METHOD_ICONS[method]}
-                  <span className="text-xs">{method.replace('_', ' ')}</span>
-                </Button>
-              ))}
-            </div>
-          </div>
-          {paymentMethod === 'CASH' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3">
-              <Separator />
-              <Label className="text-xs font-medium">Cash Received</Label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={cashReceived}
-                onChange={(e) => setCashReceived(e.target.value)}
-                className="text-xl font-bold text-center h-14"
-                autoFocus
-              />
-              <div className="grid grid-cols-4 gap-1.5">
-                {[100, 200, 500, 1000, 1500, 2000, 3000, 5000].map((amt) => (
+        <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden rounded-lg border border-border bg-card [&>button]:hidden">
+          <AnimatePresence mode="wait">
+            {payingBooking && dialogOpen && (
+              <motion.div
+                key="payment-dialog"
+                variants={dialogVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="flex flex-col"
+              >
+                {/* Dialog header */}
+                <div className="px-5 pt-5 pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <DialogHeader className="space-y-0 gap-1">
+                      <DialogTitle className="text-[15px] font-semibold text-foreground">
+                        Process Payment
+                      </DialogTitle>
+                      <DialogDescription className="text-[12px] text-muted-foreground">
+                        {payingBooking.reference} · {payingBooking.passengerName}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-foreground"
+                      onClick={() => setDialogOpen(false)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+
+                  {/* Amount due */}
+                  <div className="flex flex-col items-center py-4">
+                    <span className="btr-label text-muted-foreground mb-2">Amount Due</span>
+                    <span className="btr-kpi text-foreground">
+                      KES {payingBooking.fare.toLocaleString()}
+                    </span>
+                    <span className="text-[11px] text-zinc-600 mt-1.5">
+                      {payingBooking.schedule.route.origin} → {payingBooking.schedule.route.destination}
+                    </span>
+                  </div>
+                </div>
+
+                <Separator className="bg-border" />
+
+                {/* Payment method selector */}
+                <div className="px-5 pt-4 pb-3">
+                  <Label className="btr-label text-muted-foreground mb-2.5 block">Payment Method</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {PAYMENT_METHODS.map((method) => {
+                      const isActive = paymentMethod === method.key;
+                      const Icon = method.icon;
+                      return (
+                        <button
+                          key={method.key}
+                          onClick={() => setPaymentMethod(method.key)}
+                          className={`
+                            btr-press flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg
+                            border transition-all duration-150 cursor-pointer
+                            ${isActive
+                              ? 'border-foreground/20 bg-foreground/[0.04] text-foreground'
+                              : 'border-border bg-transparent text-muted-foreground hover:border-foreground/10 hover:text-foreground'
+                            }
+                          `}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span className="text-[11px] font-medium">{method.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Cash calculator (only for CASH) */}
+                <AnimatePresence mode="wait">
+                  {paymentMethod === 'CASH' && (
+                    <motion.div
+                      key="cash-input"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      className="overflow-hidden"
+                    >
+                      <Separator className="bg-border" />
+                      <div className="px-5 pt-4 pb-3 space-y-3">
+                        <Label className="btr-label text-muted-foreground block">Cash Received</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-zinc-600 font-medium pointer-events-none">
+                            KES
+                          </span>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={cashReceived}
+                            onChange={(e) => setCashReceived(e.target.value)}
+                            className="h-12 pl-12 text-right text-lg font-semibold tabular-nums bg-transparent border-border focus-visible:ring-ring/30"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {QUICK_AMOUNTS.map((amt) => (
+                            <button
+                              key={amt}
+                              onClick={() => setCashReceived(String(amt))}
+                              className={`
+                                btr-press h-8 rounded-md text-[12px] font-medium transition-all duration-100 cursor-pointer border
+                                ${cashReceived === String(amt)
+                                  ? 'border-foreground/20 bg-foreground/[0.06] text-foreground'
+                                  : 'border-border bg-transparent text-muted-foreground hover:border-foreground/10 hover:text-foreground'
+                                }
+                              `}
+                            >
+                              {amt.toLocaleString()}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Change display */}
+                        <AnimatePresence mode="wait">
+                          {cashReceivedNum >= fareAmount && cashReceivedNum > 0 && (
+                            <motion.div
+                              key="change-display"
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -4 }}
+                              transition={{ duration: 0.2 }}
+                              className="flex items-center justify-between rounded-lg bg-muted/60 px-4 py-3"
+                            >
+                              <span className="text-[12px] text-muted-foreground">Change</span>
+                              <span className="text-[15px] font-semibold text-foreground tabular-nums">
+                                KES {changeAmount.toLocaleString()}
+                              </span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Insufficient warning */}
+                        <AnimatePresence mode="wait">
+                          {cashReceivedNum > 0 && cashReceivedNum < fareAmount && (
+                            <motion.p
+                              key="insufficient"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              className="text-[12px] text-destructive text-center"
+                            >
+                              Insufficient amount
+                            </motion.p>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <Separator className="bg-border" />
+
+                {/* Footer */}
+                <DialogFooter className="px-5 py-4 flex-row gap-2">
                   <Button
-                    key={amt}
                     variant="outline"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => setCashReceived(String(amt))}
+                    onClick={() => setDialogOpen(false)}
+                    className="flex-1 h-9 text-[13px] font-medium border-border btr-press"
                   >
-                    {amt}
+                    Cancel
                   </Button>
-                ))}
-              </div>
-              {parseFloat(cashReceived) >= (payingBooking?.fare || 0) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center"
-                >
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400">Change to Give</p>
-                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">KES {change.toLocaleString()}</p>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={processPayment} disabled={processing || (paymentMethod === 'CASH' && parseFloat(cashReceived) < (payingBooking?.fare || 0))}>
-              {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Complete Payment'}
-            </Button>
-          </DialogFooter>
+                  <Button
+                    onClick={processPayment}
+                    disabled={processing || !canCompleteCash}
+                    className="flex-1 h-9 text-[13px] font-medium btr-press"
+                  >
+                    {processing ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        Processing
+                      </>
+                    ) : (
+                      'Complete Payment'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </div>
   );
 }

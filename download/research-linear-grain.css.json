@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">@charset \"UTF-8\";\n@layer reset, base, app.base;\n.SPbJba_grain{pointer-events:none;border-radius:inherit;opacity:.9;mix-blend-mode:overlay;background-size:256px 256px;position:absolute;inset:0}.SPbJba_grain:after{content:\"\";pointer-events:none;border-radius:inherit;background:#ffffff0f;position:absolute;inset:0}@supports ((-webkit-hyphens:none)){.SPbJba_grain:after{background:0 0}}.SPbJba_grainSubtle{opacity:.6;background-size:256px 256px}.SPbJba_grainSubtle:after{content:none}\n</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "publishedTime": "Wed, 01 Jul 2026 17:40:28 GMT",
+    "title": "",
+    "url": "https://static.linear.app/web/_next/static/css/Grain.D_EBlr94.css",
+    "usage": {
+      "tokens": 195
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 195
+    }
+  },
+  "status": 20000
+}

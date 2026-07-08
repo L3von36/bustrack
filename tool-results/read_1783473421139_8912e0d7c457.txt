@@ -1,0 +1,664 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback, useMemo } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import { Bus, Ticket, Clock, Users, Loader2, Search, ArrowRight } from 'lucide-react';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Card, CardContent } from '@/components/ui/card';
+     8→import { Input } from '@/components/ui/input';
+     9→import { Badge } from '@/components/ui/badge';
+    10→import { Label } from '@/components/ui/label';
+    11→import { Skeleton } from '@/components/ui/skeleton';
+    12→import {
+    13→  Sheet,
+    14→  SheetContent,
+    15→  SheetHeader,
+    16→  SheetTitle,
+    17→  SheetTrigger,
+    18→} from '@/components/ui/sheet';
+    19→import { AppHeader } from './app-header';
+    20→import { STATUS_COLORS } from './constants';
+    21→import { useRealtimeSocket } from '@/hooks/use-realtime';
+    22→import type { StaffUser, ScheduleItem } from './types';
+    23→
+    24→/* -------------------------------------------------------------------------- */
+    25→/*  Props                                                                     */
+    26→/* -------------------------------------------------------------------------- */
+    27→
+    28→interface TicketerInterfaceProps {
+    29→  user: StaffUser;
+    30→  onLogout: () => void;
+    31→  toast: any;
+    32→}
+    33→
+    34→/* -------------------------------------------------------------------------- */
+    35→/*  Status dot helper                                                         */
+    36→/* -------------------------------------------------------------------------- */
+    37→
+    38→const STATUS_DOT: Record<string, string> = {
+    39→  SCHEDULED: 'bg-blue-400',
+    40→  BOARDING: 'bg-amber-400',
+    41→  DEPARTED: 'bg-emerald-400',
+    42→  CANCELLED: 'bg-red-400',
+    43→  DELAYED: 'bg-orange-400',
+    44→};
+    45→
+    46→/* -------------------------------------------------------------------------- */
+    47→/*  Popular route chips                                                       */
+    48→/* -------------------------------------------------------------------------- */
+    49→
+    50→const POPULAR_ROUTES = ['Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'];
+    51→
+    52→/* -------------------------------------------------------------------------- */
+    53→/*  Component                                                                 */
+    54→/* -------------------------------------------------------------------------- */
+    55→
+    56→export function TicketerInterface({ user, onLogout, toast }: TicketerInterfaceProps) {
+    57→  const { isConnected, emit, on } = useRealtimeSocket();
+    58→
+    59→  /* ---- state ---- */
+    60→  const [search, setSearch] = useState('');
+    61→  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+    62→  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
+    63→  const [scheduleDetail, setScheduleDetail] = useState<any>(null);
+    64→  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+    65→  const [passengerName, setPassengerName] = useState('');
+    66→  const [passengerPhone, setPassengerPhone] = useState('');
+    67→  const [bookingLoading, setBookingLoading] = useState(false);
+    68→  const [loading, setLoading] = useState(true);
+    69→  const [detailLoading, setDetailLoading] = useState(false);
+    70→  const [mobileRouteOpen, setMobileRouteOpen] = useState(false);
+    71→  const [mobileBookingOpen, setMobileBookingOpen] = useState(false);
+    72→
+    73→  /* ---- fetch schedules ---- */
+    74→  const fetchSchedules = useCallback(
+    75→    async (searchTerm?: string) => {
+    76→      setLoading(true);
+    77→      try {
+    78→        const q = searchTerm !== undefined ? searchTerm : search;
+    79→        const url = q ? `/api/routes?search=${q}` : '/api/routes';
+    80→        const res = await fetch(url);
+    81→        const data = await res.json();
+    82→        const allSchedules: ScheduleItem[] = [];
+    83→        data.routes?.forEach((route: any) => {
+    84→          route.schedules?.forEach((s: any) => {
+    85→            allSchedules.push({
+    86→              id: s.id,
+    87→              routeName: `${route.origin} → ${route.destination}`,
+    88→              routeId: route.id,
+    89→              busPlate: s.bus.plateNumber,
+    90→              busType: s.bus.busType,
+    91→              totalSeats: s.bus.totalSeats,
+    92→              bookedCount: s._count.bookings,
+    93→              departureTime: s.departureTime,
+    94→              fare: s.fare,
+    95→              status: s.status,
+    96→              gateNumber: s.gateNumber,
+    97→            });
+    98→          });
+    99→        });
+   100→        setSchedules(allSchedules);
+   101→      } catch (err) {
+   102→        console.error(err);
+   103→      } finally {
+   104→        setLoading(false);
+   105→      }
+   106→    },
+   107→    [search],
+   108→  );
+   109→
+   110→  useEffect(() => {
+   111→    fetchSchedules();
+   112→  }, []);
+   113→
+   114→  /* ---- realtime seat updates ---- */
+   115→  useEffect(() => {
+   116→    const off = on(
+   117→      'seat:booked',
+   118→      (data: { scheduleId: string; seatNumber: string; passengerName: string }) => {
+   119→        if (selectedSchedule?.id === data.scheduleId) {
+   120→          selectSchedule(selectedSchedule);
+   121→          fetchSchedules();
+   122→          toast({
+   123→            title: 'Seat Booked',
+   124→            description: `${data.passengerName} just booked seat ${data.seatNumber}`,
+   125→          });
+   126→        }
+   127→      },
+   128→    );
+   129→    return off;
+   130→  }, [selectedSchedule, on, toast]);
+   131→
+   132→  /* ---- helpers ---- */
+   133→  const handleSearch = (val: string) => {
+   134→    setSearch(val);
+   135→    fetchSchedules(val);
+   136→  };
+   137→
+   138→  const selectSchedule = async (schedule: ScheduleItem) => {
+   139→    setSelectedSchedule(schedule);
+   140→    setSelectedSeat(null);
+   141→    setPassengerName('');
+   142→    setPassengerPhone('');
+   143→    setDetailLoading(true);
+   144→    try {
+   145→      const res = await fetch(`/api/schedules/${schedule.id}`);
+   146→      const data = await res.json();
+   147→      setScheduleDetail(data);
+   148→    } catch (err) {
+   149→      console.error(err);
+   150→    } finally {
+   151→      setDetailLoading(false);
+   152→    }
+   153→  };
+   154→
+   155→  /* ---- book ---- */
+   156→  const handleBook = async () => {
+   157→    if (!selectedSchedule || !selectedSeat || !passengerName || !passengerPhone) return;
+   158→    setBookingLoading(true);
+   159→    try {
+   160→      const res = await fetch('/api/bookings', {
+   161→        method: 'POST',
+   162→        headers: { 'Content-Type': 'application/json' },
+   163→        body: JSON.stringify({
+   164→          scheduleId: selectedSchedule.id,
+   165→          staffId: user.id,
+   166→          passengerName,
+   167→          passengerPhone,
+   168→          seatNumber: selectedSeat,
+   169→          fare: selectedSchedule.fare,
+   170→        }),
+   171→      });
+   172→      const data = await res.json();
+   173→      if (data.booking) {
+   174→        toast({
+   175→          title: 'Booking Created!',
+   176→          description: `Ref: ${data.booking.reference} — Seat ${selectedSeat}. Awaiting payment.`,
+   177→        });
+   178→        emit('booking:created', {
+   179→          scheduleId: selectedSchedule.id,
+   180→          seatNumber: selectedSeat,
+   181→          passengerName,
+   182→          routeName: selectedSchedule.routeName,
+   183→        });
+   184→        setSelectedSeat(null);
+   185→        setPassengerName('');
+   186→        setPassengerPhone('');
+   187→        selectSchedule(selectedSchedule);
+   188→        fetchSchedules();
+   189→      } else {
+   190→        toast({ title: 'Error', description: data.error, variant: 'destructive' });
+   191→      }
+   192→    } catch {
+   193→      toast({ title: 'Error', description: 'Network error', variant: 'destructive' });
+   194→    } finally {
+   195→      setBookingLoading(false);
+   196→    }
+   197→  };
+   198→
+   199→  /* ---- derived ---- */
+   200→  const canBook = !!selectedSeat && passengerName.trim().length > 0 && passengerPhone.trim().length > 0 && !bookingLoading;
+   201→
+   202→  /* ---- seat grid data ---- */
+   203→  const seatGrid = useMemo(() => {
+   204→    if (!scheduleDetail?.bus) return [];
+   205→    const { rows, cols } = scheduleDetail.bus;
+   206→    const seats: Array<{
+   207→      seatNum: string;
+   208→      row: number;
+   209→      colLetter: string;
+   210→      isOccupied: boolean;
+   211→      bookedBy?: string;
+   212→    }> = [];
+   213→    for (let idx = 0; idx < rows * cols; idx++) {
+   214→      const row = Math.floor(idx / cols) + 1;
+   215→      const colIdx = idx % cols;
+   216→      const colLetter = String.fromCharCode(65 + colIdx);
+   217→      const seatNum = `${row}${colLetter}`;
+   218→      const booked = scheduleDetail.bookedSeats?.find((b: any) => b.seatNumber === seatNum);
+   219→      seats.push({
+   220→        seatNum,
+   221→        row,
+   222→        colLetter,
+   223→        isOccupied: !!booked,
+   224→        bookedBy: booked?.passengerName,
+   225→      });
+   226→    }
+   227→    return seats;
+   228→  }, [scheduleDetail]);
+   229→
+   230→  /* ========================================================================= */
+   231→  /*  Sub-components                                                            */
+   232→  /* ========================================================================= */
+   233→
+   234→  /* ---- Route Card (sidebar & sheet) ---- */
+   235→  const RouteCard = ({ s }: { s: ScheduleItem }) => {
+   236→    const isSelected = selectedSchedule?.id === s.id;
+   237→    return (
+   238→      <button
+   239→        onClick={() => {
+   240→          selectSchedule(s);
+   241→          setMobileRouteOpen(false);
+   242→        }}
+   243→        className={`
+   244→          w-full text-left btr-press btr-card rounded-md p-3
+   245→          transition-colors duration-150
+   246→          ${isSelected
+   247→            ? 'border-l-2 border-l-blue-500 bg-blue-500/[0.04]'
+   248→            : 'border-l-2 border-l-transparent hover:bg-muted/40'
+   249→          }
+   250→        `}
+   251→      >
+   252→        {/* Row 1: route name + status */}
+   253→        <div className="flex items-start justify-between gap-2">
+   254→          <span className="text-[13px] font-semibold text-foreground leading-tight truncate">
+   255→            {s.routeName}
+   256→          </span>
+   257→          <div className="flex items-center gap-1.5 shrink-0">
+   258→            <span className={`btr-dot ${STATUS_DOT[s.status] || 'bg-zinc-500'}`} />
+   259→            <span className="text-[11px] text-muted-foreground">{s.status}</span>
+   260→          </div>
+   261→        </div>
+   262→        {/* Row 2: time + bus plate */}
+   263→        <div className="flex items-center gap-3 mt-1.5">
+   264→          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+   265→            <Clock className="h-3 w-3 text-zinc-500" />
+   266→            {s.departureTime}
+   267→          </span>
+   268→          <span className="text-[11px] text-zinc-500">{s.busPlate}</span>
+   269→        </div>
+   270→        {/* Row 3: fare + seats */}
+   271→        <div className="flex items-center gap-3 mt-1">
+   272→          <span className="text-[11px] font-medium text-foreground">
+   273→            KES {s.fare.toLocaleString()}
+   274→          </span>
+   275→          <span className="text-[11px] text-zinc-500 flex items-center gap-1">
+   276→            <Users className="h-3 w-3" />
+   277→            {s.bookedCount}/{s.totalSeats}
+   278→          </span>
+   279→        </div>
+   280→      </button>
+   281→    );
+   282→  };
+   283→
+   284→  /* ---- Route sidebar list ---- */
+   285→  const RouteList = () => (
+   286→    <div className="flex flex-col h-full">
+   287→      {/* Search + chips */}
+   288→      <div className="p-3 border-b border-border">
+   289→        <div className="relative">
+   290→          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+   291→          <Input
+   292→            placeholder="Search routes..."
+   293→            value={search}
+   294→            onChange={(e) => handleSearch(e.target.value)}
+   295→            className="pl-8 h-8 text-[13px] bg-background border-border/60 focus-visible:ring-blue-500/20"
+   296→          />
+   297→        </div>
+   298→        <div className="flex gap-1.5 mt-2 flex-wrap">
+   299→          {POPULAR_ROUTES.map((r) => (
+   300→            <button
+   301→              key={r}
+   302→              onClick={() => handleSearch(r)}
+   303→              className={`
+   304→                btr-press text-[11px] px-2 py-0.5 rounded-full border transition-colors
+   305→                ${search === r
+   306→                  ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+   307→                  : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+   308→                }
+   309→              `}
+   310→            >
+   311→              {r}
+   312→            </button>
+   313→          ))}
+   314→        </div>
+   315→      </div>
+   316→      {/* List */}
+   317→      <div className="flex-1 overflow-y-auto btr-scroll p-2 space-y-1">
+   318→        {loading ? (
+   319→          <div className="space-y-2 p-1">
+   320→            {Array.from({ length: 5 }).map((_, i) => (
+   321→              <Skeleton key={i} className="h-16 w-full rounded-md" />
+   322→            ))}
+   323→          </div>
+   324→        ) : schedules.length === 0 ? (
+   325→          <div className="flex flex-col items-center justify-center py-16 text-center">
+   326→            <div className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+   327→              <Bus className="h-4 w-4 text-zinc-500" />
+   328→            </div>
+   329→            <p className="text-[13px] text-muted-foreground">No schedules found</p>
+   330→            <p className="text-[11px] text-zinc-500 mt-0.5">Try adjusting your search</p>
+   331→          </div>
+   332→        ) : (
+   333→          schedules.map((s) => <RouteCard key={s.id} s={s} />)
+   334→        )}
+   335→      </div>
+   336→    </div>
+   337→  );
+   338→
+   339→  /* ---- Seat Map ---- */
+   340→  const SeatMap = () => {
+   341→    if (detailLoading) {
+   342→      return (
+   343→        <div className="btr-card rounded-lg p-6 flex items-center justify-center">
+   344→          <div className="flex flex-col items-center gap-3">
+   345→            <Loader2 className="h-5 w-5 text-zinc-500 animate-spin" />
+   346→            <span className="text-[12px] text-muted-foreground">Loading seat map…</span>
+   347→          </div>
+   348→        </div>
+   349→      );
+   350→    }
+   351→
+   352→    if (!scheduleDetail?.bus) return null;
+   353→
+   354→    const { cols, totalSeats } = scheduleDetail.bus;
+   355→    const availableSeats = scheduleDetail.availableSeats ?? totalSeats - (scheduleDetail.bookedSeats?.length ?? 0);
+   356→
+   357→    return (
+   358→      <motion.div
+   359→        initial={{ opacity: 0, y: 8 }}
+   360→        animate={{ opacity: 1, y: 0 }}
+   361→        transition={{ duration: 0.2 }}
+   362→        className="btr-card rounded-lg p-5"
+   363→      >
+   364→        {/* Bus header */}
+   365→        <div className="flex items-center justify-between mb-4">
+   366→          <div className="flex items-center gap-2">
+   367→            <div className="w-7 h-7 rounded-full bg-muted/60 flex items-center justify-center">
+   368→              <Bus className="h-3.5 w-3.5 text-zinc-400" />
+   369→            </div>
+   370→            <div>
+   371→              <p className="text-[13px] font-medium text-foreground">{selectedSchedule?.busPlate}</p>
+   372→              <p className="text-[11px] text-zinc-500">{selectedSchedule?.busType}</p>
+   373→            </div>
+   374→          </div>
+   375→          <div className="text-right">
+   376→            <p className="text-[11px] text-muted-foreground">
+   377→              <span className="text-foreground font-medium">{availableSeats}</span> / {totalSeats} seats
+   378→            </p>
+   379→          </div>
+   380→        </div>
+   381→
+   382→        {/* Driver area */}
+   383→        <div className="flex justify-end mb-3">
+   384→          <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium px-2 py-1 rounded bg-muted/40">
+   385→            Driver
+   386→          </div>
+   387→        </div>
+   388→
+   389→        {/* Seat grid */}
+   390→        <div
+   391→          className="grid gap-1.5 justify-items-center mx-auto"
+   392→          style={{
+   393→            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+   394→            maxWidth: cols * 48 + (cols - 1) * 6,
+   395→          }}
+   396→        >
+   397→          {seatGrid.map((seat) => {
+   398→            const isSelected = selectedSeat === seat.seatNum;
+   399→            return (
+   400→              <motion.button
+   401→                key={seat.seatNum}
+   402→                whileHover={seat.isOccupied ? {} : { scale: 1.06 }}
+   403→                whileTap={seat.isOccupied ? {} : { scale: 0.95 }}
+   404→                disabled={seat.isOccupied}
+   405→                onClick={() => setSelectedSeat(isSelected ? null : seat.seatNum)}
+   406→                title={seat.isOccupied ? seat.bookedBy : seat.seatNum}
+   407→                className={`
+   408→                  relative w-11 h-10 rounded-md text-[11px] font-medium
+   409→                  flex flex-col items-center justify-center
+   410→                  transition-colors duration-100 cursor-pointer
+   411→                  ${seat.isOccupied
+   412→                    ? 'bg-foreground/5 text-zinc-600 cursor-not-allowed'
+   413→                    : isSelected
+   414→                      ? 'bg-blue-600 text-white'
+   415→                      : 'bg-secondary hover:bg-blue-500/10 text-foreground'
+   416→                  }
+   417→                `}
+   418→              >
+   419→                <span className="text-[9px] opacity-60 leading-none">{seat.row}</span>
+   420→                <span className="font-bold leading-tight">{seat.colLetter}</span>
+   421→              </motion.button>
+   422→            );
+   423→          })}
+   424→        </div>
+   425→
+   426→        {/* Legend */}
+   427→        <div className="flex items-center justify-center gap-5 mt-5 pt-4 border-t border-border/60">
+   428→          <div className="flex items-center gap-1.5">
+   429→            <span className="w-4 h-3.5 rounded-sm bg-secondary" />
+   430→            <span className="text-[11px] text-zinc-500">Available</span>
+   431→          </div>
+   432→          <div className="flex items-center gap-1.5">
+   433→            <span className="w-4 h-3.5 rounded-sm bg-foreground/5" />
+   434→            <span className="text-[11px] text-zinc-500">Occupied</span>
+   435→          </div>
+   436→          <div className="flex items-center gap-1.5">
+   437→            <span className="w-4 h-3.5 rounded-sm bg-blue-600" />
+   438→            <span className="text-[11px] text-zinc-500">Selected</span>
+   439→          </div>
+   440→        </div>
+   441→      </motion.div>
+   442→    );
+   443→  };
+   444→
+   445→  /* ---- Booking Form ---- */
+   446→  const BookingForm = () => (
+   447→    <div className="flex flex-col h-full">
+   448→      <div className="p-4 border-b border-border/60">
+   449→        <p className="btr-label text-zinc-500">New Booking</p>
+   450→      </div>
+   451→
+   452→      {selectedSeat ? (
+   453→        <motion.div
+   454→          initial={{ opacity: 0, y: 6 }}
+   455→          animate={{ opacity: 1, y: 0 }}
+   456→          transition={{ duration: 0.15 }}
+   457→          className="mx-4 mt-4"
+   458→        >
+   459→          <div className="btr-card rounded-md p-3 border-blue-500/20 bg-blue-500/[0.03]">
+   460→            <div className="flex items-center justify-between">
+   461→              <span className="text-[11px] text-muted-foreground">Selected seat</span>
+   462→              <Badge className="bg-blue-600 text-white text-[11px] px-2 py-0 rounded-full font-semibold">
+   463→                {selectedSeat}
+   464→              </Badge>
+   465→            </div>
+   466→            <p className="text-[11px] text-zinc-500 mt-1.5">{selectedSchedule?.routeName}</p>
+   467→            <p className="text-xl font-semibold text-foreground mt-1 tracking-tight">
+   468→              KES {selectedSchedule?.fare.toLocaleString()}
+   469→            </p>
+   470→          </div>
+   471→        </motion.div>
+   472→      ) : (
+   473→        <div className="mx-4 mt-4">
+   474→          <div className="btr-card rounded-md p-5 flex flex-col items-center justify-center text-center">
+   475→            <div className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center mb-2.5">
+   476→              <Ticket className="h-4 w-4 text-zinc-500" />
+   477→            </div>
+   478→            <p className="text-[12px] text-muted-foreground">Select a seat to continue</p>
+   479→          </div>
+   480→        </div>
+   481→      )}
+   482→
+   483→      <div className="p-4 space-y-3 flex-1">
+   484→        <div>
+   485→          <Label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Passenger Name</Label>
+   486→          <Input
+   487→            placeholder="Full name"
+   488→            value={passengerName}
+   489→            onChange={(e) => setPassengerName(e.target.value)}
+   490→            className="h-9 text-[13px] bg-background border-border/60 focus-visible:ring-blue-500/20"
+   491→          />
+   492→        </div>
+   493→        <div>
+   494→          <Label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Phone Number</Label>
+   495→          <Input
+   496→            placeholder="+254..."
+   497→            value={passengerPhone}
+   498→            onChange={(e) => setPassengerPhone(e.target.value)}
+   499→            className="h-9 text-[13px] bg-background border-border/60 focus-visible:ring-blue-500/20"
+   500→          />
+   501→        </div>
+   502→      </div>
+   503→
+   504→      <div className="p-4 border-t border-border/60">
+   505→        <Button
+   506→          className="w-full h-9 text-[13px] font-medium bg-blue-600 hover:bg-blue-700 text-white btr-press"
+   507→          disabled={!canBook}
+   508→          onClick={handleBook}
+   509→        >
+   510→          {bookingLoading ? (
+   511→            <Loader2 className="h-4 w-4 animate-spin" />
+   512→          ) : (
+   513→            <>
+   514→              <Ticket className="h-3.5 w-3.5 mr-1.5" />
+   515→              Confirm Booking
+   516→            </>
+   517→          )}
+   518→        </Button>
+   519→      </div>
+   520→    </div>
+   521→  );
+   522→
+   523→  /* ---- Empty state for main area ---- */
+   524→  const EmptyState = () => (
+   525→    <div className="flex-1 flex items-center justify-center">
+   526→      <div className="text-center">
+   527→        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+   528→          <Bus className="h-5 w-5 text-zinc-500" />
+   529→        </div>
+   530→        <p className="text-[14px] text-muted-foreground font-medium">Select a schedule</p>
+   531→        <p className="text-[12px] text-zinc-500 mt-1">Choose a route from the list to view the seat map</p>
+   532→      </div>
+   533→    </div>
+   534→  );
+   535→
+   536→  /* ========================================================================= */
+   537→  /*  Render                                                                    */
+   538→  /* ========================================================================= */
+   539→
+   540→  return (
+   541→    <motion.div
+   542→      initial={{ opacity: 0 }}
+   543→      animate={{ opacity: 1 }}
+   544→      transition={{ duration: 0.2 }}
+   545→      className="h-screen flex flex-col bg-background"
+   546→    >
+   547→      {/* ---- Header ---- */}
+   548→      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
+   549→
+   550→      {/* ---- Body ---- */}
+   551→      <div className="flex-1 flex overflow-hidden">
+   552→
+   553→        {/* ======== LEFT SIDEBAR (desktop) ======== */}
+   554→        <aside className="hidden md:flex w-64 shrink-0 border-r border-border flex-col bg-card/50">
+   555→          <RouteList />
+   556→        </aside>
+   557→
+   558→        {/* ======== MAIN AREA ======== */}
+   559→        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+   560→          {/* Mobile: search + route sheet trigger */}
+   561→          <div className="md:hidden p-3 border-b border-border bg-card/50 flex gap-2 items-center">
+   562→            <div className="relative flex-1">
+   563→              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+   564→              <Input
+   565→                placeholder="Search routes..."
+   566→                value={search}
+   567→                onChange={(e) => handleSearch(e.target.value)}
+   568→                className="pl-8 h-9 text-[13px] bg-background border-border/60"
+   569→              />
+   570→            </div>
+   571→            <Sheet open={mobileRouteOpen} onOpenChange={setMobileRouteOpen}>
+   572→              <SheetTrigger asChild>
+   573→                <Button variant="outline" size="sm" className="h-9 text-[12px] gap-1.5 border-border/60">
+   574→                  <Bus className="h-3.5 w-3.5" />
+   575→                  Routes
+   576→                </Button>
+   577→              </SheetTrigger>
+   578→              <SheetContent side="left" className="w-72 p-0 bg-card">
+   579→                <SheetHeader className="p-3 border-b border-border">
+   580→                  <SheetTitle className="text-[13px] font-medium">Schedules</SheetTitle>
+   581→                </SheetHeader>
+   582→                <div className="overflow-y-auto btr-scroll p-2 space-y-1">
+   583→                  {schedules.map((s) => <RouteCard key={s.id} s={s} />)}
+   584→                </div>
+   585→              </SheetContent>
+   586→            </Sheet>
+   587→          </div>
+   588→
+   589→          {/* Content area */}
+   590→          {selectedSchedule ? (
+   591→            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+   592→              {/* Seat map section */}
+   593→              <div className="flex-1 overflow-y-auto btr-scroll p-4 lg:p-6">
+   594→                {/* Route header */}
+   595→                <motion.div
+   596→                  initial={{ opacity: 0, y: 6 }}
+   597→                  animate={{ opacity: 1, y: 0 }}
+   598→                  transition={{ duration: 0.15 }}
+   599→                  className="mb-5"
+   600→                >
+   601→                  <div className="flex items-center gap-2 mb-1">
+   602→                    <h2 className="text-[16px] font-semibold text-foreground tracking-tight">
+   603→                      {selectedSchedule.routeName}
+   604→                    </h2>
+   605→                    <Badge
+   606→                      variant="outline"
+   607→                      className={`text-[10px] px-1.5 py-0 rounded-full border-0 ${STATUS_COLORS[selectedSchedule.status] || ''}`}
+   608→                    >
+   609→                      {selectedSchedule.status}
+   610→                    </Badge>
+   611→                  </div>
+   612→                  <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+   613→                    <span className="flex items-center gap-1">
+   614→                      <Clock className="h-3 w-3" />
+   615→                      {selectedSchedule.departureTime}
+   616→                    </span>
+   617→                    <span>{selectedSchedule.busPlate}</span>
+   618→                    <span>Gate {selectedSchedule.gateNumber || 'TBD'}</span>
+   619→                  </div>
+   620→                </motion.div>
+   621→
+   622→                {/* Seat map */}
+   623→                <SeatMap />
+   624→
+   625→                {/* Mobile: booking button at bottom */}
+   626→                <div className="lg:hidden mt-4">
+   627→                  <Sheet open={mobileBookingOpen} onOpenChange={setMobileBookingOpen}>
+   628→                    <SheetTrigger asChild>
+   629→                      <Button
+   630→                        className="w-full h-10 text-[13px] font-medium bg-blue-600 hover:bg-blue-700 text-white btr-press"
+   631→                        disabled={!selectedSeat}
+   632→                      >
+   633→                        <Ticket className="h-4 w-4 mr-1.5" />
+   634→                        {selectedSeat ? `Book Seat ${selectedSeat}` : 'Select a Seat'}
+   635→                      </Button>
+   636→                    </SheetTrigger>
+   637→                    <SheetContent side="bottom" className="max-h-[75vh] bg-card p-0 rounded-t-xl">
+   638→                      <BookingForm />
+   639→                    </SheetContent>
+   640→                  </Sheet>
+   641→                </div>
+   642→              </div>
+   643→
+   644→              {/* Booking form (desktop only) */}
+   645→              <aside className="hidden lg:flex w-72 shrink-0 border-l border-border bg-card/50">
+   646→                <div className="w-full flex flex-col">
+   647→                  {selectedSchedule && scheduleDetail ? (
+   648→                    <BookingForm />
+   649→                  ) : (
+   650→                    <div className="flex-1 flex items-center justify-center p-4">
+   651→                      <p className="text-[12px] text-zinc-500 text-center">Loading…</p>
+   652→                    </div>
+   653→                  )}
+   654→                </div>
+   655→              </aside>
+   656→            </div>
+   657→          ) : (
+   658→            <EmptyState />
+   659→          )}
+   660→        </main>
+   661→      </div>
+   662→    </motion.div>
+   663→  );
+   664→}

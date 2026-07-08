@@ -167,4 +167,9 @@
 
 ### Files Modified
 - MODIFIED: `src/app/globals.css` (added grid CSS variables + body::before rule)
-- MODIFIED: `src/components/bus-track/login-screen.tsx` (full redesign: dark hero + grid + glassmorphism)
+- MODIFIED: `src/components/bus-track/login-screen.tsx` (full redesign: dark hero + grid + glassmorphism)---
+
+### Research Files Created (Session 5)
+- download/design-research-report.md (44KB — dashboard + landing page patterns + design tokens)
+- download/landing-research.md (CSS analysis from Linear, Vercel, Resend, Lemon Squeezy, Omniroute)
+- download/ref-linear.png, ref-vercel.png, ref-raycast.png, ref-calcom.png (reference screenshots)

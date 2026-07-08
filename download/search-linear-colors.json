@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://stackoverflow.blog/2020/03/31/building-dark-mode-on-stack-overflow",
+    "name": "Building dark mode on Stack Overflow",
+    "snippet": "Variables I needed to convert static, Less-compiled hex values to runtime custom CSS properties. This meant storing our color values as var(-- ...",
+    "host_name": "stackoverflow.blog",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://fontofweb.com/tokens/linear.app",
+    "name": "linear.app Design Tokens - Colors, Fonts & CSS | FontOfWeb",
+    "snippet": "The linear.app design system includes 63 extracted brand colors, 2 typography styles, and various CSS design tokens used across 23 analyzed pages.",
+    "host_name": "fontofweb.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://m2.material.io/design/color/the-color-system.html",
+    "name": "The color system - Material Design",
+    "snippet": "The Material Design color system can help you create a color theme. Dark and light variants of each color can then be applied to your UI in different ways. ...",
+    "host_name": "m2.material.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://css-tricks.com/thinking-deeply-about-theming-and-color-naming",
+    "name": "Thinking Deeply About Theming and Color Naming - CSS-Tricks",
+    "snippet": "Today, I want to discuss a couple of patterns for naming color palettes that the community is using, and how I propose we can improve, ...",
+    "host_name": "css-tricks.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://styles.refero.design/style/90ce5883-bb24-4466-93f7-801cd617b0d1",
+    "name": "Linear design system - Refero Styles",
+    "snippet": "Explore Linear's dark Dev Tools design system: Void #08090a, Carbon #0f1011 colors, Inter Variable, Berkeley Mono typography, and DESIGN.md for AI agents.",
+    "host_name": "styles.refero.design",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/color-scheme",
+    "name": "color-scheme CSS property - MDN Web Docs - Mozilla",
+    "snippet": "The color-scheme CSS property allows an element to indicate which color schemes it can comfortably be rendered in. includes form controls, ...",
+    "host_name": "developer.mozilla.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.designlang.app/gallery/linear-app",
+    "name": "linear.app design system - designlang",
+    "snippet": "Free Use the colours above. **Never invent a new hex.** If you need a shade between two existing colours, derive it via HSL adjustment from the closest extracted",
+    "host_name": "www.designlang.app",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://colorffy.com/css-generator",
+    "name": "CSS Variables Generator & SASS/SCSS Color  - Colorffy",
+    "snippet": "Generate your design system color variables in seconds. Get ready-to-use CSS variables, SASS/SCSS color variables, and Tailwind themes with custom shades ...",
+    "host_name": "colorffy.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/codyhouse/create-your-design-system-part-3-colors-798e4729921f",
+    "name": "Create your design system, part 3: Colors | by Sebastiano Guerriero",
+    "snippet": "In this article, we'll take a look at how to set a color system in CSS, and what are the best practices to make sure the system is easy to use and maintain.",
+    "host_name": "medium.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://copycats.design/linear-app",
+    "name": "linear.app - colours, Tailwind & Figma variables - Copycats.design",
+    "snippet": "Analyse Linear's design system. a palette of 12 colours including #F7BF8B, #FFDF9F, and #00FF05 and Inter Variable and Berkeley Mono typography.",
+    "host_name": "copycats.design",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
