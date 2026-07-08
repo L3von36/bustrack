@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { motion } from 'framer-motion';
 import {
   Bus, ArrowRight, Zap, Shield, BarChart3, Ticket, CreditCard, Settings,
 } from 'lucide-react';
@@ -35,14 +34,6 @@ const FEATURES = [
   { icon: <BarChart3 className="h-4 w-4" />, title: 'AI Insights', desc: 'Demand prediction & analytics' },
   { icon: <Bus className="h-4 w-4" />, title: '5 Roles', desc: 'Ticketer, Cashier, Gateman, Manager, Admin' },
 ];
-
-const slideUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { delay: 0.1 + i * 0.08, duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-  }),
-};
 
 export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail, setLoginEmail, loginError, setLoginError, toast }: LoginScreenProps) {
   const handleLogin = useCallback(async (email?: string) => {
@@ -92,35 +83,34 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
         />
 
         <div className="relative z-10 w-full max-w-5xl mx-auto px-6 py-20 sm:py-32">
-          <motion.div initial="hidden" animate="visible" className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center animate-[fadeInUp_0.6s_ease-out_both]">
             {/* ── Left: Copy ── */}
             <div>
               {/* Eyebrow */}
-              <motion.div variants={slideUp} custom={0} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] bg-white/[0.03] mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] bg-white/[0.03] mb-8 animate-[fadeInUp_0.6s_0.1s_ease-out_both]">
                 <div className="btr-dot bg-blue-500" />
                 <span className="text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Station Management System</span>
-              </motion.div>
+              </div>
 
               {/* Headline */}
-              <motion.h1
-                variants={slideUp} custom={1}
-                className="text-4xl sm:text-5xl lg:text-[3.5rem] font-semibold tracking-tight text-white leading-[1.1]"
+              <h1
+                className="text-4xl sm:text-5xl lg:text-[3.5rem] font-semibold tracking-tight text-white leading-[1.1] animate-[fadeInUp_0.6s_0.18s_ease-out_both]"
                 style={{ textWrap: 'balance' }}
               >
                 The smartest way to
                 <span className="block mt-1 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                   run your bus station.
                 </span>
-              </motion.h1>
+              </h1>
 
               {/* Sub */}
-              <motion.p variants={slideUp} custom={2} className="mt-6 text-[15px] leading-relaxed text-zinc-500 max-w-md">
+              <p className="mt-6 text-[15px] leading-relaxed text-zinc-500 max-w-md animate-[fadeInUp_0.6s_0.26s_ease-out_both]">
                 Real-time ticketing, AI-powered insights, and seamless role-based workflows.
                 Built for stations that move thousands daily.
-              </motion.p>
+              </p>
 
               {/* Login form */}
-              <motion.div variants={slideUp} custom={3} className="mt-8 flex gap-2 max-w-md">
+              <div className="mt-8 flex gap-2 max-w-md animate-[fadeInUp_0.6s_0.34s_ease-out_both]">
                 <div className="relative flex-1">
                   <Input
                     placeholder="your@email.com"
@@ -141,13 +131,13 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
                     <>Sign In <ArrowRight className="h-3.5 w-3.5 ml-1" /></>
                   )}
                 </Button>
-              </motion.div>
+              </div>
               {loginError && (
-                <motion.p variants={slideUp} custom={3.5} className="mt-2 text-xs text-red-400">{loginError}</motion.p>
+                <p className="mt-2 text-xs text-red-400">{loginError}</p>
               )}
 
               {/* Feature pills */}
-              <motion.div variants={slideUp} custom={4} className="mt-10 grid grid-cols-2 gap-3">
+              <div className="mt-10 grid grid-cols-2 gap-3 animate-[fadeInUp_0.6s_0.42s_ease-out_both]">
                 {FEATURES.map((f) => (
                   <div key={f.title} className="flex items-start gap-3 p-3 rounded-lg border border-white/[0.04] bg-white/[0.02]">
                     <div className="mt-0.5 text-zinc-500">{f.icon}</div>
@@ -157,19 +147,17 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
                     </div>
                   </div>
                 ))}
-              </motion.div>
+              </div>
             </div>
 
             {/* ── Right: Role cards ── */}
-            <motion.div variants={slideUp} custom={2} className="hidden lg:block">
+            <div className="hidden lg:block animate-[fadeInUp_0.6s_0.26s_ease-out_both]">
               <div className="btr-glass rounded-2xl p-6">
                 <p className="btr-label text-zinc-500 mb-4">Quick Demo</p>
                 <div className="space-y-2">
                   {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config]) => (
-                    <motion.button
+                    <button
                       key={role}
-                      whileHover={{ x: 4 }}
-                      whileTap={{ scale: 0.98 }}
                       onClick={() => handleLogin(config.email)}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-colors duration-150 text-left group btr-press"
                     >
@@ -183,27 +171,20 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
                         <div className="text-[11px] text-zinc-600 truncate">{config.desc}</div>
                       </div>
                       <ArrowRight className="h-3.5 w-3.5 text-zinc-700 group-hover:text-zinc-400 transition-colors" />
-                    </motion.button>
+                    </button>
                   ))}
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
 
           {/* ── Mobile role cards (below hero on small screens) ── */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            className="lg:hidden mt-12"
-          >
+          <div className="lg:hidden mt-12 animate-[fadeInUp_0.6s_0.3s_ease-out_both]">
             <p className="btr-label text-zinc-500 mb-4 text-center">Quick Demo</p>
             <div className="grid grid-cols-2 gap-2">
-              {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config], i) => (
-                <motion.button
+              {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config]) => (
+                <button
                   key={role}
-                  variants={slideUp}
-                  custom={i}
-                  whileTap={{ scale: 0.97 }}
                   onClick={() => handleLogin(config.email)}
                   className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-left btr-press"
                 >
@@ -215,10 +196,10 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
                       {role.charAt(0) + role.slice(1).toLowerCase()}
                     </div>
                   </div>
-                </motion.button>
+                </button>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 

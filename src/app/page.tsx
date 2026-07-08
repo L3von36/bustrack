@@ -2,14 +2,17 @@
 
 import React, { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
 import { LoginScreen } from '@/components/bus-track/login-screen';
 import { AppHeader } from '@/components/bus-track/app-header';
-import { TicketerInterface } from '@/components/bus-track/ticketer-interface';
-import { CashierInterface } from '@/components/bus-track/cashier-interface';
-import { GatemanInterface } from '@/components/bus-track/gateman-interface';
-import { ManagerInterface } from '@/components/bus-track/manager-interface';
-import { SuperadminInterface } from '@/components/bus-track/superadmin-interface';
 import type { StaffUser } from '@/components/bus-track/types';
+
+// Dynamic import dashboards — only loaded after login
+const TicketerInterface = dynamic(() => import('@/components/bus-track/ticketer-interface').then(m => ({ default: m.TicketerInterface })), { ssr: false });
+const CashierInterface = dynamic(() => import('@/components/bus-track/cashier-interface').then(m => ({ default: m.CashierInterface })), { ssr: false });
+const GatemanInterface = dynamic(() => import('@/components/bus-track/gateman-interface').then(m => ({ default: m.GatemanInterface })), { ssr: false });
+const ManagerInterface = dynamic(() => import('@/components/bus-track/manager-interface').then(m => ({ default: m.ManagerInterface })), { ssr: false });
+const SuperadminInterface = dynamic(() => import('@/components/bus-track/superadmin-interface').then(m => ({ default: m.SuperadminInterface })), { ssr: false });
 
 export default function Home() {
   const [user, setUser] = useState<StaffUser | null>(null);
