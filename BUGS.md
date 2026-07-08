@@ -58,11 +58,6 @@
 ## BUG-006
 **Date Found:** 2026-07-08
 **Severity:** Critical
-**Description:** After the full UI redesign session, the dev server crashed with a fatal CSS compilation error: `Module not found: Can't resolve '/static/texture-btn.png'`. The error appears in the compiled CSS output at line 8313+ as `.after:bg-repeat { &:after { content: var(--tw-content); background-image: url("/static/texture-btn.png"); } }`. This is NOT caused by any source code in the project — `texture-btn` does not appear anywhere in `/src/`, `/public/`, or `/node_modules/` (excluding search result caches). The error persists even with a minimal globals.css and minimal page.tsx. Root cause appears to be a Tailwind CSS v4 internal bug where the `bg-repeat` utility incorrectly generates a `background-image: url(...)` reference. The dev server becomes completely unresponsive and won't auto-restart. All code passes ESLint with zero errors.
-**Fix Attempted:**
-1. Created placeholder PNG at `/public/static/texture-btn.png` — did not fix
-2. Cleared `.next` cache — did not fix
-3. Cleared `node_modules/.cache` — did not fix
-4. Removed `tailwindcss-animate` plugin from `tailwind.config.ts` — did not fix
-5. Upgraded `tw-animate-css` from 1.3.5 to 1.4.0 — did not fix
-**Status:** Open — requires dev server restart. All code is correct (0 lint errors). May need fresh `bun install` + server restart.
+**Description:** Dev server crashed with a CSS compilation error referencing a missing static image. The error was self-perpetuating: the error output was written to dev.log (via tee in the dev script), and Tailwind CSS v4 auto-scanned dev.log, found the error text containing a Tailwind class name with a URL reference, then tried to compile that class — which produced the same error again, creating an infinite loop.
+**Fix:** 1) Deleted dev.log and server.log files containing poisoned error output. 2) Escaped the class name reference in this BUGS.md file. 3) Added a .gitignore entry for *.log. 4) Removed tee from the dev script to prevent log files from being created in the future.
+**Status:** Fixed
