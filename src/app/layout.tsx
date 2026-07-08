@@ -1,8 +1,24 @@
 import type { Metadata } from "next";
+import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-export const metadata: Metadata = { title: "Test" };
+export const metadata: Metadata = { title: "BusTrack" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en"><body className="bg-background text-foreground">{children}</body></html>;
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-background text-foreground antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster />
+        </ThemeProvider>
+      </body>
+    </html>
+  );
 }
