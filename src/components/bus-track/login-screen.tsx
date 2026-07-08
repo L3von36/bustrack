@@ -71,9 +71,9 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
   }, [loginEmail, onLogin, setLoginError, setLoginLoading, toast]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" suppressHydrationWarning>
       {/* ── Dark hero ── */}
-      <section className="relative flex-1 flex items-center justify-center overflow-hidden bg-[#09090b]">
+      <section className="relative flex-1 flex items-center justify-center overflow-hidden bg-[#09090b]" suppressHydrationWarning>
         {/* Square grid */}
         <div
           aria-hidden="true"
