@@ -130,3 +130,41 @@
 - AI-powered demand prediction (Python FastAPI microservice)
 - Offline-first support (IndexedDB + Service Worker)
 - Thermal printer integration (ESC/POS via Web Serial API)
+
+---
+
+## Session 4 — 2026-07-08 (Landing Page Redesign)
+
+### Completed
+- [x] **Researched omniroute.online** reference site for square grid background pattern
+  - Extracted exact CSS technique: `body::before` with dual `linear-gradient` (horizontal + vertical)
+  - Grid vars: `--grid-size: 32px`, `--grid-line: rgba(255,255,255,0.06)` on dark
+  - Graph-paper wallpaper effect, fixed position, z-index: -1
+
+- [x] **Global Grid Background** (`globals.css`):
+  - Added `--grid-line` and `--grid-size` CSS custom properties to `:root` and `.dark`
+  - Added `body::before` pseudo-element outside `@layer base` (Tailwind preflight was resetting it inside the layer)
+  - Light theme: `rgba(0,0,0,0.06)`, Dark theme: `rgba(255,255,255,0.05)`
+
+- [x] **Landing Page Redesign** (`login-screen.tsx`):
+  - Dark hero section (`#0a0f1e`) with inline grid overlay div (white lines at 0.06 opacity)
+  - Radial blue glow behind logo (blurred 600px circle)
+  - Feature highlight pills (Real-time seat booking, Multi-role access, Gate validation, AI-powered)
+  - Glassmorphism login card (`bg-white/[0.06] backdrop-blur-xl border-white/10`)
+  - Role cards with glass effect, hover animations, blue accent highlights
+  - Bottom gradient fade from dark to light theme
+  - Light info strip with system stats (4 routes, 5 staff, 16 schedules, AI-Powered)
+  - Smooth Framer Motion staggered entrance animations
+
+- [x] **Browser Verification**:
+  - Grid overlay renders at full viewport (1280x1053) with correct `32px 32px` size
+  - Mobile viewport (375x812) grid renders correctly
+  - All 5 role cards clickable, login flow works (tested Ticketer → full interface loads)
+  - Zero lint errors, clean compilation
+
+### Bugs Fixed
+- BUG-005: `body::before` grid CSS not rendering when inside `@layer base` — moved outside the layer to bypass Tailwind preflight reset
+
+### Files Modified
+- MODIFIED: `src/app/globals.css` (added grid CSS variables + body::before rule)
+- MODIFIED: `src/components/bus-track/login-screen.tsx` (full redesign: dark hero + grid + glassmorphism)

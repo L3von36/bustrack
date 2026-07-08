@@ -62,6 +62,7 @@
 - [x] Dark mode toggle button (next-themes + ThemeProvider)
 - [x] Mobile responsiveness improvements (all 5 interfaces)
 - [x] Code refactoring (1856-line file → 8 component files)
+- [x] Landing page redesign: dark hero with omniroute-style square grid background, glassmorphism cards
 - [ ] AI-powered demand prediction (Python FastAPI)
 - [ ] Offline-first support (IndexedDB + Service Worker)
 - [ ] Thermal printer integration (ESC/POS)

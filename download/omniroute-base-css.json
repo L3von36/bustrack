@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">/* base.css — reset, typography, layout primitives, scroll-reveal animation.\n   Depends on tokens.css. */\n*,\n*::before,\n*::after {\n  box-sizing: border-box;\n  margin: 0;\n}\nhtml {\n  scroll-behavior: smooth;\n  scroll-padding-top: var(--nav-h);\n}\nbody {\n  background: var(--bg);\n  color: var(--text);\n  font: var(--step-0) / 1.6 var(--font-sans);\n  -webkit-font-smoothing: antialiased;\n  text-rendering: optimizeLegibility;\n  transition: background 0.3s var(--ease), color 0.3s var(--ease);\n}\n/* fixed graph-paper grid behind all content (wallpaper, both themes) */\nbody::before {\n  content: \"\";\n  position: fixed;\n  inset: 0;\n  z-index: -1;\n  pointer-events: none;\n  background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px),\n    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);\n  background-size: var(--grid-size) var(--grid-size);\n}\nimg {\n  max-width: 100%;\n  display: block;\n}\na {\n  color: inherit;\n  text-decoration: none;\n}\n:focus-visible {\n  outline: 2px solid var(--accent-3);\n  outline-offset: 3px;\n  border-radius: 4px;\n}\n\n/* skip-to-content link — hidden until keyboard-focused */\n.skip-link {\n  position: fixed;\n  top: 0.5rem;\n  inset-inline-start: 0.5rem;\n  z-index: 200;\n  padding: 0.6rem 1rem;\n  background: var(--primary);\n  color: #fff;\n  font-weight: 600;\n  border-radius: var(--radius-sm);\n  transform: translateY(-150%);\n  transition: transform 0.18s var(--ease);\n}\n.skip-link:focus {\n  transform: translateY(0);\n}\n\n/* layout primitives */\n.container {\n  max-width: var(--container);\n  margin-inline: auto;\n  padding-inline: 1.25rem;\n}\n.section {\n  padding-block: clamp(2.1rem, 4.8vw, 4.2rem);\n}\n.section--alt {\n  background: var(--section-alt);\n}\n.section__eyebrow {\n  color: var(--primary);\n  font-weight: 700;\n  font-size: var(--step--1);\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n.section__title {\n  font-size: var(--step-4);\n  font-weight: 800;\n  line-height: 1.05;\n  letter-spacing: -0.02em;\n}\n.section__lead {\n  color: var(--text-muted);\n  font-size: var(--step-1);\n  max-width: 60ch;\n}\n.giant {\n  font-size: var(--step-6);\n  font-weight: 800;\n  line-height: 0.92;\n  letter-spacing: -0.03em;\n  background: var(--grad-brand);\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n/* scroll-reveal */\n[data-reveal] {\n  opacity: 0;\n  transform: translateY(24px);\n  transition: opacity var(--reveal-dur) var(--ease), transform var(--reveal-dur) var(--ease);\n}\n[data-reveal].is-visible {\n  opacity: 1;\n  transform: none;\n}\n[data-reveal-delay=\"2\"] {\n  transition-delay: 0.08s;\n}\n[data-reveal-delay=\"3\"] {\n  transition-delay: 0.16s;\n}\n[data-reveal-delay=\"4\"] {\n  transition-delay: 0.24s;\n}\n</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "publishedTime": "Thu, 18 Jun 2026 04:30:22 GMT",
+    "title": "",
+    "url": "https://omniroute.online/css/base.css",
+    "usage": {
+      "tokens": 862
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 862
+    }
+  },
+  "status": 20000
+}

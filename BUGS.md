@@ -43,3 +43,12 @@
 **Description:** React ESLint rule `react-hooks/set-state-in-effect` triggered in `use-realtime.ts` — `setIsConnected(true)` was called synchronously inside a `useEffect` body when checking `socket.connected`. This can cause cascading renders.
 **Fix:** Wrapped the synchronous setState call in `queueMicrotask(() => setIsConnected(true))` to defer the state update out of the synchronous effect body, satisfying the lint rule while maintaining the same behavior.
 **Status:** Fixed
+
+---
+
+## BUG-005
+**Date Found:** 2026-07-08
+**Severity:** Medium
+**Description:** Graph-paper grid CSS (`body::before` with `linear-gradient` background) was not rendering on the page. The pseudo-element's computed styles showed `content: none`, `position: static`, `backgroundImage: none` — all default values, meaning our rule was being overridden.
+**Fix:** The rule was initially placed inside `@layer base { ... }` in `globals.css`. Tailwind CSS 4's preflight reset inside the base layer was overriding the `::before` pseudo-element styles. Moving the `body::before` rule **outside** the `@layer base` block (to the top-level of the stylesheet) gave it higher cascade priority than the layered preflight, and the grid rendered correctly. The hero section also needed its own inline grid overlay div since its solid `bg-[#0a0f1e]` background would cover the global `body::before` grid.
+**Status:** Fixed

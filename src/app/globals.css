@@ -45,6 +45,9 @@
 
 :root {
   --radius: 0.625rem;
+  /* graph-paper grid background */
+  --grid-line: rgba(0, 0, 0, 0.06);
+  --grid-size: 32px;
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -79,6 +82,7 @@
 }
 
 .dark {
+  --grid-line: rgba(255, 255, 255, 0.05);
   --background: oklch(0.16 0.02 260);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.22 0.02 260);
@@ -119,4 +123,18 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* graph-paper square grid — fixed wallpaper behind all content */
+/* placed outside @layer base to avoid Tailwind preflight reset */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
 }
