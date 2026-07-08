@@ -118,10 +118,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
         if (selectedSchedule?.id === data.scheduleId) {
           selectSchedule(selectedSchedule);
           fetchSchedules();
-          toast({
-            title: 'Seat Booked',
-            description: `${data.passengerName} just booked seat ${data.seatNumber}`,
-          });
+          toast.success(`${data.passengerName} just booked seat ${data.seatNumber}`);
         }
       },
     );
@@ -170,10 +167,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
       });
       const data = await res.json();
       if (data.booking) {
-        toast({
-          title: 'Booking Created!',
-          description: `Ref: ${data.booking.reference} — Seat ${selectedSeat}. Awaiting payment.`,
-        });
+        toast.success(`Ref: ${data.booking.reference} — Seat ${selectedSeat}. Awaiting payment.`);
         emit('booking:created', {
           scheduleId: selectedSchedule.id,
           seatNumber: selectedSeat,
@@ -186,10 +180,10 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
         selectSchedule(selectedSchedule);
         fetchSchedules();
       } else {
-        toast({ title: 'Error', description: data.error, variant: 'destructive' });
+        toast.error(data.error || 'Booking failed');
       }
     } catch {
-      toast({ title: 'Error', description: 'Network error', variant: 'destructive' });
+      toast.error('Network error');
     } finally {
       setBookingLoading(false);
     }

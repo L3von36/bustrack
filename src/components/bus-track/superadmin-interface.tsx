@@ -144,15 +144,15 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
       });
       const data = await res.json();
       if (data.route) {
-        toast({ title: 'Route created', description: `${newRoute.origin} → ${newRoute.destination}` });
+        toast.success(`Route created — ${newRoute.origin} → ${newRoute.destination}`);
         setAddRouteOpen(false);
         setNewRoute({ origin: '', destination: '', distanceKm: '', baseFare: '', estimatedMin: '' });
         fetchAll();
       } else {
-        toast({ title: 'Error', description: data.error || 'Failed to create route', variant: 'destructive' });
+        toast.error(data.error || 'Failed to create route');
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to create route', variant: 'destructive' });
+      toast.error('Failed to create route');
     } finally {
       setSubmittingRoute(false);
     }
@@ -169,15 +169,15 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
       });
       const data = await res.json();
       if (data.bus) {
-        toast({ title: 'Bus added', description: newBus.plateNumber });
+        toast.success(`Bus added — ${newBus.plateNumber}`);
         setAddBusOpen(false);
         setNewBus({ plateNumber: '', busType: 'STANDARD', totalSeats: '', rows: '', cols: '4' });
         fetchAll();
       } else {
-        toast({ title: 'Error', description: data.error || 'Failed to add bus', variant: 'destructive' });
+        toast.error(data.error || 'Failed to add bus');
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to add bus', variant: 'destructive' });
+      toast.error('Failed to add bus');
     } finally {
       setSubmittingBus(false);
     }
@@ -194,16 +194,16 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
         body: JSON.stringify({ ...newStaff, stationId }),
       });
       if (res.ok) {
-        toast({ title: 'Staff added', description: newStaff.name });
+        toast.success(`Staff added — ${newStaff.name}`);
         setAddStaffOpen(false);
         setNewStaff({ name: '', email: '', password: 'password', role: 'TICKETER' });
         fetchAll();
       } else {
         const data = await res.json();
-        toast({ title: 'Error', description: data.error || 'Failed to add staff', variant: 'destructive' });
+        toast.error(data.error || 'Failed to add staff');
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to add staff', variant: 'destructive' });
+      toast.error('Failed to add staff');
     } finally {
       setSubmittingStaff(false);
     }

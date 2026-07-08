@@ -214,10 +214,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
       const data = await res.json();
       setValidationResult(data);
       if (data.result === 'VALID') {
-        toast({
-          title: 'Valid Ticket',
-          description: `${data.passengerName} — Seat ${data.seatNumber}`,
-        });
+        toast.success(`${data.passengerName} — Seat ${data.seatNumber}`);
         fetchBoardingInfo();
         emit('gate:validated', {
           scheduleId: selectedSchedule.id,

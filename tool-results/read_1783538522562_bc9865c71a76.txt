@@ -1,0 +1,1001 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import {
+     6→  Bus, Plus, MapPin, DollarSign, Users, TrendingUp,
+     7→  LayoutDashboard, Route, UserCog, BarChart3, Car,
+     8→} from 'lucide-react';
+     9→import { Button } from '@/components/ui/button';
+    10→import { Input } from '@/components/ui/input';
+    11→import { Badge } from '@/components/ui/badge';
+    12→import { Label } from '@/components/ui/label';
+    13→import { Skeleton } from '@/components/ui/skeleton';
+    14→import { Progress } from '@/components/ui/progress';
+    15→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    16→import {
+    17→  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+    18→  DialogDescription,
+    19→} from '@/components/ui/dialog';
+    20→import {
+    21→  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    22→} from '@/components/ui/select';
+    23→import {
+    24→  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
+    25→  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+    26→} from 'recharts';
+    27→import { AppHeader } from './app-header';
+    28→import { STATUS_COLORS, CHART_COLORS } from './constants';
+    29→import { useRealtimeSocket } from '@/hooks/use-realtime';
+    30→import type { StaffUser } from './types';
+    31→
+    32→/* ─── Types ─── */
+    33→interface SuperadminInterfaceProps {
+    34→  user: StaffUser;
+    35→  onLogout: () => void;
+    36→  toast: any;
+    37→}
+    38→
+    39→type TabId = 'overview' | 'routes' | 'buses' | 'staff' | 'analytics';
+    40→
+    41→/* ─── Constants ─── */
+    42→const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    43→  { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="h-4 w-4" /> },
+    44→  { id: 'routes', label: 'Routes', icon: <Route className="h-4 w-4" /> },
+    45→  { id: 'buses', label: 'Buses', icon: <Car className="h-4 w-4" /> },
+    46→  { id: 'staff', label: 'Staff', icon: <UserCog className="h-4 w-4" /> },
+    47→  { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
+    48→];
+    49→
+    50→const BUS_TYPES = ['STANDARD', 'EXECUTIVE', 'VIP', 'PREMIUM'] as const;
+    51→const STAFF_ROLES = ['TICKETER', 'CASHIER', 'GATEMAN', 'MANAGER', 'SUPERADMIN'] as const;
+    52→
+    53→/* ─── Component ─── */
+    54→export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfaceProps) {
+    55→  const { isConnected, on, joinDashboard } = useRealtimeSocket();
+    56→
+    57→  // Active tab
+    58→  const [activeTab, setActiveTab] = useState<TabId>('overview');
+    59→
+    60→  // Data state
+    61→  const [stats, setStats] = useState<any>(null);
+    62→  const [departures, setDepartures] = useState<any[]>([]);
+    63→  const [routes, setRoutes] = useState<any[]>([]);
+    64→  const [buses, setBuses] = useState<any[]>([]);
+    65→  const [staff, setStaff] = useState<any[]>([]);
+    66→  const [analytics, setAnalytics] = useState<any>(null);
+    67→  const [loading, setLoading] = useState(true);
+    68→
+    69→  // Dialog states
+    70→  const [addRouteOpen, setAddRouteOpen] = useState(false);
+    71→  const [addBusOpen, setAddBusOpen] = useState(false);
+    72→  const [addStaffOpen, setAddStaffOpen] = useState(false);
+    73→
+    74→  // Form states
+    75→  const [newRoute, setNewRoute] = useState({
+    76→    origin: '', destination: '', distanceKm: '', baseFare: '', estimatedMin: '',
+    77→  });
+    78→  const [newBus, setNewBus] = useState({
+    79→    plateNumber: '', busType: 'STANDARD', totalSeats: '', rows: '', cols: '4',
+    80→  });
+    81→  const [newStaff, setNewStaff] = useState({
+    82→    name: '', email: '', password: 'password', role: 'TICKETER',
+    83→  });
+    84→
+    85→  // Submitting states
+    86→  const [submittingRoute, setSubmittingRoute] = useState(false);
+    87→  const [submittingBus, setSubmittingBus] = useState(false);
+    88→  const [submittingStaff, setSubmittingStaff] = useState(false);
+    89→
+    90→  /* ─── Data fetching ─── */
+    91→  const fetchAll = useCallback(async () => {
+    92→    try {
+    93→      const [statsRes, depRes, routesRes, busesRes, staffRes, analyticsRes] =
+    94→        await Promise.all([
+    95→          fetch('/api/dashboard/stats'),
+    96→          fetch('/api/dashboard/departures'),
+    97→          fetch('/api/admin/routes'),
+    98→          fetch('/api/admin/buses'),
+    99→          fetch('/api/admin/staff'),
+   100→          fetch('/api/admin/analytics'),
+   101→        ]);
+   102→      setStats(await statsRes.json());
+   103→      const depData = await depRes.json();
+   104→      setDepartures(depData.departures || []);
+   105→      const routesData = await routesRes.json();
+   106→      setRoutes(routesData.routes || []);
+   107→      const busesData = await busesRes.json();
+   108→      setBuses(busesData.buses || []);
+   109→      const staffData = await staffRes.json();
+   110→      setStaff(staffData.staff || []);
+   111→      setAnalytics(await analyticsRes.json());
+   112→    } catch (err) {
+   113→      console.error(err);
+   114→    } finally {
+   115→      setLoading(false);
+   116→    }
+   117→  }, []);
+   118→
+   119→  useEffect(() => {
+   120→    fetchAll();
+   121→    joinDashboard();
+   122→  }, [fetchAll, joinDashboard]);
+   123→
+   124→  // Real-time updates
+   125→  useEffect(() => {
+   126→    const offs = [
+   127→      on('dashboard:booking-created', () => fetchAll()),
+   128→      on('dashboard:payment-completed', () => fetchAll()),
+   129→      on('dashboard:gate-event', () => fetchAll()),
+   130→    ];
+   131→    return () => offs.forEach(off => off());
+   132→  }, [on, fetchAll]);
+   133→
+   134→  /* ─── Handlers ─── */
+   135→  const handleAddRoute = async () => {
+   136→    if (!newRoute.origin || !newRoute.destination || !newRoute.distanceKm || !newRoute.baseFare || !newRoute.estimatedMin) return;
+   137→    setSubmittingRoute(true);
+   138→    try {
+   139→      const stationId = routes[0]?.stationId || staff[0]?.stationId || '';
+   140→      const res = await fetch('/api/admin/routes', {
+   141→        method: 'POST',
+   142→        headers: { 'Content-Type': 'application/json' },
+   143→        body: JSON.stringify({ ...newRoute, stationId }),
+   144→      });
+   145→      const data = await res.json();
+   146→      if (data.route) {
+   147→        toast({ title: 'Route created', description: `${newRoute.origin} → ${newRoute.destination}` });
+   148→        setAddRouteOpen(false);
+   149→        setNewRoute({ origin: '', destination: '', distanceKm: '', baseFare: '', estimatedMin: '' });
+   150→        fetchAll();
+   151→      } else {
+   152→        toast({ title: 'Error', description: data.error || 'Failed to create route', variant: 'destructive' });
+   153→      }
+   154→    } catch {
+   155→      toast({ title: 'Error', description: 'Failed to create route', variant: 'destructive' });
+   156→    } finally {
+   157→      setSubmittingRoute(false);
+   158→    }
+   159→  };
+   160→
+   161→  const handleAddBus = async () => {
+   162→    if (!newBus.plateNumber || !newBus.totalSeats || !newBus.rows || !newBus.cols) return;
+   163→    setSubmittingBus(true);
+   164→    try {
+   165→      const res = await fetch('/api/admin/buses', {
+   166→        method: 'POST',
+   167→        headers: { 'Content-Type': 'application/json' },
+   168→        body: JSON.stringify(newBus),
+   169→      });
+   170→      const data = await res.json();
+   171→      if (data.bus) {
+   172→        toast({ title: 'Bus added', description: newBus.plateNumber });
+   173→        setAddBusOpen(false);
+   174→        setNewBus({ plateNumber: '', busType: 'STANDARD', totalSeats: '', rows: '', cols: '4' });
+   175→        fetchAll();
+   176→      } else {
+   177→        toast({ title: 'Error', description: data.error || 'Failed to add bus', variant: 'destructive' });
+   178→      }
+   179→    } catch {
+   180→      toast({ title: 'Error', description: 'Failed to add bus', variant: 'destructive' });
+   181→    } finally {
+   182→      setSubmittingBus(false);
+   183→    }
+   184→  };
+   185→
+   186→  const handleAddStaff = async () => {
+   187→    if (!newStaff.name || !newStaff.email) return;
+   188→    setSubmittingStaff(true);
+   189→    try {
+   190→      const stationId = staff[0]?.stationId || routes[0]?.stationId || '';
+   191→      const res = await fetch('/api/admin/staff', {
+   192→        method: 'POST',
+   193→        headers: { 'Content-Type': 'application/json' },
+   194→        body: JSON.stringify({ ...newStaff, stationId }),
+   195→      });
+   196→      if (res.ok) {
+   197→        toast({ title: 'Staff added', description: newStaff.name });
+   198→        setAddStaffOpen(false);
+   199→        setNewStaff({ name: '', email: '', password: 'password', role: 'TICKETER' });
+   200→        fetchAll();
+   201→      } else {
+   202→        const data = await res.json();
+   203→        toast({ title: 'Error', description: data.error || 'Failed to add staff', variant: 'destructive' });
+   204→      }
+   205→    } catch {
+   206→      toast({ title: 'Error', description: 'Failed to add staff', variant: 'destructive' });
+   207→    } finally {
+   208→      setSubmittingStaff(false);
+   209→    }
+   210→  };
+   211→
+   212→  /* ─── Derived data ─── */
+   213→  const kpis = stats ? [
+   214→    {
+   215→      label: 'Revenue',
+   216→      value: `KES ${(stats.totalRevenue || 0).toLocaleString()}`,
+   217→      icon: <DollarSign className="h-4 w-4" />,
+   218→      accent: 'text-emerald-500',
+   219→    },
+   220→    {
+   221→      label: 'Passengers',
+   222→      value: (stats.totalPassengers || 0).toLocaleString(),
+   223→      icon: <Users className="h-4 w-4" />,
+   224→      accent: 'text-blue-500',
+   225→    },
+   226→    {
+   227→      label: 'Buses',
+   228→      value: `${stats.busesDeparted || 0}/${stats.totalBuses || 0}`,
+   229→      icon: <Bus className="h-4 w-4" />,
+   230→      accent: 'text-purple-500',
+   231→    },
+   232→    {
+   233→      label: 'On-Time',
+   234→      value: `${stats.onTimeRate || 0}%`,
+   235→      icon: <TrendingUp className="h-4 w-4" />,
+   236→      accent: 'text-amber-500',
+   237→    },
+   238→  ] : [];
+   239→
+   240→  const initials = user.name
+   241→    .split(' ')
+   242→    .map((n) => n[0])
+   243→    .join('')
+   244→    .toUpperCase()
+   245→    .slice(0, 2);
+   246→
+   247→  /* ─── Render helpers ─── */
+   248→  const renderKPIs = () => {
+   249→    if (loading) {
+   250→      return (
+   251→        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   252→          {Array.from({ length: 4 }).map((_, i) => (
+   253→            <div key={i} className="btr-card p-4">
+   254→              <Skeleton className="h-3 w-16 mb-3" />
+   255→              <Skeleton className="h-8 w-28" />
+   256→            </div>
+   257→          ))}
+   258→        </div>
+   259→      );
+   260→    }
+   261→    return (
+   262→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   263→        {kpis.map((kpi, i) => (
+   264→          <div key={i} className="btr-card p-4 group">
+   265→            <div className="flex items-center justify-between mb-3">
+   266→              <span className="btr-label text-muted-foreground">{kpi.label}</span>
+   267→              <div className={`${kpi.accent} opacity-60 group-hover:opacity-100 transition-opacity`}>
+   268→                {kpi.icon}
+   269→              </div>
+   270→            </div>
+   271→            <p className="btr-kpi text-foreground">{kpi.value}</p>
+   272→          </div>
+   273→        ))}
+   274→      </div>
+   275→    );
+   276→  };
+   277→
+   278→  const renderDeparturesTable = () => (
+   279→    <div className="btr-card overflow-hidden">
+   280→      <div className="px-4 py-3 border-b border-border">
+   281→        <h3 className="text-sm font-medium text-foreground">Today&apos;s departures</h3>
+   282→      </div>
+   283→      <div className="overflow-x-auto btr-scroll">
+   284→        <Table>
+   285→          <TableHeader>
+   286→            <TableRow className="hover:bg-transparent border-border/50">
+   287→              <TableHead className="btr-label h-11 text-muted-foreground">Route</TableHead>
+   288→              <TableHead className="btr-label h-11 text-muted-foreground hidden sm:table-cell">Bus</TableHead>
+   289→              <TableHead className="btr-label h-11 text-muted-foreground">Gate</TableHead>
+   290→              <TableHead className="btr-label h-11 text-muted-foreground">Time</TableHead>
+   291→              <TableHead className="btr-label h-11 text-muted-foreground">Status</TableHead>
+   292→              <TableHead className="btr-label h-11 text-muted-foreground text-right">Occ.</TableHead>
+   293→            </TableRow>
+   294→          </TableHeader>
+   295→          <TableBody>
+   296→            {departures.length === 0 ? (
+   297→              <TableRow className="hover:bg-transparent">
+   298→                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground text-sm">
+   299→                  No departures scheduled
+   300→                </TableCell>
+   301→              </TableRow>
+   302→            ) : (
+   303→              departures.map((d: any) => (
+   304→                <TableRow key={d.id} className="h-11 border-border/30">
+   305→                  <TableCell className="text-sm font-medium text-foreground">{d.routeName}</TableCell>
+   306→                  <TableCell className="text-sm text-muted-foreground font-mono hidden sm:table-cell">{d.busPlate}</TableCell>
+   307→                  <TableCell className="text-sm text-muted-foreground">{d.gateNumber || '—'}</TableCell>
+   308→                  <TableCell className="text-sm font-mono text-foreground">{d.departureTime}</TableCell>
+   309→                  <TableCell>
+   310→                    <Badge variant="secondary" className={`text-[11px] px-2 py-0.5 rounded-md font-medium ${STATUS_COLORS[d.status] || ''}`}>
+   311→                      {d.status}
+   312→                    </Badge>
+   313→                  </TableCell>
+   314→                  <TableCell className="text-right">
+   315→                    <div className="flex items-center justify-end gap-2">
+   316→                      <Progress value={d.occupancy} className="w-14 h-1.5" />
+   317→                      <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{d.occupancy}%</span>
+   318→                    </div>
+   319→                  </TableCell>
+   320→                </TableRow>
+   321→              ))
+   322→            )}
+   323→          </TableBody>
+   324→        </Table>
+   325→      </div>
+   326→    </div>
+   327→  );
+   328→
+   329→  const renderRoutesTab = () => (
+   330→    <div className="space-y-4">
+   331→      <div className="flex items-center justify-between">
+   332→        <div>
+   333→          <h2 className="text-lg font-semibold text-foreground">Routes</h2>
+   334→          <p className="text-xs text-muted-foreground mt-0.5">{routes.length} routes configured</p>
+   335→        </div>
+   336→        <Button
+   337→          size="sm"
+   338→          onClick={() => setAddRouteOpen(true)}
+   339→          className="gap-1.5 btr-press"
+   340→        >
+   341→          <Plus className="h-3.5 w-3.5" />
+   342→          <span>Add route</span>
+   343→        </Button>
+   344→      </div>
+   345→
+   346→      <div className="btr-card overflow-hidden">
+   347→        <div className="overflow-x-auto btr-scroll">
+   348→          <Table>
+   349→            <TableHeader>
+   350→              <TableRow className="hover:bg-transparent border-border/50">
+   351→                <TableHead className="btr-label h-11 text-muted-foreground">Origin</TableHead>
+   352→                <TableHead className="btr-label h-11 text-muted-foreground">Destination</TableHead>
+   353→                <TableHead className="btr-label h-11 text-muted-foreground hidden sm:table-cell">Distance</TableHead>
+   354→                <TableHead className="btr-label h-11 text-muted-foreground">Fare</TableHead>
+   355→                <TableHead className="btr-label h-11 text-muted-foreground hidden md:table-cell">Est.</TableHead>
+   356→                <TableHead className="btr-label h-11 text-muted-foreground text-right">Schedules</TableHead>
+   357→              </TableRow>
+   358→            </TableHeader>
+   359→            <TableBody>
+   360→              {routes.length === 0 ? (
+   361→                <TableRow className="hover:bg-transparent">
+   362→                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground text-sm">
+   363→                    No routes yet
+   364→                  </TableCell>
+   365→                </TableRow>
+   366→              ) : (
+   367→                routes.map((r: any) => (
+   368→                  <TableRow key={r.id} className="h-11 border-border/30">
+   369→                    <TableCell className="text-sm">
+   370→                      <span className="flex items-center gap-1.5">
+   371→                        <MapPin className="h-3 w-3 text-muted-foreground/60" />
+   372→                        <span className="font-medium text-foreground">{r.origin}</span>
+   373→                      </span>
+   374→                    </TableCell>
+   375→                    <TableCell className="text-sm">
+   376→                      <span className="flex items-center gap-1.5">
+   377→                        <MapPin className="h-3 w-3 text-muted-foreground/60" />
+   378→                        <span className="text-foreground">{r.destination}</span>
+   379→                      </span>
+   380→                    </TableCell>
+   381→                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{r.distanceKm} km</TableCell>
+   382→                    <TableCell className="text-sm font-medium text-foreground tabular-nums">KES {r.baseFare?.toLocaleString()}</TableCell>
+   383→                    <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{r.estimatedMin} min</TableCell>
+   384→                    <TableCell className="text-right">
+   385→                      <Badge variant="secondary" className="text-[11px] px-2 py-0.5 rounded-md font-mono">
+   386→                        {r._count?.schedules || 0}
+   387→                      </Badge>
+   388→                    </TableCell>
+   389→                  </TableRow>
+   390→                ))
+   391→              )}
+   392→            </TableBody>
+   393→          </Table>
+   394→        </div>
+   395→      </div>
+   396→
+   397→      {/* Add Route Dialog */}
+   398→      <Dialog open={addRouteOpen} onOpenChange={setAddRouteOpen}>
+   399→        <DialogContent className="sm:max-w-md">
+   400→          <DialogHeader>
+   401→            <DialogTitle className="text-foreground">Add new route</DialogTitle>
+   402→            <DialogDescription className="text-muted-foreground text-sm">
+   403→              Define a new route with origin, destination, and fare details.
+   404→            </DialogDescription>
+   405→          </DialogHeader>
+   406→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+   407→            <div className="space-y-1.5">
+   408→              <Label className="btr-label text-muted-foreground">Origin</Label>
+   409→              <Input
+   410→                value={newRoute.origin}
+   411→                onChange={(e) => setNewRoute({ ...newRoute, origin: e.target.value })}
+   412→                placeholder="e.g. Nairobi"
+   413→                className="h-9 text-sm"
+   414→              />
+   415→            </div>
+   416→            <div className="space-y-1.5">
+   417→              <Label className="btr-label text-muted-foreground">Destination</Label>
+   418→              <Input
+   419→                value={newRoute.destination}
+   420→                onChange={(e) => setNewRoute({ ...newRoute, destination: e.target.value })}
+   421→                placeholder="e.g. Mombasa"
+   422→                className="h-9 text-sm"
+   423→              />
+   424→            </div>
+   425→            <div className="space-y-1.5">
+   426→              <Label className="btr-label text-muted-foreground">Distance (km)</Label>
+   427→              <Input
+   428→                type="number"
+   429→                value={newRoute.distanceKm}
+   430→                onChange={(e) => setNewRoute({ ...newRoute, distanceKm: e.target.value })}
+   431→                placeholder="480"
+   432→                className="h-9 text-sm"
+   433→              />
+   434→            </div>
+   435→            <div className="space-y-1.5">
+   436→              <Label className="btr-label text-muted-foreground">Base fare (KES)</Label>
+   437→              <Input
+   438→                type="number"
+   439→                value={newRoute.baseFare}
+   440→                onChange={(e) => setNewRoute({ ...newRoute, baseFare: e.target.value })}
+   441→                placeholder="1200"
+   442→                className="h-9 text-sm"
+   443→              />
+   444→            </div>
+   445→            <div className="space-y-1.5 sm:col-span-2">
+   446→              <Label className="btr-label text-muted-foreground">Estimated time (min)</Label>
+   447→              <Input
+   448→                type="number"
+   449→                value={newRoute.estimatedMin}
+   450→                onChange={(e) => setNewRoute({ ...newRoute, estimatedMin: e.target.value })}
+   451→                placeholder="360"
+   452→                className="h-9 text-sm"
+   453→              />
+   454→            </div>
+   455→          </div>
+   456→          <DialogFooter className="gap-2 pt-2">
+   457→            <Button
+   458→              variant="ghost"
+   459→              onClick={() => setAddRouteOpen(false)}
+   460→              className="btr-press text-sm"
+   461→            >
+   462→              Cancel
+   463→            </Button>
+   464→            <Button
+   465→              onClick={handleAddRoute}
+   466→              disabled={submittingRoute || !newRoute.origin || !newRoute.destination || !newRoute.distanceKm || !newRoute.baseFare || !newRoute.estimatedMin}
+   467→              className="btr-press text-sm"
+   468→            >
+   469→              {submittingRoute ? 'Creating...' : 'Create route'}
+   470→            </Button>
+   471→          </DialogFooter>
+   472→        </DialogContent>
+   473→      </Dialog>
+   474→    </div>
+   475→  );
+   476→
+   477→  const renderBusesTab = () => (
+   478→    <div className="space-y-4">
+   479→      <div className="flex items-center justify-between">
+   480→        <div>
+   481→          <h2 className="text-lg font-semibold text-foreground">Buses</h2>
+   482→          <p className="text-xs text-muted-foreground mt-0.5">{buses.length} buses in fleet</p>
+   483→        </div>
+   484→        <Button
+   485→          size="sm"
+   486→          onClick={() => setAddBusOpen(true)}
+   487→          className="gap-1.5 btr-press"
+   488→        >
+   489→          <Plus className="h-3.5 w-3.5" />
+   490→          <span>Add bus</span>
+   491→        </Button>
+   492→      </div>
+   493→
+   494→      <div className="btr-card overflow-hidden">
+   495→        <div className="overflow-x-auto btr-scroll">
+   496→          <Table>
+   497→            <TableHeader>
+   498→              <TableRow className="hover:bg-transparent border-border/50">
+   499→                <TableHead className="btr-label h-11 text-muted-foreground">Plate</TableHead>
+   500→                <TableHead className="btr-label h-11 text-muted-foreground">Type</TableHead>
+   501→                <TableHead className="btr-label h-11 text-muted-foreground">Seats</TableHead>
+   502→                <TableHead className="btr-label h-11 text-muted-foreground hidden sm:table-cell">Layout</TableHead>
+   503→                <TableHead className="btr-label h-11 text-muted-foreground text-right hidden sm:table-cell">Schedules</TableHead>
+   504→                <TableHead className="btr-label h-11 text-muted-foreground">Status</TableHead>
+   505→              </TableRow>
+   506→            </TableHeader>
+   507→            <TableBody>
+   508→              {buses.length === 0 ? (
+   509→                <TableRow className="hover:bg-transparent">
+   510→                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground text-sm">
+   511→                    No buses registered
+   512→                  </TableCell>
+   513→                </TableRow>
+   514→              ) : (
+   515→                buses.map((b: any) => (
+   516→                  <TableRow key={b.id} className="h-11 border-border/30">
+   517→                    <TableCell className="text-sm font-mono font-medium text-foreground">{b.plateNumber}</TableCell>
+   518→                    <TableCell>
+   519→                      <Badge variant="outline" className="text-[11px] px-2 py-0.5 rounded-md font-medium">
+   520→                        {b.busType}
+   521→                      </Badge>
+   522→                    </TableCell>
+   523→                    <TableCell className="text-sm tabular-nums text-foreground">{b.totalSeats}</TableCell>
+   524→                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{b.rows}×{b.cols}</TableCell>
+   525→                    <TableCell className="text-right hidden sm:table-cell">
+   526→                      <Badge variant="secondary" className="text-[11px] px-2 py-0.5 rounded-md font-mono">
+   527→                        {b._count?.schedules || 0}
+   528→                      </Badge>
+   529→                    </TableCell>
+   530→                    <TableCell>
+   531→                      <div className="flex items-center gap-1.5">
+   532→                        <div className={`w-1.5 h-1.5 rounded-full ${b.active ? 'bg-emerald-500' : 'bg-zinc-500'}`} />
+   533→                        <span className="text-xs text-muted-foreground">
+   534→                          {b.active ? 'Active' : 'Inactive'}
+   535→                        </span>
+   536→                      </div>
+   537→                    </TableCell>
+   538→                  </TableRow>
+   539→                ))
+   540→              )}
+   541→            </TableBody>
+   542→          </Table>
+   543→        </div>
+   544→      </div>
+   545→
+   546→      {/* Add Bus Dialog */}
+   547→      <Dialog open={addBusOpen} onOpenChange={setAddBusOpen}>
+   548→        <DialogContent className="sm:max-w-md">
+   549→          <DialogHeader>
+   550→            <DialogTitle className="text-foreground">Add new bus</DialogTitle>
+   551→            <DialogDescription className="text-muted-foreground text-sm">
+   552→              Register a new bus with its seat configuration.
+   553→            </DialogDescription>
+   554→          </DialogHeader>
+   555→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+   556→            <div className="space-y-1.5 sm:col-span-2">
+   557→              <Label className="btr-label text-muted-foreground">Plate number</Label>
+   558→              <Input
+   559→                value={newBus.plateNumber}
+   560→                onChange={(e) => setNewBus({ ...newBus, plateNumber: e.target.value })}
+   561→                placeholder="KBA 123A"
+   562→                className="h-9 text-sm font-mono"
+   563→              />
+   564→            </div>
+   565→            <div className="space-y-1.5">
+   566→              <Label className="btr-label text-muted-foreground">Type</Label>
+   567→              <Select value={newBus.busType} onValueChange={(v) => setNewBus({ ...newBus, busType: v })}>
+   568→                <SelectTrigger className="h-9 text-sm">
+   569→                  <SelectValue />
+   570→                </SelectTrigger>
+   571→                <SelectContent>
+   572→                  {BUS_TYPES.map((t) => (
+   573→                    <SelectItem key={t} value={t} className="text-sm">
+   574→                      {t.charAt(0) + t.slice(1).toLowerCase()}
+   575→                    </SelectItem>
+   576→                  ))}
+   577→                </SelectContent>
+   578→              </Select>
+   579→            </div>
+   580→            <div className="space-y-1.5">
+   581→              <Label className="btr-label text-muted-foreground">Total seats</Label>
+   582→              <Input
+   583→                type="number"
+   584→                value={newBus.totalSeats}
+   585→                onChange={(e) => setNewBus({ ...newBus, totalSeats: e.target.value })}
+   586→                placeholder="36"
+   587→                className="h-9 text-sm"
+   588→              />
+   589→            </div>
+   590→            <div className="space-y-1.5">
+   591→              <Label className="btr-label text-muted-foreground">Rows</Label>
+   592→              <Input
+   593→                type="number"
+   594→                value={newBus.rows}
+   595→                onChange={(e) => setNewBus({ ...newBus, rows: e.target.value })}
+   596→                placeholder="9"
+   597→                className="h-9 text-sm"
+   598→              />
+   599→            </div>
+   600→            <div className="space-y-1.5">
+   601→              <Label className="btr-label text-muted-foreground">Columns</Label>
+   602→              <Input
+   603→                type="number"
+   604→                value={newBus.cols}
+   605→                onChange={(e) => setNewBus({ ...newBus, cols: e.target.value })}
+   606→                placeholder="4"
+   607→                className="h-9 text-sm"
+   608→              />
+   609→            </div>
+   610→          </div>
+   611→          <DialogFooter className="gap-2 pt-2">
+   612→            <Button
+   613→              variant="ghost"
+   614→              onClick={() => setAddBusOpen(false)}
+   615→              className="btr-press text-sm"
+   616→            >
+   617→              Cancel
+   618→            </Button>
+   619→            <Button
+   620→              onClick={handleAddBus}
+   621→              disabled={submittingBus || !newBus.plateNumber || !newBus.totalSeats || !newBus.rows || !newBus.cols}
+   622→              className="btr-press text-sm"
+   623→            >
+   624→              {submittingBus ? 'Adding...' : 'Add bus'}
+   625→            </Button>
+   626→          </DialogFooter>
+   627→        </DialogContent>
+   628→      </Dialog>
+   629→    </div>
+   630→  );
+   631→
+   632→  const renderStaffTab = () => (
+   633→    <div className="space-y-4">
+   634→      <div className="flex items-center justify-between">
+   635→        <div>
+   636→          <h2 className="text-lg font-semibold text-foreground">Staff</h2>
+   637→          <p className="text-xs text-muted-foreground mt-0.5">{staff.length} team members</p>
+   638→        </div>
+   639→        <Button
+   640→          size="sm"
+   641→          onClick={() => setAddStaffOpen(true)}
+   642→          className="gap-1.5 btr-press"
+   643→        >
+   644→          <Plus className="h-3.5 w-3.5" />
+   645→          <span>Add staff</span>
+   646→        </Button>
+   647→      </div>
+   648→
+   649→      <div className="btr-card overflow-hidden">
+   650→        <div className="overflow-x-auto btr-scroll">
+   651→          <Table>
+   652→            <TableHeader>
+   653→              <TableRow className="hover:bg-transparent border-border/50">
+   654→                <TableHead className="btr-label h-11 text-muted-foreground">Name</TableHead>
+   655→                <TableHead className="btr-label h-11 text-muted-foreground hidden sm:table-cell">Email</TableHead>
+   656→                <TableHead className="btr-label h-11 text-muted-foreground">Role</TableHead>
+   657→                <TableHead className="btr-label h-11 text-muted-foreground text-right hidden sm:table-cell">Bookings</TableHead>
+   658→                <TableHead className="btr-label h-11 text-muted-foreground">Status</TableHead>
+   659→              </TableRow>
+   660→            </TableHeader>
+   661→            <TableBody>
+   662→              {staff.length === 0 ? (
+   663→                <TableRow className="hover:bg-transparent">
+   664→                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground text-sm">
+   665→                    No staff members
+   666→                  </TableCell>
+   667→                </TableRow>
+   668→              ) : (
+   669→                staff.map((s: any) => (
+   670→                  <TableRow key={s.id} className="h-11 border-border/30">
+   671→                    <TableCell>
+   672→                      <div className="flex items-center gap-2.5">
+   673→                        <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
+   674→                          {s.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+   675→                        </div>
+   676→                        <span className="text-sm font-medium text-foreground">{s.name}</span>
+   677→                      </div>
+   678→                    </TableCell>
+   679→                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{s.email}</TableCell>
+   680→                    <TableCell>
+   681→                      <Badge variant="outline" className="text-[11px] px-2 py-0.5 rounded-md font-medium">
+   682→                        {s.role}
+   683→                      </Badge>
+   684→                    </TableCell>
+   685→                    <TableCell className="text-sm tabular-nums text-muted-foreground text-right hidden sm:table-cell">
+   686→                      {s._count?.bookings || 0}
+   687→                    </TableCell>
+   688→                    <TableCell>
+   689→                      <div className="flex items-center gap-1.5">
+   690→                        <div className={`w-1.5 h-1.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-zinc-500'}`} />
+   691→                        <span className="text-xs text-muted-foreground">
+   692→                          {s.active ? 'Active' : 'Inactive'}
+   693→                        </span>
+   694→                      </div>
+   695→                    </TableCell>
+   696→                  </TableRow>
+   697→                ))
+   698→              )}
+   699→            </TableBody>
+   700→          </Table>
+   701→        </div>
+   702→      </div>
+   703→
+   704→      {/* Add Staff Dialog */}
+   705→      <Dialog open={addStaffOpen} onOpenChange={setAddStaffOpen}>
+   706→        <DialogContent className="sm:max-w-md">
+   707→          <DialogHeader>
+   708→            <DialogTitle className="text-foreground">Add new staff</DialogTitle>
+   709→            <DialogDescription className="text-muted-foreground text-sm">
+   710→              Invite a new team member. They can reset their password on first login.
+   711→            </DialogDescription>
+   712→          </DialogHeader>
+   713→          <div className="space-y-4 pt-2">
+   714→            <div className="space-y-1.5">
+   715→              <Label className="btr-label text-muted-foreground">Full name</Label>
+   716→              <Input
+   717→                value={newStaff.name}
+   718→                onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+   719→                placeholder="John Doe"
+   720→                className="h-9 text-sm"
+   721→              />
+   722→            </div>
+   723→            <div className="space-y-1.5">
+   724→              <Label className="btr-label text-muted-foreground">Email</Label>
+   725→              <Input
+   726→                type="email"
+   727→                value={newStaff.email}
+   728→                onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+   729→                placeholder="john@bustrack.com"
+   730→                className="h-9 text-sm"
+   731→              />
+   732→            </div>
+   733→            <div className="space-y-1.5">
+   734→              <Label className="btr-label text-muted-foreground">Role</Label>
+   735→              <Select value={newStaff.role} onValueChange={(v) => setNewStaff({ ...newStaff, role: v })}>
+   736→                <SelectTrigger className="h-9 text-sm">
+   737→                  <SelectValue />
+   738→                </SelectTrigger>
+   739→                <SelectContent>
+   740→                  {STAFF_ROLES.map((r) => (
+   741→                    <SelectItem key={r} value={r} className="text-sm">
+   742→                      {r.charAt(0) + r.slice(1).toLowerCase()}
+   743→                    </SelectItem>
+   744→                  ))}
+   745→                </SelectContent>
+   746→              </Select>
+   747→            </div>
+   748→          </div>
+   749→          <DialogFooter className="gap-2 pt-2">
+   750→            <Button
+   751→              variant="ghost"
+   752→              onClick={() => setAddStaffOpen(false)}
+   753→              className="btr-press text-sm"
+   754→            >
+   755→              Cancel
+   756→            </Button>
+   757→            <Button
+   758→              onClick={handleAddStaff}
+   759→              disabled={submittingStaff || !newStaff.name || !newStaff.email}
+   760→              className="btr-press text-sm"
+   761→            >
+   762→              {submittingStaff ? 'Adding...' : 'Add staff'}
+   763→            </Button>
+   764→          </DialogFooter>
+   765→        </DialogContent>
+   766→      </Dialog>
+   767→    </div>
+   768→  );
+   769→
+   770→  const renderAnalyticsTab = () => {
+   771→    if (loading || !analytics) {
+   772→      return (
+   773→        <div className="space-y-4">
+   774→          <div>
+   775→            <h2 className="text-lg font-semibold text-foreground">Analytics</h2>
+   776→            <p className="text-xs text-muted-foreground mt-0.5">Revenue and passenger metrics</p>
+   777→          </div>
+   778→          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   779→            <div className="btr-card p-4">
+   780→              <Skeleton className="h-3 w-32 mb-4" />
+   781→              <Skeleton className="h-[300px] w-full" />
+   782→            </div>
+   783→            <div className="btr-card p-4">
+   784→              <Skeleton className="h-3 w-32 mb-4" />
+   785→              <Skeleton className="h-[300px] w-full" />
+   786→            </div>
+   787→          </div>
+   788→        </div>
+   789→      );
+   790→    }
+   791→
+   792→    return (
+   793→      <div className="space-y-4">
+   794→        <div>
+   795→          <h2 className="text-lg font-semibold text-foreground">Analytics</h2>
+   796→          <p className="text-xs text-muted-foreground mt-0.5">Revenue and passenger metrics</p>
+   797→        </div>
+   798→        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   799→          {/* Revenue Bar Chart */}
+   800→          <div className="btr-card p-4">
+   801→            <h3 className="btr-label text-muted-foreground mb-4">Revenue by route</h3>
+   802→            {analytics.revenueByRoute?.length > 0 ? (
+   803→              <ResponsiveContainer width="100%" height={300}>
+   804→                <BarChart data={analytics.revenueByRoute} barCategoryGap="20%">
+   805→                  <CartesianGrid
+   806→                    strokeDasharray="3 3"
+   807→                    stroke="var(--border)"
+   808→                    vertical={false}
+   809→                  />
+   810→                  <XAxis
+   811→                    dataKey="routeName"
+   812→                    tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+   813→                    axisLine={{ stroke: 'var(--border)' }}
+   814→                    tickLine={false}
+   815→                  />
+   816→                  <YAxis
+   817→                    tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+   818→                    axisLine={false}
+   819→                    tickLine={false}
+   820→                  />
+   821→                  <RTooltip
+   822→                    contentStyle={{
+   823→                      backgroundColor: 'var(--popover)',
+   824→                      border: '1px solid var(--border)',
+   825→                      borderRadius: '0.375rem',
+   826→                      fontSize: '12px',
+   827→                      color: 'var(--popover-foreground)',
+   828→                    }}
+   829→                    formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Revenue']}
+   830→                  />
+   831→                  <Bar
+   832→                    dataKey="revenue"
+   833→                    radius={[4, 4, 0, 0]}
+   834→                    fill="var(--primary)"
+   835→                    opacity={0.85}
+   836→                  />
+   837→                </BarChart>
+   838→              </ResponsiveContainer>
+   839→            ) : (
+   840→              <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
+   841→                No revenue data yet
+   842→              </div>
+   843→            )}
+   844→          </div>
+   845→
+   846→          {/* Passengers Pie Chart */}
+   847→          <div className="btr-card p-4">
+   848→            <h3 className="btr-label text-muted-foreground mb-4">Passengers by route</h3>
+   849→            {analytics.seatOccupancy?.length > 0 ? (
+   850→              <ResponsiveContainer width="100%" height={300}>
+   851→                <PieChart>
+   852→                  <Pie
+   853→                    data={analytics.seatOccupancy}
+   854→                    cx="50%"
+   855→                    cy="50%"
+   856→                    innerRadius={60}
+   857→                    outerRadius={100}
+   858→                    dataKey="value"
+   859→                    nameKey="name"
+   860→                    strokeWidth={2}
+   861→                    stroke="var(--card)"
+   862→                    label={({ name, percentage }: any) =>
+   863→                      `${name.split('→')[1]?.trim() || name} ${percentage}%`
+   864→                    }
+   865→                  >
+   866→                    {analytics.seatOccupancy.map((_: any, index: number) => (
+   867→                      <Cell
+   868→                        key={index}
+   869→                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+   870→                      />
+   871→                    ))}
+   872→                  </Pie>
+   873→                  <RTooltip
+   874→                    contentStyle={{
+   875→                      backgroundColor: 'var(--popover)',
+   876→                      border: '1px solid var(--border)',
+   877→                      borderRadius: '0.375rem',
+   878→                      fontSize: '12px',
+   879→                      color: 'var(--popover-foreground)',
+   880→                    }}
+   881→                  />
+   882→                  <Legend
+   883→                    iconType="circle"
+   884→                    iconSize={8}
+   885→                    wrapperStyle={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
+   886→                  />
+   887→                </PieChart>
+   888→              </ResponsiveContainer>
+   889→            ) : (
+   890→              <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
+   891→                No passenger data yet
+   892→              </div>
+   893→            )}
+   894→          </div>
+   895→        </div>
+   896→      </div>
+   897→    );
+   898→  };
+   899→
+   900→  /* ─── Main render ─── */
+   901→  return (
+   902→    <motion.div
+   903→      initial={{ opacity: 0 }}
+   904→      animate={{ opacity: 1 }}
+   905→      exit={{ opacity: 0 }}
+   906→      transition={{ duration: 0.2 }}
+   907→      className="h-screen flex flex-col bg-background"
+   908→    >
+   909→      {/* Header */}
+   910→      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
+   911→
+   912→      <div className="flex flex-1 overflow-hidden">
+   913→        {/* ─── Desktop Sidebar ─── */}
+   914→        <aside className="hidden md:flex w-56 flex-col bg-sidebar border-r border-sidebar-border shrink-0">
+   915→          <nav className="flex-1 p-2 space-y-0.5">
+   916→            {TABS.map((tab) => (
+   917→              <button
+   918→                key={tab.id}
+   919→                onClick={() => setActiveTab(tab.id)}
+   920→                className={`
+   921→                  w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors duration-100
+   922→                  ${activeTab === tab.id
+   923→                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+   924→                    : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+   925→                  }
+   926→                `}
+   927→              >
+   928→                <span className="shrink-0">{tab.icon}</span>
+   929→                <span>{tab.label}</span>
+   930→              </button>
+   931→            ))}
+   932→          </nav>
+   933→
+   934→          {/* Sidebar user */}
+   935→          <div className="p-3 border-t border-sidebar-border">
+   936→            <div className="flex items-center gap-2.5 px-2 py-1.5">
+   937→              <div className="w-7 h-7 rounded-md bg-sidebar-accent flex items-center justify-center text-[11px] font-semibold text-sidebar-accent-foreground shrink-0">
+   938→                {initials}
+   939→              </div>
+   940→              <div className="flex-1 min-w-0">
+   941→                <p className="text-xs font-medium text-sidebar-foreground truncate">{user.name}</p>
+   942→                <p className="text-[10px] text-sidebar-foreground/50">Superadmin</p>
+   943→              </div>
+   944→            </div>
+   945→          </div>
+   946→        </aside>
+   947→
+   948→        {/* ─── Mobile Tab Bar ─── */}
+   949→        <div className="md:hidden flex border-b border-border bg-card">
+   950→          {TABS.map((tab) => (
+   951→            <button
+   952→              key={tab.id}
+   953→              onClick={() => setActiveTab(tab.id)}
+   954→              className={`
+   955→                flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] font-medium transition-colors duration-100
+   956→                ${activeTab === tab.id
+   957→                  ? 'text-foreground border-b-2 border-foreground'
+   958→                  : 'text-muted-foreground hover:text-foreground/80'
+   959→                }
+   960→              `}
+   961→            >
+   962→              {tab.icon}
+   963→              <span>{tab.label}</span>
+   964→            </button>
+   965→          ))}
+   966→        </div>
+   967→
+   968→        {/* ─── Content Area ─── */}
+   969→        <main className="flex-1 overflow-y-auto btr-scroll">
+   970→          <div className="p-4 sm:p-6 max-w-6xl">
+   971→            <AnimatePresence mode="wait">
+   972→              <motion.div
+   973→                key={activeTab}
+   974→                initial={{ opacity: 0, y: 4 }}
+   975→                animate={{ opacity: 1, y: 0 }}
+   976→                exit={{ opacity: 0, y: -4 }}
+   977→                transition={{ duration: 0.15 }}
+   978→              >
+   979→                {activeTab === 'overview' && (
+   980→                  <div className="space-y-4">
+   981→                    <div>
+   982→                      <h2 className="text-lg font-semibold text-foreground">Overview</h2>
+   983→                      <p className="text-xs text-muted-foreground mt-0.5">Real-time station performance</p>
+   984→                    </div>
+   985→                    {renderKPIs()}
+   986→                    {renderDeparturesTable()}
+   987→                  </div>
+   988→                )}
+   989→
+   990→                {activeTab === 'routes' && renderRoutesTab()}
+   991→                {activeTab === 'buses' && renderBusesTab()}
+   992→                {activeTab === 'staff' && renderStaffTab()}
+   993→                {activeTab === 'analytics' && renderAnalyticsTab()}
+   994→              </motion.div>
+   995→            </AnimatePresence>
+   996→          </div>
+   997→        </main>
+   998→      </div>
+   999→    </motion.div>
+  1000→  );
+  1001→}

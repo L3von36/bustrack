@@ -137,11 +137,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
       const change = cashR ? cashR - amount : null;
 
       if (paymentMethod === 'CASH' && cashR < amount) {
-        toast({
-          title: 'Insufficient cash',
-          description: 'Amount received is less than fare',
-          variant: 'destructive',
-        });
+        toast.error('Insufficient cash — amount received is less than fare');
         setProcessing(false);
         return;
       }
@@ -161,10 +157,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
       const data = await res.json();
 
       if (data.payment) {
-        toast({
-          title: 'Payment Complete',
-          description: `${payingBooking.reference} — KES ${amount.toLocaleString()} via ${paymentMethod.replace('_', ' ')}${change ? ` · Change: KES ${change.toLocaleString()}` : ''}`,
-        });
+        toast.success(`${payingBooking.reference} — KES ${amount.toLocaleString()} via ${paymentMethod.replace('_', ' ')}${change ? ` · Change: KES ${change.toLocaleString()}` : ''}`);
         emit('payment:completed', {
           bookingRef: payingBooking.reference,
           amount,
@@ -175,10 +168,10 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
         setDialogOpen(false);
         fetchData();
       } else {
-        toast({ title: 'Error', description: data.error, variant: 'destructive' });
+        toast.error(data.error || 'Payment failed');
       }
     } catch {
-      toast({ title: 'Error', description: 'Network error', variant: 'destructive' });
+      toast.error('Network error');
     } finally {
       setProcessing(false);
     }

@@ -50,7 +50,7 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
       const data = await res.json();
       if (data.user) {
         onLogin(data.user);
-        toast({ title: `Welcome, ${data.user.name}!`, description: `Logged in as ${data.user.role}` });
+        toast.success(`Welcome, ${data.user.name}! — ${data.user.role}`);
       } else {
         setLoginError(data.error || 'Login failed');
       }
