@@ -1,0 +1,643 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback, useMemo } from 'react';
+     4→import { Bus, Ticket, Clock, Users, Loader2, Search } from 'lucide-react';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Input } from '@/components/ui/input';
+     7→import { Badge } from '@/components/ui/badge';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Skeleton } from '@/components/ui/skeleton';
+    10→import {
+    11→  Sheet,
+    12→  SheetContent,
+    13→  SheetHeader,
+    14→  SheetTitle,
+    15→  SheetTrigger,
+    16→} from '@/components/ui/sheet';
+    17→import { AppHeader } from './app-header';
+    18→import { STATUS_COLORS } from './constants';
+    19→import { useRealtimeSocket } from '@/hooks/use-realtime';
+    20→import type { StaffUser, ScheduleItem } from './types';
+    21→
+    22→/* -------------------------------------------------------------------------- */
+    23→/*  Props                                                                     */
+    24→/* -------------------------------------------------------------------------- */
+    25→
+    26→interface TicketerInterfaceProps {
+    27→  user: StaffUser;
+    28→  onLogout: () => void;
+    29→  toast: any;
+    30→}
+    31→
+    32→/* -------------------------------------------------------------------------- */
+    33→/*  Status dot helper                                                         */
+    34→/* -------------------------------------------------------------------------- */
+    35→
+    36→const STATUS_DOT: Record<string, string> = {
+    37→  SCHEDULED: 'bg-emerald-400',
+    38→  BOARDING: 'bg-amber-400',
+    39→  DEPARTED: 'bg-emerald-500',
+    40→  CANCELLED: 'bg-red-400',
+    41→  DELAYED: 'bg-orange-400',
+    42→};
+    43→
+    44→/* -------------------------------------------------------------------------- */
+    45→/*  Popular route chips                                                       */
+    46→/* -------------------------------------------------------------------------- */
+    47→
+    48→const POPULAR_ROUTES = ['Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'];
+    49→
+    50→/* -------------------------------------------------------------------------- */
+    51→/*  Component                                                                 */
+    52→/* -------------------------------------------------------------------------- */
+    53→
+    54→export function TicketerInterface({ user, onLogout, toast }: TicketerInterfaceProps) {
+    55→  const { isConnected, emit, on } = useRealtimeSocket();
+    56→
+    57→  /* ---- state ---- */
+    58→  const [search, setSearch] = useState('');
+    59→  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+    60→  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
+    61→  const [scheduleDetail, setScheduleDetail] = useState<any>(null);
+    62→  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+    63→  const [passengerName, setPassengerName] = useState('');
+    64→  const [passengerPhone, setPassengerPhone] = useState('');
+    65→  const [bookingLoading, setBookingLoading] = useState(false);
+    66→  const [loading, setLoading] = useState(true);
+    67→  const [detailLoading, setDetailLoading] = useState(false);
+    68→  const [mobileRouteOpen, setMobileRouteOpen] = useState(false);
+    69→  const [mobileBookingOpen, setMobileBookingOpen] = useState(false);
+    70→
+    71→  /* ---- fetch schedules ---- */
+    72→  const fetchSchedules = useCallback(
+    73→    async (searchTerm?: string) => {
+    74→      setLoading(true);
+    75→      try {
+    76→        const q = searchTerm !== undefined ? searchTerm : search;
+    77→        const url = q ? `/api/routes?search=${q}` : '/api/routes';
+    78→        const res = await fetch(url);
+    79→        const data = await res.json();
+    80→        const allSchedules: ScheduleItem[] = [];
+    81→        data.routes?.forEach((route: any) => {
+    82→          route.schedules?.forEach((s: any) => {
+    83→            allSchedules.push({
+    84→              id: s.id,
+    85→              routeName: `${route.origin} → ${route.destination}`,
+    86→              routeId: route.id,
+    87→              busPlate: s.bus.plateNumber,
+    88→              busType: s.bus.busType,
+    89→              totalSeats: s.bus.totalSeats,
+    90→              bookedCount: s._count.bookings,
+    91→              departureTime: s.departureTime,
+    92→              fare: s.fare,
+    93→              status: s.status,
+    94→              gateNumber: s.gateNumber,
+    95→            });
+    96→          });
+    97→        });
+    98→        setSchedules(allSchedules);
+    99→      } catch (err) {
+   100→        console.error(err);
+   101→      } finally {
+   102→        setLoading(false);
+   103→      }
+   104→    },
+   105→    [search],
+   106→  );
+   107→
+   108→  useEffect(() => {
+   109→    fetchSchedules();
+   110→  }, []);
+   111→
+   112→  /* ---- realtime seat updates ---- */
+   113→  useEffect(() => {
+   114→    const off = on(
+   115→      'seat:booked',
+   116→      (data: { scheduleId: string; seatNumber: string; passengerName: string }) => {
+   117→        if (selectedSchedule?.id === data.scheduleId) {
+   118→          selectSchedule(selectedSchedule);
+   119→          fetchSchedules();
+   120→          toast.success(`${data.passengerName} just booked seat ${data.seatNumber}`);
+   121→        }
+   122→      },
+   123→    );
+   124→    return off;
+   125→  }, [selectedSchedule, on, toast]);
+   126→
+   127→  /* ---- helpers ---- */
+   128→  const handleSearch = (val: string) => {
+   129→    setSearch(val);
+   130→    fetchSchedules(val);
+   131→  };
+   132→
+   133→  const selectSchedule = async (schedule: ScheduleItem) => {
+   134→    setSelectedSchedule(schedule);
+   135→    setSelectedSeat(null);
+   136→    setPassengerName('');
+   137→    setPassengerPhone('');
+   138→    setDetailLoading(true);
+   139→    try {
+   140→      const res = await fetch(`/api/schedules/${schedule.id}`);
+   141→      const data = await res.json();
+   142→      setScheduleDetail(data);
+   143→    } catch (err) {
+   144→      console.error(err);
+   145→    } finally {
+   146→      setDetailLoading(false);
+   147→    }
+   148→  };
+   149→
+   150→  /* ---- book ---- */
+   151→  const handleBook = async () => {
+   152→    if (!selectedSchedule || !selectedSeat || !passengerName || !passengerPhone) return;
+   153→    setBookingLoading(true);
+   154→    try {
+   155→      const res = await fetch('/api/bookings', {
+   156→        method: 'POST',
+   157→        headers: { 'Content-Type': 'application/json' },
+   158→        body: JSON.stringify({
+   159→          scheduleId: selectedSchedule.id,
+   160→          staffId: user.id,
+   161→          passengerName,
+   162→          passengerPhone,
+   163→          seatNumber: selectedSeat,
+   164→          fare: selectedSchedule.fare,
+   165→        }),
+   166→      });
+   167→      const data = await res.json();
+   168→      if (data.booking) {
+   169→        toast.success(`Ref: ${data.booking.reference} — Seat ${selectedSeat}. Awaiting payment.`);
+   170→        emit('booking:created', {
+   171→          scheduleId: selectedSchedule.id,
+   172→          seatNumber: selectedSeat,
+   173→          passengerName,
+   174→          routeName: selectedSchedule.routeName,
+   175→        });
+   176→        setSelectedSeat(null);
+   177→        setPassengerName('');
+   178→        setPassengerPhone('');
+   179→        selectSchedule(selectedSchedule);
+   180→        fetchSchedules();
+   181→      } else {
+   182→        toast.error(data.error || 'Booking failed');
+   183→      }
+   184→    } catch {
+   185→      toast.error('Network error');
+   186→    } finally {
+   187→      setBookingLoading(false);
+   188→    }
+   189→  };
+   190→
+   191→  /* ---- derived ---- */
+   192→  const canBook = !!selectedSeat && passengerName.trim().length > 0 && passengerPhone.trim().length > 0 && !bookingLoading;
+   193→
+   194→  /* ---- seat grid data ---- */
+   195→  const seatGrid = useMemo(() => {
+   196→    if (!scheduleDetail?.bus) return [];
+   197→    const { rows, cols } = scheduleDetail.bus;
+   198→    const seats: Array<{
+   199→      seatNum: string;
+   200→      row: number;
+   201→      colLetter: string;
+   202→      isOccupied: boolean;
+   203→      bookedBy?: string;
+   204→    }> = [];
+   205→    for (let idx = 0; idx < rows * cols; idx++) {
+   206→      const row = Math.floor(idx / cols) + 1;
+   207→      const colIdx = idx % cols;
+   208→      const colLetter = String.fromCharCode(65 + colIdx);
+   209→      const seatNum = `${row}${colLetter}`;
+   210→      const booked = scheduleDetail.bookedSeats?.find((b: any) => b.seatNumber === seatNum);
+   211→      seats.push({
+   212→        seatNum,
+   213→        row,
+   214→        colLetter,
+   215→        isOccupied: !!booked,
+   216→        bookedBy: booked?.passengerName,
+   217→      });
+   218→    }
+   219→    return seats;
+   220→  }, [scheduleDetail]);
+   221→
+   222→  /* ========================================================================= */
+   223→  /*  Sub-components                                                            */
+   224→  /* ========================================================================= */
+   225→
+   226→  /* ---- Route Card (sidebar & sheet) ---- */
+   227→  const RouteCard = ({ s }: { s: ScheduleItem }) => {
+   228→    const isSelected = selectedSchedule?.id === s.id;
+   229→    return (
+   230→      <button
+   231→        onClick={() => {
+   232→          selectSchedule(s);
+   233→          setMobileRouteOpen(false);
+   234→        }}
+   235→        className={`
+   236→          w-full text-left rounded-lg p-3
+   237→          transition-colors duration-150 active:scale-[0.99]
+   238→          ${isSelected
+   239→            ? 'border border-emerald-500/30 bg-emerald-500/[0.06] shadow-sm'
+   240→            : 'border border-transparent hover:bg-muted/50'
+   241→          }
+   242→        `}
+   243→      >
+   244→        {/* Row 1: route name + status */}
+   245→        <div className="flex items-start justify-between gap-2">
+   246→          <span className="text-[13px] font-semibold text-foreground leading-tight truncate">
+   247→            {s.routeName}
+   248→          </span>
+   249→          <div className="flex items-center gap-1.5 shrink-0">
+   250→            <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[s.status] || 'bg-zinc-500'}`} />
+   251→            <span className="text-[11px] text-muted-foreground">{s.status}</span>
+   252→          </div>
+   253→        </div>
+   254→        {/* Row 2: time + bus plate */}
+   255→        <div className="flex items-center gap-3 mt-1.5">
+   256→          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+   257→            <Clock className="h-3 w-3 text-zinc-400" />
+   258→            {s.departureTime}
+   259→          </span>
+   260→          <span className="text-[11px] text-zinc-500">{s.busPlate}</span>
+   261→        </div>
+   262→        {/* Row 3: fare + seats */}
+   263→        <div className="flex items-center gap-3 mt-1">
+   264→          <span className="text-[11px] font-medium text-foreground">
+   265→            KES {s.fare.toLocaleString()}
+   266→          </span>
+   267→          <span className="text-[11px] text-zinc-500 flex items-center gap-1">
+   268→            <Users className="h-3 w-3" />
+   269→            {s.bookedCount}/{s.totalSeats}
+   270→          </span>
+   271→        </div>
+   272→      </button>
+   273→    );
+   274→  };
+   275→
+   276→  /* ---- Route sidebar list ---- */
+   277→  const RouteList = () => (
+   278→    <div className="flex flex-col h-full">
+   279→      {/* Search + chips */}
+   280→      <div className="p-3 border-b border-border/60">
+   281→        <div className="relative">
+   282→          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+   283→          <Input
+   284→            placeholder="Search routes..."
+   285→            value={search}
+   286→            onChange={(e) => handleSearch(e.target.value)}
+   287→            className="pl-8 h-8 text-[13px] bg-background border-border/60 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40"
+   288→          />
+   289→        </div>
+   290→        <div className="flex gap-1.5 mt-2 flex-wrap">
+   291→          {POPULAR_ROUTES.map((r) => (
+   292→            <button
+   293→              key={r}
+   294→              onClick={() => handleSearch(r)}
+   295→              className={`
+   296→                text-[11px] px-2.5 py-0.5 rounded-full border transition-colors active:scale-[0.97]
+   297→                ${search === r
+   298→                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+   299→                  : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+   300→                }
+   301→              `}
+   302→            >
+   303→              {r}
+   304→            </button>
+   305→          ))}
+   306→        </div>
+   307→      </div>
+   308→      {/* List */}
+   309→      <div className="flex-1 overflow-y-auto bt-scroll p-2 space-y-1">
+   310→        {loading ? (
+   311→          <div className="space-y-2 p-1">
+   312→            {Array.from({ length: 5 }).map((_, i) => (
+   313→              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+   314→            ))}
+   315→          </div>
+   316→        ) : schedules.length === 0 ? (
+   317→          <div className="flex flex-col items-center justify-center py-16 text-center">
+   318→            <div className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+   319→              <Bus className="h-4.5 w-4.5 text-zinc-400" />
+   320→            </div>
+   321→            <p className="text-[13px] text-muted-foreground">No schedules found</p>
+   322→            <p className="text-[11px] text-zinc-500 mt-0.5">Try adjusting your search</p>
+   323→          </div>
+   324→        ) : (
+   325→          schedules.map((s) => <RouteCard key={s.id} s={s} />)
+   326→        )}
+   327→      </div>
+   328→    </div>
+   329→  );
+   330→
+   331→  /* ---- Seat Map ---- */
+   332→  const SeatMap = () => {
+   333→    if (detailLoading) {
+   334→      return (
+   335→        <div className="border border-border/60 bg-card rounded-xl p-6 flex items-center justify-center animate-bt-fade-in">
+   336→          <div className="flex flex-col items-center gap-3">
+   337→            <Loader2 className="h-5 w-5 text-zinc-400 animate-spin" />
+   338→            <span className="text-[12px] text-muted-foreground">Loading seat map…</span>
+   339→          </div>
+   340→        </div>
+   341→      );
+   342→    }
+   343→
+   344→    if (!scheduleDetail?.bus) return null;
+   345→
+   346→    const { cols, totalSeats } = scheduleDetail.bus;
+   347→    const availableSeats = scheduleDetail.availableSeats ?? totalSeats - (scheduleDetail.bookedSeats?.length ?? 0);
+   348→
+   349→    return (
+   350→      <div
+   351→        className="border border-border/60 bg-card rounded-xl p-5 animate-bt-slide-up"
+   352→      >
+   353→        {/* Bus header */}
+   354→        <div className="flex items-center justify-between mb-4">
+   355→          <div className="flex items-center gap-2.5">
+   356→            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+   357→              <Bus className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+   358→            </div>
+   359→            <div>
+   360→              <p className="text-[13px] font-semibold text-foreground">{selectedSchedule?.busPlate}</p>
+   361→              <p className="text-[11px] text-muted-foreground">{selectedSchedule?.busType}</p>
+   362→            </div>
+   363→          </div>
+   364→          <div className="text-right">
+   365→            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+   366→              Available
+   367→            </p>
+   368→            <p className="text-xl font-bold tracking-tight text-foreground mt-0.5">
+   369→              {availableSeats}<span className="text-sm font-normal text-muted-foreground">/{totalSeats}</span>
+   370→            </p>
+   371→          </div>
+   372→        </div>
+   373→
+   374→        {/* Driver area */}
+   375→        <div className="flex justify-end mb-3">
+   376→          <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium px-2.5 py-1 rounded-md bg-muted/50 border border-border/40">
+   377→            Driver
+   378→          </div>
+   379→        </div>
+   380→
+   381→        {/* Seat grid */}
+   382→        <div
+   383→          className="grid gap-1.5 justify-items-center mx-auto"
+   384→          style={{
+   385→            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+   386→            maxWidth: cols * 48 + (cols - 1) * 6,
+   387→          }}
+   388→        >
+   389→          {seatGrid.map((seat) => {
+   390→            const isSelected = selectedSeat === seat.seatNum;
+   391→            return (
+   392→              <button
+   393→                key={seat.seatNum}
+   394→                disabled={seat.isOccupied}
+   395→                onClick={() => setSelectedSeat(isSelected ? null : seat.seatNum)}
+   396→                title={seat.isOccupied ? seat.bookedBy : seat.seatNum}
+   397→                className={`
+   398→                  relative w-11 h-10 rounded-md text-[11px] font-medium
+   399→                  flex flex-col items-center justify-center
+   400→                  transition-all duration-100 cursor-pointer
+   401→                  ${seat.isOccupied
+   402→                    ? 'bg-muted/40 text-zinc-500 cursor-not-allowed'
+   403→                    : isSelected
+   404→                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 scale-[1.04]'
+   405→                      : 'bg-muted/60 hover:bg-emerald-500/10 text-foreground border border-transparent hover:border-emerald-500/20'
+   406→                  }
+   407→                `}
+   408→              >
+   409→                <span className="text-[9px] opacity-50 leading-none">{seat.row}</span>
+   410→                <span className="font-bold leading-tight">{seat.colLetter}</span>
+   411→              </button>
+   412→            );
+   413→          })}
+   414→        </div>
+   415→
+   416→        {/* Legend */}
+   417→        <div className="flex items-center justify-center gap-5 mt-5 pt-4 border-t border-border/60">
+   418→          <div className="flex items-center gap-1.5">
+   419→            <span className="w-3.5 h-3 rounded-[4px] bg-muted/60 border border-border/40" />
+   420→            <span className="text-[11px] text-zinc-500">Available</span>
+   421→          </div>
+   422→          <div className="flex items-center gap-1.5">
+   423→            <span className="w-3.5 h-3 rounded-[4px] bg-muted/40" />
+   424→            <span className="text-[11px] text-zinc-500">Occupied</span>
+   425→          </div>
+   426→          <div className="flex items-center gap-1.5">
+   427→            <span className="w-3.5 h-3 rounded-[4px] bg-emerald-600" />
+   428→            <span className="text-[11px] text-zinc-500">Selected</span>
+   429→          </div>
+   430→        </div>
+   431→      </div>
+   432→    );
+   433→  };
+   434→
+   435→  /* ---- Booking Form ---- */
+   436→  const BookingForm = () => (
+   437→    <div className="flex flex-col h-full">
+   438→      <div className="p-4 border-b border-border/60">
+   439→        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">New Booking</p>
+   440→      </div>
+   441→
+   442→      {selectedSeat ? (
+   443→        <div className="mx-4 mt-4 animate-bt-slide-up">
+   444→          <div className="border border-emerald-500/20 bg-emerald-500/[0.04] rounded-xl p-4">
+   445→            <div className="flex items-center justify-between">
+   446→              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Selected seat</span>
+   447→              <Badge className="bg-emerald-600 text-white text-[11px] px-2.5 py-0.5 rounded-full font-semibold border-0">
+   448→                {selectedSeat}
+   449→              </Badge>
+   450→            </div>
+   451→            <p className="text-[11px] text-muted-foreground mt-2">{selectedSchedule?.routeName}</p>
+   452→            <p className="text-3xl font-bold tracking-tight text-foreground mt-1">
+   453→              KES {selectedSchedule?.fare.toLocaleString()}
+   454→            </p>
+   455→          </div>
+   456→        </div>
+   457→      ) : (
+   458→        <div className="mx-4 mt-4">
+   459→          <div className="border border-border/60 bg-card rounded-xl p-6 flex flex-col items-center justify-center text-center">
+   460→            <div className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+   461→              <Ticket className="h-4.5 w-4.5 text-zinc-400" />
+   462→            </div>
+   463→            <p className="text-[13px] text-muted-foreground">Select a seat to continue</p>
+   464→          </div>
+   465→        </div>
+   466→      )}
+   467→
+   468→      <div className="p-4 space-y-3 flex-1">
+   469→        <div>
+   470→          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
+   471→            Passenger Name
+   472→          </Label>
+   473→          <Input
+   474→            placeholder="Full name"
+   475→            value={passengerName}
+   476→            onChange={(e) => setPassengerName(e.target.value)}
+   477→            className="h-9 text-[13px] bg-background border-border/60 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40"
+   478→          />
+   479→        </div>
+   480→        <div>
+   481→          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
+   482→            Phone Number
+   483→          </Label>
+   484→          <Input
+   485→            placeholder="+254..."
+   486→            value={passengerPhone}
+   487→            onChange={(e) => setPassengerPhone(e.target.value)}
+   488→            className="h-9 text-[13px] bg-background border-border/60 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40"
+   489→          />
+   490→        </div>
+   491→      </div>
+   492→
+   493→      <div className="p-4 border-t border-border/60">
+   494→        <Button
+   495→          className="w-full h-10 text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+   496→          disabled={!canBook}
+   497→          onClick={handleBook}
+   498→        >
+   499→          {bookingLoading ? (
+   500→            <Loader2 className="h-4 w-4 animate-spin" />
+   501→          ) : (
+   502→            <>
+   503→              <Ticket className="h-3.5 w-3.5 mr-1.5" />
+   504→              Confirm Booking
+   505→            </>
+   506→          )}
+   507→        </Button>
+   508→      </div>
+   509→    </div>
+   510→  );
+   511→
+   512→  /* ---- Empty state for main area ---- */
+   513→  const EmptyState = () => (
+   514→    <div className="flex-1 flex items-center justify-center animate-bt-fade-in">
+   515→      <div className="text-center">
+   516→        <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto mb-4">
+   517→          <Bus className="h-6 w-6 text-zinc-400" />
+   518→        </div>
+   519→        <p className="text-[14px] text-foreground font-medium">Select a schedule</p>
+   520→        <p className="text-[12px] text-muted-foreground mt-1">Choose a route from the list to view the seat map</p>
+   521→      </div>
+   522→    </div>
+   523→  );
+   524→
+   525→  /* ========================================================================= */
+   526→  /*  Render                                                                    */
+   527→  /* ========================================================================= */
+   528→
+   529→  return (
+   530→    <div className="h-full flex flex-col">
+   531→      {/* ---- Header ---- */}
+   532→      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
+   533→
+   534→      {/* ---- Body ---- */}
+   535→      <main className="flex-1 overflow-hidden flex">
+   536→
+   537→        {/* ======== LEFT SIDEBAR (desktop) ======== */}
+   538→        <aside className="hidden md:flex w-64 shrink-0 border-r border-border/60 flex-col bg-card/50">
+   539→          <RouteList />
+   540→        </aside>
+   541→
+   542→        {/* ======== MAIN AREA ======== */}
+   543→        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+   544→          {/* Mobile: search + route sheet trigger */}
+   545→          <div className="md:hidden p-3 border-b border-border/60 bg-card/50 flex gap-2 items-center">
+   546→            <div className="relative flex-1">
+   547→              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+   548→              <Input
+   549→                placeholder="Search routes..."
+   550→                value={search}
+   551→                onChange={(e) => handleSearch(e.target.value)}
+   552→                className="pl-8 h-9 text-[13px] bg-background border-border/60 focus-visible:ring-emerald-500/20"
+   553→              />
+   554→            </div>
+   555→            <Sheet open={mobileRouteOpen} onOpenChange={setMobileRouteOpen}>
+   556→              <SheetTrigger asChild>
+   557→                <Button variant="outline" size="sm" className="h-9 text-[12px] gap-1.5 border-border/60">
+   558→                  <Bus className="h-3.5 w-3.5" />
+   559→                  Routes
+   560→                </Button>
+   561→              </SheetTrigger>
+   562→              <SheetContent side="left" className="w-72 p-0 bg-card">
+   563→                <SheetHeader className="p-3 border-b border-border/60">
+   564→                  <SheetTitle className="text-[13px] font-medium">Schedules</SheetTitle>
+   565→                </SheetHeader>
+   566→                <div className="overflow-y-auto bt-scroll p-2 space-y-1">
+   567→                  {schedules.map((s) => <RouteCard key={s.id} s={s} />)}
+   568→                </div>
+   569→              </SheetContent>
+   570→            </Sheet>
+   571→          </div>
+   572→
+   573→          {/* Content area */}
+   574→          {selectedSchedule ? (
+   575→            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+   576→              {/* Seat map section */}
+   577→              <div className="flex-1 overflow-y-auto bt-scroll p-4 lg:p-6">
+   578→                {/* Route header */}
+   579→                <div className="mb-5 animate-bt-fade-in">
+   580→                  <div className="flex items-center gap-2 mb-1.5">
+   581→                    <h2 className="text-lg font-semibold text-foreground tracking-tight">
+   582→                      {selectedSchedule.routeName}
+   583→                    </h2>
+   584→                    <Badge
+   585→                      variant="outline"
+   586→                      className={`text-[10px] px-1.5 py-0 rounded-full border-0 ${STATUS_COLORS[selectedSchedule.status] || ''}`}
+   587→                    >
+   588→                      {selectedSchedule.status}
+   589→                    </Badge>
+   590→                  </div>
+   591→                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+   592→                    <span className="flex items-center gap-1">
+   593→                      <Clock className="h-3 w-3" />
+   594→                      {selectedSchedule.departureTime}
+   595→                    </span>
+   596→                    <span>{selectedSchedule.busPlate}</span>
+   597→                    <span>Gate {selectedSchedule.gateNumber || 'TBD'}</span>
+   598→                  </div>
+   599→                </div>
+   600→
+   601→                {/* Seat map */}
+   602→                <SeatMap />
+   603→
+   604→                {/* Mobile: booking button at bottom */}
+   605→                <div className="lg:hidden mt-4">
+   606→                  <Sheet open={mobileBookingOpen} onOpenChange={setMobileBookingOpen}>
+   607→                    <SheetTrigger asChild>
+   608→                      <Button
+   609→                        className="w-full h-10 text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+   610→                        disabled={!selectedSeat}
+   611→                      >
+   612→                        <Ticket className="h-4 w-4 mr-1.5" />
+   613→                        {selectedSeat ? `Book Seat ${selectedSeat}` : 'Select a Seat'}
+   614→                      </Button>
+   615→                    </SheetTrigger>
+   616→                    <SheetContent side="bottom" className="max-h-[75vh] bg-card p-0 rounded-t-xl">
+   617→                      <BookingForm />
+   618→                    </SheetContent>
+   619→                  </Sheet>
+   620→                </div>
+   621→              </div>
+   622→
+   623→              {/* Booking form (desktop only) */}
+   624→              <aside className="hidden lg:flex w-72 shrink-0 border-l border-border/60 bg-card/50">
+   625→                <div className="w-full flex flex-col">
+   626→                  {selectedSchedule && scheduleDetail ? (
+   627→                    <BookingForm />
+   628→                  ) : (
+   629→                    <div className="flex-1 flex items-center justify-center p-4">
+   630→                      <p className="text-[12px] text-muted-foreground text-center">Loading…</p>
+   631→                    </div>
+   632→                  )}
+   633→                </div>
+   634→              </aside>
+   635→            </div>
+   636→          ) : (
+   637→            <EmptyState />
+   638→          )}
+   639→        </div>
+   640→      </main>
+   641→    </div>
+   642→  );
+   643→}

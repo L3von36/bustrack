@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bus,
   Car,
@@ -13,7 +12,6 @@ import {
   X,
   AlertTriangle,
   QrCode,
-  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,9 +26,9 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRealtimeSocket } from '@/hooks/use-realtime';
-import { useTheme } from 'next-themes';
-import type { StaffUser, ScheduleItem } from './types';
 import { AppHeader } from './app-header';
+import { STATUS_COLORS } from './constants';
+import type { StaffUser, ScheduleItem } from './types';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -129,9 +127,6 @@ function ProgressRing({
 
 export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProps) {
   const { isConnected, emit, on, joinGate } = useRealtimeSocket();
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
 
   /* ---- state ---- */
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
@@ -245,46 +240,73 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
 
   /* ================================================================ */
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="h-screen flex flex-col bg-background"
-    >
+    <div className="h-full flex flex-col">
       {/* ── Header ── */}
       <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
 
       {/* ── Body ── */}
-      <main className="flex-1 overflow-y-auto btr-scroll">
-        <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col gap-4">
-          {/* ── Schedule Selector ── */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="btr-label text-muted-foreground">Schedule</span>
-            <Select
-              value={selectedSchedule?.id ?? ''}
-              onValueChange={(v) => {
-                const s = schedules.find((x) => x.id === v);
-                if (s) {
-                  setSelectedSchedule(s);
-                  setValidationResult(null);
-                }
-              }}
-            >
-              <SelectTrigger className="w-64 h-9 text-[13px] font-mono bg-card border-border">
-                <SelectValue placeholder="Select schedule…" />
-              </SelectTrigger>
-              <SelectContent>
-                {schedules.map((s) => (
-                  <SelectItem key={s.id} value={s.id} className="text-[13px] font-mono">
-                    {s.routeName} — {s.departureTime}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <main className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto bt-scroll">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-5">
 
+            {/* ── Schedule Selector ── */}
+            <div className="animate-bt-fade-in flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Schedule</span>
+                <Select
+                  value={selectedSchedule?.id ?? ''}
+                  onValueChange={(v) => {
+                    const s = schedules.find((x) => x.id === v);
+                    if (s) {
+                      setSelectedSchedule(s);
+                      setValidationResult(null);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-64 h-9 text-[13px] font-mono border-border/60 bg-card">
+                    <SelectValue placeholder="Select schedule…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {schedules.map((s) => (
+                      <SelectItem key={s.id} value={s.id} className="text-[13px] font-mono">
+                        <span className="flex items-center gap-2">
+                          {s.routeName} — {s.departureTime}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedSchedule && (
+                <div className="hidden sm:flex items-center gap-5 ml-auto text-[12px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Car className="h-3.5 w-3.5" />
+                    {selectedSchedule.busPlate}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <DoorOpen className="h-3.5 w-3.5" />
+                    Gate {selectedSchedule.gateNumber || 'TBD'}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    {selectedSchedule.departureTime}
+                  </span>
+                  {selectedSchedule.status && (
+                    <Badge
+                      variant="secondary"
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium border-0 ${STATUS_COLORS[selectedSchedule.status] || ''}`}
+                    >
+                      {selectedSchedule.status}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Mobile schedule details ── */}
             {selectedSchedule && (
-              <div className="hidden sm:flex items-center gap-4 ml-2 text-[12px] text-muted-foreground">
+              <div className="sm:hidden flex items-center gap-3 text-[11px] text-muted-foreground animate-bt-fade-in">
                 <span className="flex items-center gap-1">
                   <Car className="h-3 w-3" />
                   {selectedSchedule.busPlate}
@@ -299,60 +321,82 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
                 </span>
               </div>
             )}
-          </div>
 
-          {/* ── Two-column grid ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            {/* ─── Left: Scan Ticket (3 cols) ─── */}
-            <div className="lg:col-span-3 flex flex-col gap-4">
-              <div className="btr-card p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <QrCode className="h-4 w-4 text-muted-foreground" />
-                  <span className="btr-label text-muted-foreground">Scan Ticket</span>
+            {/* ── KPI Strip ── */}
+            {selectedSchedule && boardingInfo && (
+              <div className="animate-bt-slide-up grid grid-cols-3 gap-3 sm:gap-4">
+                <div className="border border-border/60 bg-card rounded-xl p-4 flex flex-col">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Boarded</span>
+                  <span className="text-3xl font-bold tracking-tight text-foreground">{boardingCount}</span>
+                  <span className="text-[11px] text-muted-foreground mt-0.5">of {boardingTotal} passengers</span>
                 </div>
-
-                {/* Input row */}
-                <div className="flex gap-2">
-                  <Input
-                    ref={inputRef}
-                    placeholder="Type or scan reference…"
-                    value={reference}
-                    onChange={(e) => setReference(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleValidate()}
-                    className="h-12 text-lg font-mono tracking-widest text-center flex-1 bg-background border-border"
-                    autoFocus
-                    disabled={validating}
-                  />
-                  <Button
-                    className="btr-press h-12 px-6"
-                    onClick={handleValidate}
-                    disabled={validating || !reference.trim()}
-                  >
-                    {validating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ShieldCheck className="h-4 w-4" />
-                    )}
-                    <span className="ml-2 text-[13px] font-medium hidden sm:inline">Validate</span>
-                  </Button>
+                <div className="border border-border/60 bg-card rounded-xl p-4 flex flex-col">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Remaining</span>
+                  <span className="text-3xl font-bold tracking-tight text-foreground">{Math.max(boardingTotal - boardingCount, 0)}</span>
+                  <span className="text-[11px] text-muted-foreground mt-0.5">to board</span>
                 </div>
+                <div className="border border-border/60 bg-card rounded-xl p-4 flex flex-col">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Progress</span>
+                  <span className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">{boardingPct}%</span>
+                  <div className="mt-2 h-1.5 rounded-full bg-border overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
+                      style={{ width: `${boardingPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
-                {/* Animated result */}
-                <div className="mt-4 min-h-[120px] flex items-center justify-center">
-                  <AnimatePresence mode="wait">
+            {/* ── Two-column grid ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 flex-1 min-h-0">
+              {/* ─── Left: Scan Ticket (3 cols) ─── */}
+              <div className="lg:col-span-3 animate-bt-slide-up delay-100">
+                <div className="border border-border/60 bg-card rounded-xl p-5 sm:p-6 h-full flex flex-col">
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
+                      <QrCode className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-semibold tracking-tight">Scan Ticket</h2>
+                      <p className="text-[11px] text-muted-foreground">Enter or scan a booking reference to validate</p>
+                    </div>
+                  </div>
+
+                  {/* Input row */}
+                  <div className="flex gap-2.5">
+                    <Input
+                      ref={inputRef}
+                      placeholder="Type or scan reference…"
+                      value={reference}
+                      onChange={(e) => setReference(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleValidate()}
+                      className="h-12 text-lg font-mono tracking-widest text-center flex-1 bg-background border-border/60"
+                      autoFocus
+                      disabled={validating}
+                    />
+                    <Button
+                      className="h-12 px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      onClick={handleValidate}
+                      disabled={validating || !reference.trim()}
+                    >
+                      {validating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ShieldCheck className="h-4 w-4" />
+                      )}
+                      <span className="ml-2 text-[13px] font-medium hidden sm:inline">Validate</span>
+                    </Button>
+                  </div>
+
+                  {/* Result area */}
+                  <div className="mt-6 flex-1 min-h-[140px] flex items-center justify-center">
                     {validationResult && config && (
-                      <motion.div
+                      <div
                         key={validationResult.result + (validationResult.reference ?? '')}
-                        initial={{ opacity: 0, y: 12, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                        className="flex flex-col items-center gap-3 w-full"
+                        className="animate-bt-scale-in flex flex-col items-center gap-3 w-full"
                       >
-                        {/* Icon */}
                         <div className={`${config.color}`}>{config.icon}</div>
-
-                        {/* Status label */}
                         <span
                           className={`text-sm font-semibold tracking-wide ${config.color}`}
                         >
@@ -361,12 +405,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
 
                         {/* Passenger details (valid only) */}
                         {validationResult.result === 'VALID' && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1, duration: 0.2 }}
-                            className="text-center space-y-1"
-                          >
+                          <div className="animate-bt-fade-in text-center space-y-1.5 mt-1">
                             <p className="text-foreground font-medium text-base">
                               {validationResult.passengerName}
                             </p>
@@ -375,139 +414,139 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
                             </p>
                             <Badge
                               variant="secondary"
-                              className="mt-1 font-mono text-[12px]"
+                              className="mt-1.5 font-mono text-[12px] px-2.5 py-0.5"
                             >
                               Seat {validationResult.seatNumber}
                             </Badge>
-                          </motion.div>
+                          </div>
                         )}
 
                         {/* Reason (non-valid) */}
                         {validationResult.result !== 'VALID' && validationResult.reason && (
-                          <p className="text-[12px] text-muted-foreground">
+                          <p className="text-[12px] text-muted-foreground mt-1">
                             {validationResult.reason}
                           </p>
                         )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Empty state */}
-                  {!validationResult && !validating && (
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground/40 select-none">
-                      <Bus className="h-8 w-8" />
-                      <span className="text-[12px]">Waiting for scan…</span>
-                    </div>
-                  )}
-
-                  {/* Loading state */}
-                  {validating && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex flex-col items-center gap-2 text-muted-foreground"
-                    >
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                      <span className="text-[12px]">Validating…</span>
-                    </motion.div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* ─── Right: Boarding (2 cols) ─── */}
-            <div className="lg:col-span-2">
-              <div className="btr-card p-5 h-full flex flex-col">
-                <div className="flex items-center gap-2 mb-5">
-                  <DoorOpen className="h-4 w-4 text-muted-foreground" />
-                  <span className="btr-label text-muted-foreground">Boarding</span>
-                </div>
-
-                {!boardingInfo ? (
-                  <div className="flex flex-col gap-3">
-                    <Skeleton className="h-24 w-24 rounded-full mx-auto" />
-                    <Skeleton className="h-4 w-20 mx-auto" />
-                    <Separator className="my-2" />
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <Skeleton key={i} className="h-8 w-full rounded-md" />
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    {/* Progress ring + count */}
-                    <div className="flex flex-col items-center mb-5">
-                      <div className="relative flex items-center justify-center">
-                        <ProgressRing value={progressValue} size={88} strokeWidth={5} />
-                        <div className="absolute flex flex-col items-center">
-                          <span className="btr-kpi text-foreground leading-none">
-                            {boardingCount}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground mt-0.5">
-                            /{boardingTotal}
-                          </span>
-                        </div>
                       </div>
-                      <span className="text-[12px] text-muted-foreground mt-2">
-                        {boardingPct}% boarded
-                      </span>
+                    )}
+
+                    {/* Empty state */}
+                    {!validationResult && !validating && (
+                      <div className="flex flex-col items-center gap-2.5 text-muted-foreground/30 select-none">
+                        <Bus className="h-10 w-10" />
+                        <span className="text-[12px]">Waiting for scan…</span>
+                      </div>
+                    )}
+
+                    {/* Loading state */}
+                    {validating && (
+                      <div className="animate-bt-fade-in flex flex-col items-center gap-2.5 text-muted-foreground">
+                        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                        <span className="text-[12px]">Validating…</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ─── Right: Boarding (2 cols) ─── */}
+              <div className="lg:col-span-2 animate-bt-slide-up delay-200">
+                <div className="border border-border/60 bg-card rounded-xl p-5 sm:p-6 h-full flex flex-col">
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
+                      <DoorOpen className="h-4 w-4 text-muted-foreground" />
                     </div>
-
-                    {/* Progress bar (compact) */}
-                    <div className="h-1 rounded-full bg-border mb-4 overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full bg-emerald-500"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${boardingPct}%` }}
-                        transition={{ duration: 0.6, ease: 'easeOut' }}
-                      />
+                    <div>
+                      <h2 className="text-sm font-semibold tracking-tight">Boarding</h2>
+                      <p className="text-[11px] text-muted-foreground">Real-time passenger boarding status</p>
                     </div>
+                  </div>
 
-                    <Separator className="mb-4" />
-
-                    {/* Boarded list */}
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="btr-label text-muted-foreground">Passengers</span>
-                      <span className="text-[11px] text-muted-foreground font-mono">
-                        {boardingCount} of {boardingTotal}
-                      </span>
+                  {!boardingInfo ? (
+                    <div className="flex flex-col gap-3">
+                      <Skeleton className="h-24 w-24 rounded-full mx-auto" />
+                      <Skeleton className="h-4 w-20 mx-auto" />
+                      <Separator className="my-2" />
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                      ))}
                     </div>
-
-                    <div className="flex-1 max-h-72 overflow-y-auto btr-scroll pr-1">
-                      {boardingInfo.boarded?.length > 0 ? (
-                        <div className="flex flex-col gap-1">
-                          {boardingInfo.boarded.map((b: any, i: number) => (
-                            <div
-                              key={b.id}
-                              className="flex items-center gap-3 px-2.5 py-2 rounded-md hover:bg-muted/40 transition-colors"
-                            >
-                              <span className="text-[11px] text-muted-foreground font-mono w-4 text-right tabular-nums">
-                                {i + 1}
-                              </span>
-                              <span className="flex-1 text-[13px] text-foreground truncate">
-                                {b.passengerName}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className="font-mono text-[11px] h-5 px-1.5 border-border"
-                              >
-                                {b.seatNumber}
-                              </Badge>
-                            </div>
-                          ))}
+                  ) : (
+                    <>
+                      {/* Progress ring + count */}
+                      <div className="flex flex-col items-center mb-4">
+                        <div className="relative flex items-center justify-center">
+                          <ProgressRing value={progressValue} size={88} strokeWidth={5} />
+                          <div className="absolute flex flex-col items-center">
+                            <span className="text-3xl font-bold tracking-tight text-foreground leading-none">
+                              {boardingCount}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground mt-0.5 font-mono">
+                              /{boardingTotal}
+                            </span>
+                          </div>
                         </div>
-                      ) : (
-                        <p className="text-[12px] text-muted-foreground/60 text-center py-6">
-                          No passengers boarded yet
-                        </p>
-                      )}
-                    </div>
-                  </>
-                )}
+                        <span className="text-[12px] text-muted-foreground mt-2 font-medium">
+                          {boardingPct}% boarded
+                        </span>
+                      </div>
+
+                      {/* Progress bar (compact) */}
+                      <div className="h-1.5 rounded-full bg-border mb-4 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
+                          style={{ width: `${boardingPct}%` }}
+                        />
+                      </div>
+
+                      <Separator className="mb-4" />
+
+                      {/* Boarded list */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Passengers</span>
+                        <span className="text-[11px] text-muted-foreground font-mono">
+                          {boardingCount} of {boardingTotal}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 max-h-72 overflow-y-auto bt-scroll pr-1">
+                        {boardingInfo.boarded?.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {boardingInfo.boarded.map((b: any, i: number) => (
+                              <div
+                                key={b.id}
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/40 transition-colors"
+                              >
+                                <span className="text-[11px] text-muted-foreground font-mono w-4 text-right tabular-nums">
+                                  {i + 1}
+                                </span>
+                                <span className="flex-1 text-[13px] text-foreground truncate">
+                                  {b.passengerName}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className="font-mono text-[11px] h-5 px-1.5 border-border/60"
+                                >
+                                  {b.seatNumber}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[12px] text-muted-foreground/50 text-center py-8">
+                            No passengers boarded yet
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </main>
-    </motion.div>
+    </div>
   );
 }

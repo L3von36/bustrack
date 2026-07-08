@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bus, Plus, MapPin, DollarSign, Users, TrendingUp,
   LayoutDashboard, Route, UserCog, BarChart3, Car,
@@ -221,19 +220,19 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
       label: 'Passengers',
       value: (stats.totalPassengers || 0).toLocaleString(),
       icon: <Users className="h-4 w-4" />,
-      accent: 'text-blue-500',
+      accent: 'text-teal-500',
     },
     {
       label: 'Buses',
       value: `${stats.busesDeparted || 0}/${stats.totalBuses || 0}`,
       icon: <Bus className="h-4 w-4" />,
-      accent: 'text-purple-500',
+      accent: 'text-amber-500',
     },
     {
       label: 'On-Time',
       value: `${stats.onTimeRate || 0}%`,
       icon: <TrendingUp className="h-4 w-4" />,
-      accent: 'text-amber-500',
+      accent: 'text-orange-500',
     },
   ] : [];
 
@@ -250,7 +249,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
       return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="btr-card p-4">
+            <div key={i} className="border border-border/60 bg-card rounded-xl p-5">
               <Skeleton className="h-3 w-16 mb-3" />
               <Skeleton className="h-8 w-28" />
             </div>
@@ -261,14 +260,17 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, i) => (
-          <div key={i} className="btr-card p-4 group">
+          <div
+            key={i}
+            className={`border border-border/60 bg-card rounded-xl p-5 group animate-bt-fade-in delay-${(i + 1) * 100}`}
+          >
             <div className="flex items-center justify-between mb-3">
-              <span className="btr-label text-muted-foreground">{kpi.label}</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{kpi.label}</span>
               <div className={`${kpi.accent} opacity-60 group-hover:opacity-100 transition-opacity`}>
                 {kpi.icon}
               </div>
             </div>
-            <p className="btr-kpi text-foreground">{kpi.value}</p>
+            <p className="text-3xl font-bold tracking-tight text-foreground">{kpi.value}</p>
           </div>
         ))}
       </div>
@@ -276,20 +278,20 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   };
 
   const renderDeparturesTable = () => (
-    <div className="btr-card overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
-        <h3 className="text-sm font-medium text-foreground">Today&apos;s departures</h3>
+    <div className="border border-border/60 bg-card rounded-xl overflow-hidden animate-bt-fade-in delay-200">
+      <div className="px-5 py-3.5 border-b border-border/60">
+        <h3 className="text-sm font-semibold text-foreground">Today&apos;s departures</h3>
       </div>
-      <div className="overflow-x-auto btr-scroll">
+      <div className="overflow-x-auto bt-scroll">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-border/50">
-              <TableHead className="btr-label h-11 text-muted-foreground">Route</TableHead>
-              <TableHead className="btr-label h-11 text-muted-foreground hidden sm:table-cell">Bus</TableHead>
-              <TableHead className="btr-label h-11 text-muted-foreground">Gate</TableHead>
-              <TableHead className="btr-label h-11 text-muted-foreground">Time</TableHead>
-              <TableHead className="btr-label h-11 text-muted-foreground">Status</TableHead>
-              <TableHead className="btr-label h-11 text-muted-foreground text-right">Occ.</TableHead>
+            <TableRow className="hover:bg-transparent border-border/40">
+              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Route</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden sm:table-cell">Bus</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Gate</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Time</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Status</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 text-right">Occ.</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -301,7 +303,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               </TableRow>
             ) : (
               departures.map((d: any) => (
-                <TableRow key={d.id} className="h-11 border-border/30">
+                <TableRow key={d.id} className="h-10 border-border/30">
                   <TableCell className="text-sm font-medium text-foreground">{d.routeName}</TableCell>
                   <TableCell className="text-sm text-muted-foreground font-mono hidden sm:table-cell">{d.busPlate}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{d.gateNumber || '—'}</TableCell>
@@ -327,33 +329,33 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   );
 
   const renderRoutesTab = () => (
-    <div className="space-y-4">
+    <div className="space-y-5 animate-bt-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Routes</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Routes</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{routes.length} routes configured</p>
         </div>
         <Button
           size="sm"
           onClick={() => setAddRouteOpen(true)}
-          className="gap-1.5 btr-press"
+          className="gap-1.5"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Add route</span>
         </Button>
       </div>
 
-      <div className="btr-card overflow-hidden">
-        <div className="overflow-x-auto btr-scroll">
+      <div className="border border-border/60 bg-card rounded-xl overflow-hidden">
+        <div className="overflow-x-auto bt-scroll">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/50">
-                <TableHead className="btr-label h-11 text-muted-foreground">Origin</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground">Destination</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground hidden sm:table-cell">Distance</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground">Fare</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground hidden md:table-cell">Est.</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground text-right">Schedules</TableHead>
+              <TableRow className="hover:bg-transparent border-border/40">
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Origin</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Destination</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden sm:table-cell">Distance</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Fare</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden md:table-cell">Est.</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 text-right">Schedules</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -365,16 +367,16 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                 </TableRow>
               ) : (
                 routes.map((r: any) => (
-                  <TableRow key={r.id} className="h-11 border-border/30">
+                  <TableRow key={r.id} className="h-10 border-border/30">
                     <TableCell className="text-sm">
                       <span className="flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3 text-muted-foreground/60" />
+                        <MapPin className="h-3 w-3 text-muted-foreground/50" />
                         <span className="font-medium text-foreground">{r.origin}</span>
                       </span>
                     </TableCell>
                     <TableCell className="text-sm">
                       <span className="flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3 text-muted-foreground/60" />
+                        <MapPin className="h-3 w-3 text-muted-foreground/50" />
                         <span className="text-foreground">{r.destination}</span>
                       </span>
                     </TableCell>
@@ -405,7 +407,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Origin</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Origin</Label>
               <Input
                 value={newRoute.origin}
                 onChange={(e) => setNewRoute({ ...newRoute, origin: e.target.value })}
@@ -414,7 +416,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Destination</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Destination</Label>
               <Input
                 value={newRoute.destination}
                 onChange={(e) => setNewRoute({ ...newRoute, destination: e.target.value })}
@@ -423,7 +425,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Distance (km)</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Distance (km)</Label>
               <Input
                 type="number"
                 value={newRoute.distanceKm}
@@ -433,7 +435,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Base fare (KES)</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Base fare (KES)</Label>
               <Input
                 type="number"
                 value={newRoute.baseFare}
@@ -443,7 +445,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="btr-label text-muted-foreground">Estimated time (min)</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Estimated time (min)</Label>
               <Input
                 type="number"
                 value={newRoute.estimatedMin}
@@ -457,14 +459,14 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
             <Button
               variant="ghost"
               onClick={() => setAddRouteOpen(false)}
-              className="btr-press text-sm"
+              className="text-sm"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAddRoute}
               disabled={submittingRoute || !newRoute.origin || !newRoute.destination || !newRoute.distanceKm || !newRoute.baseFare || !newRoute.estimatedMin}
-              className="btr-press text-sm"
+              className="text-sm"
             >
               {submittingRoute ? 'Creating...' : 'Create route'}
             </Button>
@@ -475,33 +477,33 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   );
 
   const renderBusesTab = () => (
-    <div className="space-y-4">
+    <div className="space-y-5 animate-bt-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Buses</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Buses</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{buses.length} buses in fleet</p>
         </div>
         <Button
           size="sm"
           onClick={() => setAddBusOpen(true)}
-          className="gap-1.5 btr-press"
+          className="gap-1.5"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Add bus</span>
         </Button>
       </div>
 
-      <div className="btr-card overflow-hidden">
-        <div className="overflow-x-auto btr-scroll">
+      <div className="border border-border/60 bg-card rounded-xl overflow-hidden">
+        <div className="overflow-x-auto bt-scroll">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/50">
-                <TableHead className="btr-label h-11 text-muted-foreground">Plate</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground">Type</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground">Seats</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground hidden sm:table-cell">Layout</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground text-right hidden sm:table-cell">Schedules</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground">Status</TableHead>
+              <TableRow className="hover:bg-transparent border-border/40">
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Plate</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Type</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Seats</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden sm:table-cell">Layout</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 text-right hidden sm:table-cell">Schedules</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -513,7 +515,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                 </TableRow>
               ) : (
                 buses.map((b: any) => (
-                  <TableRow key={b.id} className="h-11 border-border/30">
+                  <TableRow key={b.id} className="h-10 border-border/30">
                     <TableCell className="text-sm font-mono font-medium text-foreground">{b.plateNumber}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[11px] px-2 py-0.5 rounded-md font-medium">
@@ -529,7 +531,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${b.active ? 'bg-emerald-500' : 'bg-zinc-500'}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${b.active ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
                         <span className="text-xs text-muted-foreground">
                           {b.active ? 'Active' : 'Inactive'}
                         </span>
@@ -554,7 +556,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="btr-label text-muted-foreground">Plate number</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Plate number</Label>
               <Input
                 value={newBus.plateNumber}
                 onChange={(e) => setNewBus({ ...newBus, plateNumber: e.target.value })}
@@ -563,7 +565,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Type</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</Label>
               <Select value={newBus.busType} onValueChange={(v) => setNewBus({ ...newBus, busType: v })}>
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
@@ -578,7 +580,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Total seats</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total seats</Label>
               <Input
                 type="number"
                 value={newBus.totalSeats}
@@ -588,7 +590,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Rows</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Rows</Label>
               <Input
                 type="number"
                 value={newBus.rows}
@@ -598,7 +600,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Columns</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Columns</Label>
               <Input
                 type="number"
                 value={newBus.cols}
@@ -612,14 +614,14 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
             <Button
               variant="ghost"
               onClick={() => setAddBusOpen(false)}
-              className="btr-press text-sm"
+              className="text-sm"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAddBus}
               disabled={submittingBus || !newBus.plateNumber || !newBus.totalSeats || !newBus.rows || !newBus.cols}
-              className="btr-press text-sm"
+              className="text-sm"
             >
               {submittingBus ? 'Adding...' : 'Add bus'}
             </Button>
@@ -630,32 +632,32 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   );
 
   const renderStaffTab = () => (
-    <div className="space-y-4">
+    <div className="space-y-5 animate-bt-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Staff</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Staff</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{staff.length} team members</p>
         </div>
         <Button
           size="sm"
           onClick={() => setAddStaffOpen(true)}
-          className="gap-1.5 btr-press"
+          className="gap-1.5"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Add staff</span>
         </Button>
       </div>
 
-      <div className="btr-card overflow-hidden">
-        <div className="overflow-x-auto btr-scroll">
+      <div className="border border-border/60 bg-card rounded-xl overflow-hidden">
+        <div className="overflow-x-auto bt-scroll">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/50">
-                <TableHead className="btr-label h-11 text-muted-foreground">Name</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground hidden sm:table-cell">Email</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground">Role</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground text-right hidden sm:table-cell">Bookings</TableHead>
-                <TableHead className="btr-label h-11 text-muted-foreground">Status</TableHead>
+              <TableRow className="hover:bg-transparent border-border/40">
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Name</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 hidden sm:table-cell">Email</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Role</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10 text-right hidden sm:table-cell">Bookings</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-10">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -667,10 +669,10 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                 </TableRow>
               ) : (
                 staff.map((s: any) => (
-                  <TableRow key={s.id} className="h-11 border-border/30">
+                  <TableRow key={s.id} className="h-10 border-border/30">
                     <TableCell>
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
                           {s.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
                         </div>
                         <span className="text-sm font-medium text-foreground">{s.name}</span>
@@ -687,7 +689,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-zinc-500'}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
                         <span className="text-xs text-muted-foreground">
                           {s.active ? 'Active' : 'Inactive'}
                         </span>
@@ -712,7 +714,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Full name</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Full name</Label>
               <Input
                 value={newStaff.name}
                 onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
@@ -721,7 +723,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Email</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</Label>
               <Input
                 type="email"
                 value={newStaff.email}
@@ -731,7 +733,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="btr-label text-muted-foreground">Role</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role</Label>
               <Select value={newStaff.role} onValueChange={(v) => setNewStaff({ ...newStaff, role: v })}>
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
@@ -750,14 +752,14 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
             <Button
               variant="ghost"
               onClick={() => setAddStaffOpen(false)}
-              className="btr-press text-sm"
+              className="text-sm"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAddStaff}
               disabled={submittingStaff || !newStaff.name || !newStaff.email}
-              className="btr-press text-sm"
+              className="text-sm"
             >
               {submittingStaff ? 'Adding...' : 'Add staff'}
             </Button>
@@ -770,17 +772,17 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   const renderAnalyticsTab = () => {
     if (loading || !analytics) {
       return (
-        <div className="space-y-4">
+        <div className="space-y-5 animate-bt-fade-in">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Analytics</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">Analytics</h2>
             <p className="text-xs text-muted-foreground mt-0.5">Revenue and passenger metrics</p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="btr-card p-4">
+            <div className="border border-border/60 bg-card rounded-xl p-5">
               <Skeleton className="h-3 w-32 mb-4" />
               <Skeleton className="h-[300px] w-full" />
             </div>
-            <div className="btr-card p-4">
+            <div className="border border-border/60 bg-card rounded-xl p-5">
               <Skeleton className="h-3 w-32 mb-4" />
               <Skeleton className="h-[300px] w-full" />
             </div>
@@ -790,15 +792,15 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     }
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-5 animate-bt-fade-in">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Analytics</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Analytics</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Revenue and passenger metrics</p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Revenue Bar Chart */}
-          <div className="btr-card p-4">
-            <h3 className="btr-label text-muted-foreground mb-4">Revenue by route</h3>
+          <div className="border border-border/60 bg-card rounded-xl p-5">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Revenue by route</h3>
             {analytics.revenueByRoute?.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analytics.revenueByRoute} barCategoryGap="20%">
@@ -822,7 +824,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                     contentStyle={{
                       backgroundColor: 'var(--popover)',
                       border: '1px solid var(--border)',
-                      borderRadius: '0.375rem',
+                      borderRadius: '0.5rem',
                       fontSize: '12px',
                       color: 'var(--popover-foreground)',
                     }}
@@ -844,8 +846,8 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
           </div>
 
           {/* Passengers Pie Chart */}
-          <div className="btr-card p-4">
-            <h3 className="btr-label text-muted-foreground mb-4">Passengers by route</h3>
+          <div className="border border-border/60 bg-card rounded-xl p-5">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Passengers by route</h3>
             {analytics.seatOccupancy?.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -874,7 +876,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                     contentStyle={{
                       backgroundColor: 'var(--popover)',
                       border: '1px solid var(--border)',
-                      borderRadius: '0.375rem',
+                      borderRadius: '0.5rem',
                       fontSize: '12px',
                       color: 'var(--popover-foreground)',
                     }}
@@ -899,103 +901,55 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
 
   /* ─── Main render ─── */
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="h-screen flex flex-col bg-background"
-    >
-      {/* Header */}
+    <div className="h-full flex flex-col bg-background animate-bt-fade-in">
       <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* ─── Desktop Sidebar ─── */}
-        <aside className="hidden md:flex w-56 flex-col bg-sidebar border-r border-sidebar-border shrink-0">
-          <nav className="flex-1 p-2 space-y-0.5">
+      {/* Tab Navigation */}
+      <nav className="shrink-0 border-b border-border/60 bg-card">
+        <div className="px-4 sm:px-6 max-w-6xl mx-auto">
+          <div className="flex gap-0 overflow-x-auto bt-scroll -mb-px">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors duration-100
+                  flex items-center gap-2 px-3.5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors duration-150
                   ${activeTab === tab.id
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                    : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                    ? 'border-primary text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground/70'
                   }
                 `}
               >
-                <span className="shrink-0">{tab.icon}</span>
+                {tab.icon}
                 <span>{tab.label}</span>
               </button>
             ))}
-          </nav>
-
-          {/* Sidebar user */}
-          <div className="p-3 border-t border-sidebar-border">
-            <div className="flex items-center gap-2.5 px-2 py-1.5">
-              <div className="w-7 h-7 rounded-md bg-sidebar-accent flex items-center justify-center text-[11px] font-semibold text-sidebar-accent-foreground shrink-0">
-                {initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-sidebar-foreground truncate">{user.name}</p>
-                <p className="text-[10px] text-sidebar-foreground/50">Superadmin</p>
-              </div>
-            </div>
           </div>
-        </aside>
-
-        {/* ─── Mobile Tab Bar ─── */}
-        <div className="md:hidden flex border-b border-border bg-card">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] font-medium transition-colors duration-100
-                ${activeTab === tab.id
-                  ? 'text-foreground border-b-2 border-foreground'
-                  : 'text-muted-foreground hover:text-foreground/80'
-                }
-              `}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </button>
-          ))}
         </div>
+      </nav>
 
-        {/* ─── Content Area ─── */}
-        <main className="flex-1 overflow-y-auto btr-scroll">
-          <div className="p-4 sm:p-6 max-w-6xl">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.15 }}
-              >
-                {activeTab === 'overview' && (
-                  <div className="space-y-4">
-                    <div>
-                      <h2 className="text-lg font-semibold text-foreground">Overview</h2>
-                      <p className="text-xs text-muted-foreground mt-0.5">Real-time station performance</p>
-                    </div>
-                    {renderKPIs()}
-                    {renderDeparturesTable()}
-                  </div>
-                )}
+      {/* Content Area */}
+      <main className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto bt-scroll">
+          <div className="p-4 sm:p-6 max-w-6xl mx-auto">
+            {activeTab === 'overview' && (
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight text-foreground">Overview</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Real-time station performance</p>
+                </div>
+                {renderKPIs()}
+                {renderDeparturesTable()}
+              </div>
+            )}
 
-                {activeTab === 'routes' && renderRoutesTab()}
-                {activeTab === 'buses' && renderBusesTab()}
-                {activeTab === 'staff' && renderStaffTab()}
-                {activeTab === 'analytics' && renderAnalyticsTab()}
-              </motion.div>
-            </AnimatePresence>
+            {activeTab === 'routes' && renderRoutesTab()}
+            {activeTab === 'buses' && renderBusesTab()}
+            {activeTab === 'staff' && renderStaffTab()}
+            {activeTab === 'analytics' && renderAnalyticsTab()}
           </div>
-        </main>
-      </div>
-    </motion.div>
+        </div>
+      </main>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Bus, Ticket, Clock, Users, Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,9 +34,9 @@ interface TicketerInterfaceProps {
 /* -------------------------------------------------------------------------- */
 
 const STATUS_DOT: Record<string, string> = {
-  SCHEDULED: 'bg-blue-400',
+  SCHEDULED: 'bg-emerald-400',
   BOARDING: 'bg-amber-400',
-  DEPARTED: 'bg-emerald-400',
+  DEPARTED: 'bg-emerald-500',
   CANCELLED: 'bg-red-400',
   DELAYED: 'bg-orange-400',
 };
@@ -234,11 +233,11 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
           setMobileRouteOpen(false);
         }}
         className={`
-          w-full text-left btr-press btr-card rounded-md p-3
-          transition-colors duration-150
+          w-full text-left rounded-lg p-3
+          transition-colors duration-150 active:scale-[0.99]
           ${isSelected
-            ? 'border-l-2 border-l-blue-500 bg-blue-500/[0.04]'
-            : 'border-l-2 border-l-transparent hover:bg-muted/40'
+            ? 'border border-emerald-500/30 bg-emerald-500/[0.06] shadow-sm'
+            : 'border border-transparent hover:bg-muted/50'
           }
         `}
       >
@@ -248,14 +247,14 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
             {s.routeName}
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className={`btr-dot ${STATUS_DOT[s.status] || 'bg-zinc-500'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[s.status] || 'bg-zinc-500'}`} />
             <span className="text-[11px] text-muted-foreground">{s.status}</span>
           </div>
         </div>
         {/* Row 2: time + bus plate */}
         <div className="flex items-center gap-3 mt-1.5">
           <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-            <Clock className="h-3 w-3 text-zinc-500" />
+            <Clock className="h-3 w-3 text-zinc-400" />
             {s.departureTime}
           </span>
           <span className="text-[11px] text-zinc-500">{s.busPlate}</span>
@@ -278,14 +277,14 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
   const RouteList = () => (
     <div className="flex flex-col h-full">
       {/* Search + chips */}
-      <div className="p-3 border-b border-border">
+      <div className="p-3 border-b border-border/60">
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
           <Input
             placeholder="Search routes..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            className="pl-8 h-8 text-[13px] bg-background border-border/60 focus-visible:ring-blue-500/20"
+            className="pl-8 h-8 text-[13px] bg-background border-border/60 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40"
           />
         </div>
         <div className="flex gap-1.5 mt-2 flex-wrap">
@@ -294,9 +293,9 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
               key={r}
               onClick={() => handleSearch(r)}
               className={`
-                btr-press text-[11px] px-2 py-0.5 rounded-full border transition-colors
+                text-[11px] px-2.5 py-0.5 rounded-full border transition-colors active:scale-[0.97]
                 ${search === r
-                  ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                   : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }
               `}
@@ -307,17 +306,17 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
         </div>
       </div>
       {/* List */}
-      <div className="flex-1 overflow-y-auto btr-scroll p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto bt-scroll p-2 space-y-1">
         {loading ? (
           <div className="space-y-2 p-1">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-md" />
+              <Skeleton key={i} className="h-16 w-full rounded-lg" />
             ))}
           </div>
         ) : schedules.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center mb-3">
-              <Bus className="h-4 w-4 text-zinc-500" />
+            <div className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+              <Bus className="h-4.5 w-4.5 text-zinc-400" />
             </div>
             <p className="text-[13px] text-muted-foreground">No schedules found</p>
             <p className="text-[11px] text-zinc-500 mt-0.5">Try adjusting your search</p>
@@ -333,9 +332,9 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
   const SeatMap = () => {
     if (detailLoading) {
       return (
-        <div className="btr-card rounded-lg p-6 flex items-center justify-center">
+        <div className="border border-border/60 bg-card rounded-xl p-6 flex items-center justify-center animate-bt-fade-in">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-5 w-5 text-zinc-500 animate-spin" />
+            <Loader2 className="h-5 w-5 text-zinc-400 animate-spin" />
             <span className="text-[12px] text-muted-foreground">Loading seat map…</span>
           </div>
         </div>
@@ -348,33 +347,33 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
     const availableSeats = scheduleDetail.availableSeats ?? totalSeats - (scheduleDetail.bookedSeats?.length ?? 0);
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        className="btr-card rounded-lg p-5"
+      <div
+        className="border border-border/60 bg-card rounded-xl p-5 animate-bt-slide-up"
       >
         {/* Bus header */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-muted/60 flex items-center justify-center">
-              <Bus className="h-3.5 w-3.5 text-zinc-400" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <Bus className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <p className="text-[13px] font-medium text-foreground">{selectedSchedule?.busPlate}</p>
-              <p className="text-[11px] text-zinc-500">{selectedSchedule?.busType}</p>
+              <p className="text-[13px] font-semibold text-foreground">{selectedSchedule?.busPlate}</p>
+              <p className="text-[11px] text-muted-foreground">{selectedSchedule?.busType}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[11px] text-muted-foreground">
-              <span className="text-foreground font-medium">{availableSeats}</span> / {totalSeats} seats
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Available
+            </p>
+            <p className="text-xl font-bold tracking-tight text-foreground mt-0.5">
+              {availableSeats}<span className="text-sm font-normal text-muted-foreground">/{totalSeats}</span>
             </p>
           </div>
         </div>
 
         {/* Driver area */}
         <div className="flex justify-end mb-3">
-          <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium px-2 py-1 rounded bg-muted/40">
+          <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium px-2.5 py-1 rounded-md bg-muted/50 border border-border/40">
             Driver
           </div>
         </div>
@@ -390,28 +389,26 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
           {seatGrid.map((seat) => {
             const isSelected = selectedSeat === seat.seatNum;
             return (
-              <motion.button
+              <button
                 key={seat.seatNum}
-                whileHover={seat.isOccupied ? {} : { scale: 1.06 }}
-                whileTap={seat.isOccupied ? {} : { scale: 0.95 }}
                 disabled={seat.isOccupied}
                 onClick={() => setSelectedSeat(isSelected ? null : seat.seatNum)}
                 title={seat.isOccupied ? seat.bookedBy : seat.seatNum}
                 className={`
                   relative w-11 h-10 rounded-md text-[11px] font-medium
                   flex flex-col items-center justify-center
-                  transition-colors duration-100 cursor-pointer
+                  transition-all duration-100 cursor-pointer
                   ${seat.isOccupied
-                    ? 'bg-foreground/5 text-zinc-600 cursor-not-allowed'
+                    ? 'bg-muted/40 text-zinc-500 cursor-not-allowed'
                     : isSelected
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-secondary hover:bg-blue-500/10 text-foreground'
+                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 scale-[1.04]'
+                      : 'bg-muted/60 hover:bg-emerald-500/10 text-foreground border border-transparent hover:border-emerald-500/20'
                   }
                 `}
               >
-                <span className="text-[9px] opacity-60 leading-none">{seat.row}</span>
+                <span className="text-[9px] opacity-50 leading-none">{seat.row}</span>
                 <span className="font-bold leading-tight">{seat.colLetter}</span>
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -419,19 +416,19 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
         {/* Legend */}
         <div className="flex items-center justify-center gap-5 mt-5 pt-4 border-t border-border/60">
           <div className="flex items-center gap-1.5">
-            <span className="w-4 h-3.5 rounded-sm bg-secondary" />
+            <span className="w-3.5 h-3 rounded-[4px] bg-muted/60 border border-border/40" />
             <span className="text-[11px] text-zinc-500">Available</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-4 h-3.5 rounded-sm bg-foreground/5" />
+            <span className="w-3.5 h-3 rounded-[4px] bg-muted/40" />
             <span className="text-[11px] text-zinc-500">Occupied</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-4 h-3.5 rounded-sm bg-blue-600" />
+            <span className="w-3.5 h-3 rounded-[4px] bg-emerald-600" />
             <span className="text-[11px] text-zinc-500">Selected</span>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   };
 
@@ -439,64 +436,63 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
   const BookingForm = () => (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-border/60">
-        <p className="btr-label text-zinc-500">New Booking</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">New Booking</p>
       </div>
 
       {selectedSeat ? (
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15 }}
-          className="mx-4 mt-4"
-        >
-          <div className="btr-card rounded-md p-3 border-blue-500/20 bg-blue-500/[0.03]">
+        <div className="mx-4 mt-4 animate-bt-slide-up">
+          <div className="border border-emerald-500/20 bg-emerald-500/[0.04] rounded-xl p-4">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">Selected seat</span>
-              <Badge className="bg-blue-600 text-white text-[11px] px-2 py-0 rounded-full font-semibold">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Selected seat</span>
+              <Badge className="bg-emerald-600 text-white text-[11px] px-2.5 py-0.5 rounded-full font-semibold border-0">
                 {selectedSeat}
               </Badge>
             </div>
-            <p className="text-[11px] text-zinc-500 mt-1.5">{selectedSchedule?.routeName}</p>
-            <p className="text-xl font-semibold text-foreground mt-1 tracking-tight">
+            <p className="text-[11px] text-muted-foreground mt-2">{selectedSchedule?.routeName}</p>
+            <p className="text-3xl font-bold tracking-tight text-foreground mt-1">
               KES {selectedSchedule?.fare.toLocaleString()}
             </p>
           </div>
-        </motion.div>
+        </div>
       ) : (
         <div className="mx-4 mt-4">
-          <div className="btr-card rounded-md p-5 flex flex-col items-center justify-center text-center">
-            <div className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center mb-2.5">
-              <Ticket className="h-4 w-4 text-zinc-500" />
+          <div className="border border-border/60 bg-card rounded-xl p-6 flex flex-col items-center justify-center text-center">
+            <div className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+              <Ticket className="h-4.5 w-4.5 text-zinc-400" />
             </div>
-            <p className="text-[12px] text-muted-foreground">Select a seat to continue</p>
+            <p className="text-[13px] text-muted-foreground">Select a seat to continue</p>
           </div>
         </div>
       )}
 
       <div className="p-4 space-y-3 flex-1">
         <div>
-          <Label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Passenger Name</Label>
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
+            Passenger Name
+          </Label>
           <Input
             placeholder="Full name"
             value={passengerName}
             onChange={(e) => setPassengerName(e.target.value)}
-            className="h-9 text-[13px] bg-background border-border/60 focus-visible:ring-blue-500/20"
+            className="h-9 text-[13px] bg-background border-border/60 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40"
           />
         </div>
         <div>
-          <Label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Phone Number</Label>
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
+            Phone Number
+          </Label>
           <Input
             placeholder="+254..."
             value={passengerPhone}
             onChange={(e) => setPassengerPhone(e.target.value)}
-            className="h-9 text-[13px] bg-background border-border/60 focus-visible:ring-blue-500/20"
+            className="h-9 text-[13px] bg-background border-border/60 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40"
           />
         </div>
       </div>
 
       <div className="p-4 border-t border-border/60">
         <Button
-          className="w-full h-9 text-[13px] font-medium bg-blue-600 hover:bg-blue-700 text-white btr-press"
+          className="w-full h-10 text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
           disabled={!canBook}
           onClick={handleBook}
         >
@@ -515,13 +511,13 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
 
   /* ---- Empty state for main area ---- */
   const EmptyState = () => (
-    <div className="flex-1 flex items-center justify-center">
+    <div className="flex-1 flex items-center justify-center animate-bt-fade-in">
       <div className="text-center">
-        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-          <Bus className="h-5 w-5 text-zinc-500" />
+        <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto mb-4">
+          <Bus className="h-6 w-6 text-zinc-400" />
         </div>
-        <p className="text-[14px] text-muted-foreground font-medium">Select a schedule</p>
-        <p className="text-[12px] text-zinc-500 mt-1">Choose a route from the list to view the seat map</p>
+        <p className="text-[14px] text-foreground font-medium">Select a schedule</p>
+        <p className="text-[12px] text-muted-foreground mt-1">Choose a route from the list to view the seat map</p>
       </div>
     </div>
   );
@@ -531,34 +527,29 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
   /* ========================================================================= */
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
-      className="h-screen flex flex-col bg-background"
-    >
+    <div className="h-full flex flex-col">
       {/* ---- Header ---- */}
       <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
 
       {/* ---- Body ---- */}
-      <div className="flex-1 flex overflow-hidden">
+      <main className="flex-1 overflow-hidden flex">
 
         {/* ======== LEFT SIDEBAR (desktop) ======== */}
-        <aside className="hidden md:flex w-64 shrink-0 border-r border-border flex-col bg-card/50">
+        <aside className="hidden md:flex w-64 shrink-0 border-r border-border/60 flex-col bg-card/50">
           <RouteList />
         </aside>
 
         {/* ======== MAIN AREA ======== */}
-        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Mobile: search + route sheet trigger */}
-          <div className="md:hidden p-3 border-b border-border bg-card/50 flex gap-2 items-center">
+          <div className="md:hidden p-3 border-b border-border/60 bg-card/50 flex gap-2 items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <Input
                 placeholder="Search routes..."
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="pl-8 h-9 text-[13px] bg-background border-border/60"
+                className="pl-8 h-9 text-[13px] bg-background border-border/60 focus-visible:ring-emerald-500/20"
               />
             </div>
             <Sheet open={mobileRouteOpen} onOpenChange={setMobileRouteOpen}>
@@ -569,10 +560,10 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0 bg-card">
-                <SheetHeader className="p-3 border-b border-border">
+                <SheetHeader className="p-3 border-b border-border/60">
                   <SheetTitle className="text-[13px] font-medium">Schedules</SheetTitle>
                 </SheetHeader>
-                <div className="overflow-y-auto btr-scroll p-2 space-y-1">
+                <div className="overflow-y-auto bt-scroll p-2 space-y-1">
                   {schedules.map((s) => <RouteCard key={s.id} s={s} />)}
                 </div>
               </SheetContent>
@@ -583,16 +574,11 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
           {selectedSchedule ? (
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Seat map section */}
-              <div className="flex-1 overflow-y-auto btr-scroll p-4 lg:p-6">
+              <div className="flex-1 overflow-y-auto bt-scroll p-4 lg:p-6">
                 {/* Route header */}
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="mb-5"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-[16px] font-semibold text-foreground tracking-tight">
+                <div className="mb-5 animate-bt-fade-in">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <h2 className="text-lg font-semibold text-foreground tracking-tight">
                       {selectedSchedule.routeName}
                     </h2>
                     <Badge
@@ -602,7 +588,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
                       {selectedSchedule.status}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {selectedSchedule.departureTime}
@@ -610,7 +596,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
                     <span>{selectedSchedule.busPlate}</span>
                     <span>Gate {selectedSchedule.gateNumber || 'TBD'}</span>
                   </div>
-                </motion.div>
+                </div>
 
                 {/* Seat map */}
                 <SeatMap />
@@ -620,7 +606,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
                   <Sheet open={mobileBookingOpen} onOpenChange={setMobileBookingOpen}>
                     <SheetTrigger asChild>
                       <Button
-                        className="w-full h-10 text-[13px] font-medium bg-blue-600 hover:bg-blue-700 text-white btr-press"
+                        className="w-full h-10 text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
                         disabled={!selectedSeat}
                       >
                         <Ticket className="h-4 w-4 mr-1.5" />
@@ -635,13 +621,13 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
               </div>
 
               {/* Booking form (desktop only) */}
-              <aside className="hidden lg:flex w-72 shrink-0 border-l border-border bg-card/50">
+              <aside className="hidden lg:flex w-72 shrink-0 border-l border-border/60 bg-card/50">
                 <div className="w-full flex flex-col">
                   {selectedSchedule && scheduleDetail ? (
                     <BookingForm />
                   ) : (
                     <div className="flex-1 flex items-center justify-center p-4">
-                      <p className="text-[12px] text-zinc-500 text-center">Loading…</p>
+                      <p className="text-[12px] text-muted-foreground text-center">Loading…</p>
                     </div>
                   )}
                 </div>
@@ -650,8 +636,8 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
           ) : (
             <EmptyState />
           )}
-        </main>
-      </div>
-    </motion.div>
+        </div>
+      </main>
+    </div>
   );
 }

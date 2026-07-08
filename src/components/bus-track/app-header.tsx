@@ -1,17 +1,17 @@
 'use client';
 
 import React from 'react';
-import { LogOut, Sun, Moon, Wifi, WifiOff, Bus } from 'lucide-react';
+import { LogOut, Sun, Moon, Bus, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import type { Role } from './types';
 
-const ROLE_HEADER: Record<Role, { icon: React.ReactNode; label: string }> = {
-  TICKETER: { icon: <Bus className="h-4 w-4" />, label: 'Ticketer' },
-  CASHIER: { icon: <Bus className="h-4 w-4" />, label: 'Cashier' },
-  GATEMAN: { icon: <Bus className="h-4 w-4" />, label: 'Gateman' },
-  MANAGER: { icon: <Bus className="h-4 w-4" />, label: 'Station Manager' },
-  SUPERADMIN: { icon: <Bus className="h-4 w-4" />, label: 'Super Admin' },
+const ROLE_LABELS: Record<Role, string> = {
+  TICKETER: 'Ticketer',
+  CASHIER: 'Cashier',
+  GATEMAN: 'Gateman',
+  MANAGER: 'Station Manager',
+  SUPERADMIN: 'Super Admin',
 };
 
 interface AppHeaderProps {
@@ -22,33 +22,32 @@ interface AppHeaderProps {
 
 export function AppHeader({ user, onLogout, isConnected = false }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
-  const roleInfo = ROLE_HEADER[user.role];
 
   return (
-    <header className="h-[52px] flex items-center justify-between px-4 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0">
-      {/* Left: Logo + Role */}
+    <header className="h-14 flex items-center justify-between px-5 border-b border-border bg-card/80 backdrop-blur-md flex-shrink-0">
+      {/* Left */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-            <Bus className="h-3.5 w-3.5" />
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Bus className="h-3.5 w-3.5 text-primary-foreground" />
           </div>
-          <span className="text-[13px] font-semibold tracking-tight hidden sm:block">BusTrack</span>
+          <span className="text-sm font-semibold tracking-tight">BusTrack</span>
         </div>
-        <div className="h-4 w-px bg-border hidden sm:block" />
-        <span className="text-[12px] text-muted-foreground font-medium hidden sm:block">{roleInfo.label}</span>
-        <div className="flex items-center gap-1.5 ml-1">
-          <div className={`btr-dot ${isConnected ? 'bg-emerald-500' : 'bg-zinc-500'}`} />
-          <span className="text-[11px] text-muted-foreground hidden md:block">{user.name}</span>
-        </div>
+        <div className="h-4 w-px bg-border" />
+        <span className="text-xs text-muted-foreground font-medium">{ROLE_LABELS[user.role]}</span>
       </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-1">
+      {/* Right */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 mr-1">
+          <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+          <span className="text-xs text-muted-foreground hidden sm:inline">{user.name}</span>
+        </div>
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
         >
           {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         </Button>
@@ -56,7 +55,7 @@ export function AppHeader({ user, onLogout, isConnected = false }: AppHeaderProp
           variant="ghost"
           size="sm"
           onClick={onLogout}
-          className="h-8 px-2.5 text-muted-foreground hover:text-foreground text-xs gap-1.5"
+          className="h-8 px-3 text-muted-foreground hover:text-foreground text-xs gap-1.5"
         >
           <LogOut className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Logout</span>

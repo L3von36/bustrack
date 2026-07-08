@@ -29,9 +29,9 @@ const ROLE_ICONS: Record<Role, React.ReactNode> = {
 };
 
 const FEATURES = [
-  { icon: <Zap className="h-4 w-4" />, title: 'Real-time', desc: 'Live seat booking & updates' },
-  { icon: <Shield className="h-4 w-4" />, title: 'Gate Scan', desc: 'Instant ticket validation' },
-  { icon: <BarChart3 className="h-4 w-4" />, title: 'AI Insights', desc: 'Demand prediction & analytics' },
+  { icon: <Zap className="h-4 w-4" />, title: 'Real-time Booking', desc: 'Live seat selection & instant confirmation' },
+  { icon: <Shield className="h-4 w-4" />, title: 'Gate Validation', desc: 'Scan tickets with instant verification' },
+  { icon: <BarChart3 className="h-4 w-4" />, title: 'Smart Analytics', desc: 'Revenue trends & demand forecasting' },
   { icon: <Bus className="h-4 w-4" />, title: '5 Roles', desc: 'Ticketer, Cashier, Gateman, Manager, Admin' },
 ];
 
@@ -62,156 +62,141 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
   }, [loginEmail, onLogin, setLoginError, setLoginLoading, toast]);
 
   return (
-    <div className="min-h-screen flex flex-col" suppressHydrationWarning>
-      {/* ── Dark hero ── */}
-      <section className="relative flex-1 flex items-center justify-center overflow-hidden bg-[#09090b]" suppressHydrationWarning>
-        {/* Square grid */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-          }}
-        />
-        {/* Ambient blue glow */}
-        <div
-          aria-hidden="true"
-          className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[900px] h-[600px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(70% 80% at center 100%, rgba(37,99,235,0.08) 0%, transparent 70%)' }}
-        />
-
-        <div className="relative z-10 w-full max-w-5xl mx-auto px-6 py-20 sm:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center animate-[fadeInUp_0.6s_ease-out_both]">
-            {/* ── Left: Copy ── */}
-            <div>
-              {/* Eyebrow */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] bg-white/[0.03] mb-8 animate-[fadeInUp_0.6s_0.1s_ease-out_both]">
-                <div className="btr-dot bg-blue-500" />
-                <span className="text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Station Management System</span>
+    <div className="min-h-screen flex flex-col bg-background" suppressHydrationWarning>
+      {/* ── Main Content ── */}
+      <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20">
+        <div className="w-full max-w-5xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* ── Left Column ── */}
+            <div className="animate-bt-slide-up">
+              {/* Logo */}
+              <div className="flex items-center gap-2.5 mb-10">
+                <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+                  <Bus className="h-4.5 w-4.5 text-primary-foreground" />
+                </div>
+                <span className="text-lg font-semibold tracking-tight">BusTrack</span>
               </div>
 
               {/* Headline */}
-              <h1
-                className="text-4xl sm:text-5xl lg:text-[3.5rem] font-semibold tracking-tight text-white leading-[1.1] animate-[fadeInUp_0.6s_0.18s_ease-out_both]"
-                style={{ textWrap: 'balance' }}
-              >
-                The smartest way to
-                <span className="block mt-1 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                  run your bus station.
-                </span>
+              <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.15] text-foreground">
+                The modern way to
+                <span className="block mt-1.5 text-primary">manage your bus station.</span>
               </h1>
 
-              {/* Sub */}
-              <p className="mt-6 text-[15px] leading-relaxed text-zinc-500 max-w-md animate-[fadeInUp_0.6s_0.26s_ease-out_both]">
-                Real-time ticketing, AI-powered insights, and seamless role-based workflows.
-                Built for stations that move thousands daily.
+              {/* Subheadline */}
+              <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground max-w-md">
+                Real-time ticketing, role-based workflows, and powerful analytics — built for stations that move thousands daily.
               </p>
 
-              {/* Login form */}
-              <div className="mt-8 flex gap-2 max-w-md animate-[fadeInUp_0.6s_0.34s_ease-out_both]">
+              {/* Login Form */}
+              <div className="mt-8 flex gap-2 max-w-md">
                 <div className="relative flex-1">
                   <Input
                     placeholder="your@email.com"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                    className="h-10 bg-white/[0.04] border-white/[0.08] text-sm text-white placeholder:text-zinc-600 focus-visible:ring-blue-500/30 focus-visible:border-blue-500/30 rounded-lg"
+                    className="h-11 rounded-xl bg-card border-border text-sm"
                   />
                 </div>
                 <Button
                   onClick={() => handleLogin()}
                   disabled={loginLoading}
-                  className="h-10 px-5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg btr-press shadow-lg shadow-blue-600/20"
+                  className="h-11 px-6 rounded-xl text-sm font-medium"
                 >
                   {loginLoading ? (
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
                   ) : (
-                    <>Sign In <ArrowRight className="h-3.5 w-3.5 ml-1" /></>
+                    <>Sign In <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></>
                   )}
                 </Button>
               </div>
               {loginError && (
-                <p className="mt-2 text-xs text-red-400">{loginError}</p>
+                <p className="mt-2.5 text-xs text-destructive font-medium">{loginError}</p>
               )}
 
-              {/* Feature pills */}
-              <div className="mt-10 grid grid-cols-2 gap-3 animate-[fadeInUp_0.6s_0.42s_ease-out_both]">
-                {FEATURES.map((f) => (
-                  <div key={f.title} className="flex items-start gap-3 p-3 rounded-lg border border-white/[0.04] bg-white/[0.02]">
-                    <div className="mt-0.5 text-zinc-500">{f.icon}</div>
+              {/* Features */}
+              <div className="mt-10 grid grid-cols-2 gap-3">
+                {FEATURES.map((f, i) => (
+                  <div
+                    key={f.title}
+                    className={`flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/60 animate-bt-fade-in delay-${(i + 2) * 100}`}
+                  >
+                    <div className="mt-0.5 text-primary">{f.icon}</div>
                     <div>
-                      <div className="text-[13px] font-medium text-zinc-300">{f.title}</div>
-                      <div className="text-[11px] text-zinc-600 mt-0.5">{f.desc}</div>
+                      <div className="text-[13px] font-semibold text-foreground">{f.title}</div>
+                      <div className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">{f.desc}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* ── Right: Role cards ── */}
-            <div className="hidden lg:block animate-[fadeInUp_0.6s_0.26s_ease-out_both]">
-              <div className="btr-glass rounded-2xl p-6">
-                <p className="btr-label text-zinc-500 mb-4">Quick Demo</p>
-                <div className="space-y-2">
-                  {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config]) => (
+            {/* ── Right Column: Quick Demo ── */}
+            <div className="animate-bt-slide-up delay-200">
+              <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Demo</p>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    <span className="text-[11px] text-muted-foreground">Live</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config], i) => (
                     <button
                       key={role}
                       onClick={() => handleLogin(config.email)}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-colors duration-150 text-left group btr-press"
+                      className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl hover:bg-accent transition-colors duration-150 text-left group animate-bt-fade-in delay-${(i + 2) * 100}`}
                     >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/15 transition-colors">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
                         {ROLE_ICONS[role]}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-medium text-zinc-300">
+                        <div className="text-[13px] font-semibold text-foreground">
                           {role.charAt(0) + role.slice(1).toLowerCase()}
                         </div>
-                        <div className="text-[11px] text-zinc-600 truncate">{config.desc}</div>
+                        <div className="text-[11.5px] text-muted-foreground truncate mt-0.5">{config.desc}</div>
                       </div>
-                      <ArrowRight className="h-3.5 w-3.5 text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground group-hover:translate-x-0.5 transition-all duration-200" />
                     </button>
                   ))}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* ── Mobile role cards (below hero on small screens) ── */}
-          <div className="lg:hidden mt-12 animate-[fadeInUp_0.6s_0.3s_ease-out_both]">
-            <p className="btr-label text-zinc-500 mb-4 text-center">Quick Demo</p>
-            <div className="grid grid-cols-2 gap-2">
-              {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config]) => (
-                <button
-                  key={role}
-                  onClick={() => handleLogin(config.email)}
-                  className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-left btr-press"
-                >
-                  <div className="flex items-center justify-center w-7 h-7 rounded-md bg-blue-500/10 text-blue-400">
-                    {ROLE_ICONS[role]}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[12px] font-medium text-zinc-300 truncate">
-                      {role.charAt(0) + role.slice(1).toLowerCase()}
+              {/* Mobile role grid */}
+              <div className="lg:hidden mt-6 grid grid-cols-2 gap-2">
+                {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config]) => (
+                  <button
+                    key={role}
+                    onClick={() => handleLogin(config.email)}
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border/60 text-left hover:bg-accent transition-colors"
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
+                      {ROLE_ICONS[role]}
                     </div>
-                  </div>
-                </button>
-              ))}
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-semibold text-foreground truncate">
+                        {role.charAt(0) + role.slice(1).toLowerCase()}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </section>
+      </main>
 
-      {/* ── Bottom strip ── */}
-      <section className="bg-background border-t border-border py-6 px-6">
-        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Bus className="h-3 w-3" /> 4 Active Routes</span>
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Zap className="h-3 w-3" /> AI-Powered</span>
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Shield className="h-3 w-3" /> Real-time Validation</span>
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><BarChart3 className="h-3 w-3" /> Smart Analytics</span>
+      {/* ── Footer ── */}
+      <footer className="border-t border-border py-5 px-6">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5"><Bus className="h-3 w-3" /> 4 Active Routes</span>
+          <span className="flex items-center gap-1.5"><Zap className="h-3 w-3" /> AI-Powered</span>
+          <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" /> Real-time</span>
+          <span className="flex items-center gap-1.5"><BarChart3 className="h-3 w-3" /> Analytics</span>
         </div>
-      </section>
+      </footer>
     </div>
   );
 }
