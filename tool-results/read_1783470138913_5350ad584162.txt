@@ -1,0 +1,1856 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback, useRef } from 'react';
+     4→import { useToast } from '@/hooks/use-toast';
+     5→import { motion, AnimatePresence } from 'framer-motion';
+     6→import {
+     7→  Bus, Ticket, CreditCard, ShieldCheck, BarChart3, LogOut, Search,
+     8→  Check, X, Users, MapPin, Clock, DollarSign, AlertTriangle,
+     9→  ArrowRight, ChevronRight, Loader2, Eye, Plus, QrCode,
+    10→  Smartphone, Wallet, Banknote, LayoutDashboard, Route, UserCog,
+    11→  Settings, TrendingUp, Activity, CalendarDays, Phone, User,
+    12→  Car, DoorOpen, Printer
+    13→} from 'lucide-react';
+    14→import { Button } from '@/components/ui/button';
+    15→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    16→import { Input } from '@/components/ui/input';
+    17→import { Badge } from '@/components/ui/badge';
+    18→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    19→import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+    20→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    21→import { Label } from '@/components/ui/label';
+    22→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    23→import { Progress } from '@/components/ui/progress';
+    24→import { Separator } from '@/components/ui/separator';
+    25→import { Skeleton } from '@/components/ui/skeleton';
+    26→import {
+    27→  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
+    28→  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+    29→} from 'recharts';
+    30→
+    31→// ─── Types ──────────────────────────────────────────────────────────────
+    32→type Role = 'TICKETER' | 'CASHIER' | 'GATEMAN' | 'MANAGER' | 'SUPERADMIN';
+    33→
+    34→interface StaffUser {
+    35→  id: string;
+    36→  name: string;
+    37→  email: string;
+    38→  phone: string | null;
+    39→  role: Role;
+    40→  stationId: string | null;
+    41→  active: boolean;
+    42→  station?: { name: string; city: string } | null;
+    43→}
+    44→
+    45→interface ScheduleItem {
+    46→  id: string;
+    47→  routeName: string;
+    48→  routeId: string;
+    49→  busPlate: string;
+    50→  busType: string;
+    51→  totalSeats: number;
+    52→  bookedCount: number;
+    53→  departureTime: string;
+    54→  fare: number;
+    55→  status: string;
+    56→  gateNumber: string | null;
+    57→}
+    58→
+    59→interface BookingItem {
+    60→  id: string;
+    61→  reference: string;
+    62→  passengerName: string;
+    63→  passengerPhone: string;
+    64→  seatNumber: string;
+    65→  fare: number;
+    66→  status: string;
+    67→  createdAt: string;
+    68→  schedule: {
+    69→    route: { origin: string; destination: string };
+    70→    bus: { plateNumber: string; busType: string };
+    71→    departureTime: string;
+    72→  };
+    73→  staff: { name: string };
+    74→}
+    75→
+    76→// ─── Role Config ────────────────────────────────────────────────────────
+    77→const ROLE_CONFIG: Record<Role, { icon: React.ReactNode; color: string; desc: string; email: string }> = {
+    78→  TICKETER: { icon: <Ticket className="h-6 w-6" />, color: 'text-blue-600', desc: 'Search routes, select seats, create bookings', email: 'alice@bustrack.com' },
+    79→  CASHIER: { icon: <CreditCard className="h-6 w-6" />, color: 'text-emerald-600', desc: 'Process payments for pending bookings', email: 'bob@bustrack.com' },
+    80→  GATEMAN: { icon: <ShieldCheck className="h-6 w-6" />, color: 'text-amber-600', desc: 'Validate tickets and manage boarding', email: 'charles@bustrack.com' },
+    81→  MANAGER: { icon: <BarChart3 className="h-6 w-6" />, color: 'text-purple-600', desc: 'View dashboard stats and operations', email: 'diana@bustrack.com' },
+    82→  SUPERADMIN: { icon: <Settings className="h-6 w-6" />, color: 'text-red-600', desc: 'Full system management and analytics', email: 'edward@bustrack.com' },
+    83→};
+    84→
+    85→const STATUS_COLORS: Record<string, string> = {
+    86→  SCHEDULED: 'bg-blue-100 text-blue-700',
+    87→  BOARDING: 'bg-amber-100 text-amber-700',
+    88→  DEPARTED: 'bg-green-100 text-green-700',
+    89→  CANCELLED: 'bg-red-100 text-red-700',
+    90→  DELAYED: 'bg-orange-100 text-orange-700',
+    91→  PENDING_PAYMENT: 'bg-yellow-100 text-yellow-700',
+    92→  CONFIRMED: 'bg-emerald-100 text-emerald-700',
+    93→  BOARDED: 'bg-blue-100 text-blue-700',
+    94→  NO_SHOW: 'bg-gray-100 text-gray-700',
+    95→  VALID: 'bg-green-100 text-green-700',
+    96→  INVALID: 'bg-red-100 text-red-700',
+    97→  WRONG_GATE: 'bg-amber-100 text-amber-700',
+    98→  ALREADY_BOARDED: 'bg-orange-100 text-orange-700',
+    99→};
+   100→
+   101→const PAYMENT_METHOD_ICONS: Record<string, React.ReactNode> = {
+   102→  CASH: <Banknote className="h-4 w-4" />,
+   103→  MOBILE_MONEY: <Smartphone className="h-4 w-4" />,
+   104→  CARD: <CreditCard className="h-4 w-4" />,
+   105→  QR_CODE: <QrCode className="h-4 w-4" />,
+   106→};
+   107→
+   108→const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+   109→
+   110→export default function Home() {
+   111→  const { toast } = useToast();
+   112→
+   113→  // ─── Auth State ──────────────────────────────────────────────────────
+   114→  const [user, setUser] = useState<StaffUser | null>(null);
+   115→  const [loginLoading, setLoginLoading] = useState(false);
+   116→  const [loginEmail, setLoginEmail] = useState('');
+   117→  const [loginError, setLoginError] = useState('');
+   118→
+   119→  // ─── Shared State ────────────────────────────────────────────────────
+   120→  const schedulePollRef = useRef<NodeJS.Timeout | null>(null);
+   121→
+   122→  const logout = useCallback(() => {
+   123→    setUser(null);
+   124→    setLoginEmail('');
+   125→    setLoginError('');
+   126→    if (schedulePollRef.current) clearInterval(schedulePollRef.current);
+   127→  }, []);
+   128→
+   129→  const quickLogin = useCallback(async (email: string) => {
+   130→    setLoginLoading(true);
+   131→    setLoginError('');
+   132→    try {
+   133→      const res = await fetch('/api/auth/login', {
+   134→        method: 'POST',
+   135→        headers: { 'Content-Type': 'application/json' },
+   136→        body: JSON.stringify({ email, password: 'password' }),
+   137→      });
+   138→      const data = await res.json();
+   139→      if (data.user) {
+   140→        setUser(data.user);
+   141→        toast({ title: `Welcome, ${data.user.name}!`, description: `Logged in as ${data.user.role}` });
+   142→      } else {
+   143→        setLoginError(data.error || 'Login failed');
+   144→      }
+   145→    } catch {
+   146→      setLoginError('Network error');
+   147→    } finally {
+   148→      setLoginLoading(false);
+   149→    }
+   150→  }, [toast]);
+   151→
+   152→  const handleLogin = useCallback(async () => {
+   153→    if (!loginEmail) return;
+   154→    setLoginLoading(true);
+   155→    setLoginError('');
+   156→    try {
+   157→      const res = await fetch('/api/auth/login', {
+   158→        method: 'POST',
+   159→        headers: { 'Content-Type': 'application/json' },
+   160→        body: JSON.stringify({ email: loginEmail, password: 'password' }),
+   161→      });
+   162→      const data = await res.json();
+   163→      if (data.user) {
+   164→        setUser(data.user);
+   165→        toast({ title: `Welcome back!`, description: `Logged in as ${data.user.name}` });
+   166→      } else {
+   167→        setLoginError(data.error || 'Login failed');
+   168→      }
+   169→    } catch {
+   170→      setLoginError('Network error');
+   171→    } finally {
+   172→      setLoginLoading(false);
+   173→    }
+   174→  }, [loginEmail, toast]);
+   175→
+   176→  // ─── LOGIN SCREEN ────────────────────────────────────────────────────
+   177→  if (!user) {
+   178→    return (
+   179→      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+   180→        <motion.div
+   181→          initial={{ opacity: 0, y: 20 }}
+   182→          animate={{ opacity: 1, y: 0 }}
+   183→          className="w-full max-w-2xl"
+   184→        >
+   185→          {/* Logo */}
+   186→          <div className="text-center mb-8">
+   187→            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground mb-4">
+   188→              <Bus className="h-8 w-8" />
+   189→            </div>
+   190→            <h1 className="text-4xl font-bold tracking-tight">BusTrack</h1>
+   191→            <p className="text-muted-foreground mt-2">Bus Station Ticket Booking System</p>
+   192→          </div>
+   193→
+   194→          {/* Login Card */}
+   195→          <Card className="mb-8">
+   196→            <CardHeader className="pb-4">
+   197→              <CardTitle className="text-lg">Sign In</CardTitle>
+   198→              <CardDescription>Enter your email to access the system</CardDescription>
+   199→            </CardHeader>
+   200→            <CardContent>
+   201→              <div className="flex gap-2">
+   202→                <Input
+   203→                  placeholder="your@email.com"
+   204→                  value={loginEmail}
+   205→                  onChange={(e) => setLoginEmail(e.target.value)}
+   206→                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+   207→                  className="flex-1"
+   208→                />
+   209→                <Button onClick={handleLogin} disabled={loginLoading}>
+   210→                  {loginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Login'}
+   211→                </Button>
+   212→              </div>
+   213→              {loginError && (
+   214→                <p className="text-sm text-destructive mt-2">{loginError}</p>
+   215→              )}
+   216→            </CardContent>
+   217→          </Card>
+   218→
+   219→          {/* Quick Demo */}
+   220→          <div className="mb-4">
+   221→            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4 text-center">
+   222→              Quick Demo — Click a role to enter
+   223→            </h2>
+   224→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+   225→              {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config]) => (
+   226→                <motion.div
+   227→                  key={role}
+   228→                  whileHover={{ scale: 1.02 }}
+   229→                  whileTap={{ scale: 0.98 }}
+   230→                >
+   231→                  <Card
+   232→                    className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/30"
+   233→                    onClick={() => quickLogin(config.email)}
+   234→                  >
+   235→                    <CardContent className="p-4 text-center">
+   236→                      <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl bg-muted mb-2 ${config.color}`}>
+   237→                        {config.icon}
+   238→                      </div>
+   239→                      <h3 className="font-semibold text-sm">{role.charAt(0) + role.slice(1).toLowerCase()}</h3>
+   240→                      <p className="text-xs text-muted-foreground mt-1 leading-tight">{config.desc}</p>
+   241→                      <Button size="sm" variant="ghost" className="mt-2 h-7 text-xs gap-1">
+   242→                        Enter <ChevronRight className="h-3 w-3" />
+   243→                      </Button>
+   244→                    </CardContent>
+   245→                  </Card>
+   246→                </motion.div>
+   247→              ))}
+   248→            </div>
+   249→          </div>
+   250→        </motion.div>
+   251→      </div>
+   252→    );
+   253→  }
+   254→
+   255→  // ─── ROLE ROUTING ────────────────────────────────────────────────────
+   256→  switch (user.role) {
+   257→    case 'TICKETER':
+   258→      return <TicketerInterface user={user} onLogout={logout} toast={toast} />;
+   259→    case 'CASHIER':
+   260→      return <CashierInterface user={user} onLogout={logout} toast={toast} />;
+   261→    case 'GATEMAN':
+   262→      return <GatemanInterface user={user} onLogout={logout} toast={toast} />;
+   263→    case 'MANAGER':
+   264→      return <ManagerInterface user={user} onLogout={logout} toast={toast} />;
+   265→    case 'SUPERADMIN':
+   266→      return <SuperadminInterface user={user} onLogout={logout} toast={toast} />;
+   267→    default:
+   268→      return null;
+   269→  }
+   270→}
+   271→
+   272→// ═══════════════════════════════════════════════════════════════════════
+   273→// TICKETER INTERFACE
+   274→// ═══════════════════════════════════════════════════════════════════════
+   275→function TicketerInterface({ user, onLogout, toast }: { user: StaffUser; onLogout: () => void; toast: any }) {
+   276→  const [search, setSearch] = useState('');
+   277→  const [routes, setRoutes] = useState<any[]>([]);
+   278→  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+   279→  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
+   280→  const [scheduleDetail, setScheduleDetail] = useState<any>(null);
+   281→  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+   282→  const [passengerName, setPassengerName] = useState('');
+   283→  const [passengerPhone, setPassengerPhone] = useState('');
+   284→  const [bookingLoading, setBookingLoading] = useState(false);
+   285→  const [loading, setLoading] = useState(true);
+   286→
+   287→  const fetchSchedules = useCallback(async (searchTerm?: string) => {
+   288→    setLoading(true);
+   289→    try {
+   290→      const q = searchTerm !== undefined ? searchTerm : search;
+   291→      const url = q ? `/api/routes?search=${q}` : '/api/routes';
+   292→      const res = await fetch(url);
+   293→      const data = await res.json();
+   294→      const allSchedules: ScheduleItem[] = [];
+   295→      data.routes?.forEach((route: any) => {
+   296→        route.schedules?.forEach((s: any) => {
+   297→          allSchedules.push({
+   298→            id: s.id,
+   299→            routeName: `${route.origin} → ${route.destination}`,
+   300→            routeId: route.id,
+   301→            busPlate: s.bus.plateNumber,
+   302→            busType: s.bus.busType,
+   303→            totalSeats: s.bus.totalSeats,
+   304→            bookedCount: s._count.bookings,
+   305→            departureTime: s.departureTime,
+   306→            fare: s.fare,
+   307→            status: s.status,
+   308→            gateNumber: s.gateNumber,
+   309→          });
+   310→        });
+   311→      });
+   312→      setSchedules(allSchedules);
+   313→    } catch (err) {
+   314→      console.error(err);
+   315→    } finally {
+   316→      setLoading(false);
+   317→    }
+   318→  }, [search]);
+   319→
+   320→  useEffect(() => {
+   321→    fetchSchedules();
+   322→  }, []);
+   323→
+   324→  const handleSearch = (val: string) => {
+   325→    setSearch(val);
+   326→    fetchSchedules(val);
+   327→  };
+   328→
+   329→  const selectSchedule = async (schedule: ScheduleItem) => {
+   330→    setSelectedSchedule(schedule);
+   331→    setSelectedSeat(null);
+   332→    setPassengerName('');
+   333→    setPassengerPhone('');
+   334→    try {
+   335→      const res = await fetch(`/api/schedules/${schedule.id}`);
+   336→      const data = await res.json();
+   337→      setScheduleDetail(data);
+   338→    } catch (err) {
+   339→      console.error(err);
+   340→    }
+   341→  };
+   342→
+   343→  const handleBook = async () => {
+   344→    if (!selectedSchedule || !selectedSeat || !passengerName || !passengerPhone) return;
+   345→    setBookingLoading(true);
+   346→    try {
+   347→      const res = await fetch('/api/bookings', {
+   348→        method: 'POST',
+   349→        headers: { 'Content-Type': 'application/json' },
+   350→        body: JSON.stringify({
+   351→          scheduleId: selectedSchedule.id,
+   352→          staffId: user.id,
+   353→          passengerName,
+   354→          passengerPhone,
+   355→          seatNumber: selectedSeat,
+   356→          fare: selectedSchedule.fare,
+   357→        }),
+   358→      });
+   359→      const data = await res.json();
+   360→      if (data.booking) {
+   361→        toast({
+   362→          title: 'Booking Created!',
+   363→          description: `Ref: ${data.booking.reference} — Seat ${selectedSeat}. Awaiting payment.`,
+   364→        });
+   365→        setSelectedSeat(null);
+   366→        setPassengerName('');
+   367→        setPassengerPhone('');
+   368→        selectSchedule(selectedSchedule);
+   369→        fetchSchedules();
+   370→      } else {
+   371→        toast({ title: 'Error', description: data.error, variant: 'destructive' });
+   372→      }
+   373→    } catch {
+   374→      toast({ title: 'Error', description: 'Network error', variant: 'destructive' });
+   375→    } finally {
+   376→      setBookingLoading(false);
+   377→    }
+   378→  };
+   379→
+   380→  const popularRoutes = ['Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'];
+   381→
+   382→  return (
+   383→    <div className="h-screen flex flex-col bg-background">
+   384→      {/* Top Bar */}
+   385→      <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
+   386→        <div className="flex items-center gap-3">
+   387→          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
+   388→            <Bus className="h-4 w-4" />
+   389→          </div>
+   390→          <span className="font-semibold">Ticketer: {user.name}</span>
+   391→        </div>
+   392→        <Button variant="ghost" size="sm" onClick={onLogout} className="gap-2">
+   393→          <LogOut className="h-4 w-4" /> Logout
+   394→        </Button>
+   395→      </header>
+   396→
+   397→      {/* Main Layout */}
+   398→      <div className="flex-1 flex overflow-hidden">
+   399→        {/* Left Panel - Routes */}
+   400→        <aside className="w-80 border-r flex flex-col bg-card shrink-0">
+   401→          <div className="p-3 border-b">
+   402→            <div className="relative">
+   403→              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+   404→              <Input
+   405→                placeholder="Search routes..."
+   406→                value={search}
+   407→                onChange={(e) => handleSearch(e.target.value)}
+   408→                className="pl-9"
+   409→              />
+   410→            </div>
+   411→            <div className="flex gap-1.5 mt-2 flex-wrap">
+   412→              {popularRoutes.map((r) => (
+   413→                <Button key={r} variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleSearch(r)}>
+   414→                  {r}
+   415→                </Button>
+   416→              ))}
+   417→            </div>
+   418→          </div>
+   419→          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+   420→            {loading ? (
+   421→              Array.from({ length: 5 }).map((_, i) => (
+   422→                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+   423→              ))
+   424→            ) : schedules.length === 0 ? (
+   425→              <p className="text-sm text-muted-foreground text-center py-8">No schedules found</p>
+   426→            ) : (
+   427→              schedules.map((s) => (
+   428→                <Card
+   429→                  key={s.id}
+   430→                  className={`cursor-pointer hover:shadow-sm transition-all p-3 ${selectedSchedule?.id === s.id ? 'border-primary bg-primary/5' : ''}`}
+   431→                  onClick={() => selectSchedule(s)}
+   432→                >
+   433→                  <div className="flex justify-between items-start">
+   434→                    <div>
+   435→                      <p className="font-medium text-sm">{s.routeName}</p>
+   436→                      <p className="text-xs text-muted-foreground">{s.busPlate} · {s.busType}</p>
+   437→                    </div>
+   438→                    <Badge variant="outline" className={STATUS_COLORS[s.status] || ''}>{s.status}</Badge>
+   439→                  </div>
+   440→                  <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+   441→                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {s.departureTime}</span>
+   442→                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {s.bookedCount}/{s.totalSeats}</span>
+   443→                    <span className="font-semibold text-foreground">KES {s.fare.toLocaleString()}</span>
+   444→                  </div>
+   445→                </Card>
+   446→              ))
+   447→            )}
+   448→          </div>
+   449→        </aside>
+   450→
+   451→        {/* Center Panel - Seat Map */}
+   452→        <main className="flex-1 flex flex-col overflow-hidden">
+   453→          {selectedSchedule && scheduleDetail ? (
+   454→            <div className="flex-1 flex flex-col p-4">
+   455→              <div className="flex items-center justify-between mb-4">
+   456→                <div>
+   457→                  <h2 className="text-lg font-semibold">{selectedSchedule.routeName}</h2>
+   458→                  <p className="text-sm text-muted-foreground">
+   459→                    {selectedSchedule.busPlate} · Gate {selectedSchedule.gateNumber || 'TBD'} · {selectedSchedule.departureTime}
+   460→                  </p>
+   461→                </div>
+   462→                <div className="flex items-center gap-4 text-xs">
+   463→                  <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded border bg-white" /> Available</span>
+   464→                  <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-gray-300" /> Occupied</span>
+   465→                  <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-primary" /> Selected</span>
+   466→                </div>
+   467→              </div>
+   468→
+   469→              {/* Bus Visualization */}
+   470→              <div className="flex-1 flex items-center justify-center">
+   471→                <div className="bg-card border-2 border-primary/20 rounded-2xl p-6 max-w-md w-full shadow-sm">
+   472→                  {/* Driver area */}
+   473→                  <div className="flex justify-end mb-4 pr-2">
+   474→                    <div className="w-16 h-10 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground">
+   475→                      DRIVER
+   476→                    </div>
+   477→                  </div>
+   478→
+   479→                  {/* Seat Grid */}
+   480→                  <div
+   481→                    className="grid gap-2"
+   482→                    style={{
+   483→                      gridTemplateColumns: `repeat(${scheduleDetail.bus.cols}, 1fr)`,
+   484→                      maxWidth: scheduleDetail.bus.cols * 64 + (scheduleDetail.bus.cols - 1) * 8,
+   485→                      margin: '0 auto',
+   486→                    }}
+   487→                  >
+   488→                    {Array.from({ length: scheduleDetail.bus.rows * scheduleDetail.bus.cols }).map((_, idx) => {
+   489→                      const row = Math.floor(idx / scheduleDetail.bus.cols) + 1;
+   490→                      const colIdx = idx % scheduleDetail.bus.cols;
+   491→                      const colLetter = String.fromCharCode(65 + colIdx);
+   492→                      const seatNum = `${row}${colLetter}`;
+   493→                      const booked = scheduleDetail.bookedSeats?.find((b: any) => b.seatNumber === seatNum);
+   494→                      const isSelected = selectedSeat === seatNum;
+   495→                      const isOccupied = !!booked;
+   496→
+   497→                      // Skip aisle seat if 4 cols (skip index 2 for center aisle)
+   498→                      // Actually let's just render all seats
+   499→
+   500→                      return (
+   501→                        <motion.button
+   502→                          key={seatNum}
+   503→                          whileHover={!isOccupied ? { scale: 1.08 } : {}}
+   504→                          whileTap={!isOccupied ? { scale: 0.95 } : {}}
+   505→                          className={`
+   506→                            relative w-14 h-12 rounded-lg border-2 text-xs font-medium
+   507→                            flex flex-col items-center justify-center transition-all
+   508→                            ${isOccupied
+   509→                              ? 'bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed'
+   510→                              : isSelected
+   511→                                ? 'bg-primary border-primary text-primary-foreground shadow-md'
+   512→                                : 'bg-white border-border hover:border-primary/50 hover:bg-primary/5 cursor-pointer'
+   513→                            }
+   514→                          `}
+   515→                          disabled={isOccupied}
+   516→                          onClick={() => setSelectedSeat(isSelected ? null : seatNum)}
+   517→                          title={booked ? `${booked.passengerName}` : seatNum}
+   518→                        >
+   519→                          <span className="text-[10px] opacity-70">{row}</span>
+   520→                          <span className="font-bold">{colLetter}</span>
+   521→                          {isOccupied && (
+   522→                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gray-400 text-white flex items-center justify-center text-[8px]">
+   523→                              ✕
+   524→                            </span>
+   525→                          )}
+   526→                        </motion.button>
+   527→                      );
+   528→                    })}
+   529→                  </div>
+   530→
+   531→                  <div className="mt-4 text-center text-xs text-muted-foreground">
+   532→                    {scheduleDetail.availableSeats} of {scheduleDetail.bus.totalSeats} seats available
+   533→                  </div>
+   534→                </div>
+   535→              </div>
+   536→            </div>
+   537→          ) : (
+   538→            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+   539→              <div className="text-center">
+   540→                <Bus className="h-12 w-12 mx-auto mb-3 opacity-30" />
+   541→                <p>Select a schedule to view seats</p>
+   542→              </div>
+   543→            </div>
+   544→          )}
+   545→        </main>
+   546→
+   547→        {/* Right Panel - Booking Form */}
+   548→        <aside className="w-80 border-l flex flex-col bg-card shrink-0">
+   549→          {selectedSchedule && scheduleDetail ? (
+   550→            <div className="p-4 flex flex-col h-full">
+   551→              <h3 className="font-semibold mb-4">New Booking</h3>
+   552→
+   553→              {selectedSeat ? (
+   554→                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+   555→                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-4">
+   556→                    <div className="flex items-center justify-between">
+   557→                      <span className="text-sm font-medium">Selected Seat</span>
+   558→                      <Badge className="bg-primary text-primary-foreground">{selectedSeat}</Badge>
+   559→                    </div>
+   560→                    <p className="text-xs text-muted-foreground mt-1">{selectedSchedule.routeName}</p>
+   561→                    <p className="text-lg font-bold mt-1">KES {selectedSchedule.fare.toLocaleString()}</p>
+   562→                  </div>
+   563→                </motion.div>
+   564→              ) : (
+   565→                <div className="bg-muted rounded-xl p-4 mb-4 text-center text-sm text-muted-foreground">
+   566→                  <Ticket className="h-6 w-6 mx-auto mb-2 opacity-40" />
+   567→                  Click a seat to select it
+   568→                </div>
+   569→              )}
+   570→
+   571→              <div className="space-y-3 flex-1">
+   572→                <div>
+   573→                  <Label className="text-xs">Passenger Name</Label>
+   574→                  <Input
+   575→                    placeholder="Full name"
+   576→                    value={passengerName}
+   577→                    onChange={(e) => setPassengerName(e.target.value)}
+   578→                    className="mt-1"
+   579→                  />
+   580→                </div>
+   581→                <div>
+   582→                  <Label className="text-xs">Phone Number</Label>
+   583→                  <Input
+   584→                    placeholder="+254..."
+   585→                    value={passengerPhone}
+   586→                    onChange={(e) => setPassengerPhone(e.target.value)}
+   587→                    className="mt-1"
+   588→                  />
+   589→                </div>
+   590→              </div>
+   591→
+   592→              <Button
+   593→                className="w-full mt-4"
+   594→                disabled={!selectedSeat || !passengerName || !passengerPhone || bookingLoading}
+   595→                onClick={handleBook}
+   596→              >
+   597→                {bookingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+   598→                  <>
+   599→                    <Ticket className="h-4 w-4 mr-2" /> Confirm Booking
+   600→                  </>
+   601→                )}
+   602→              </Button>
+   603→            </div>
+   604→          ) : (
+   605→            <div className="p-4 flex-1 flex items-center justify-center text-center text-muted-foreground text-sm">
+   606→              Select a schedule first
+   607→            </div>
+   608→          )}
+   609→        </aside>
+   610→      </div>
+   611→    </div>
+   612→  );
+   613→}
+   614→
+   615→// ═══════════════════════════════════════════════════════════════════════
+   616→// CASHIER INTERFACE
+   617→// ═══════════════════════════════════════════════════════════════════════
+   618→function CashierInterface({ user, onLogout, toast }: { user: StaffUser; onLogout: () => void; toast: any }) {
+   619→  const [pendingBookings, setPendingBookings] = useState<BookingItem[]>([]);
+   620→  const [recentPayments, setRecentPayments] = useState<any[]>([]);
+   621→  const [loading, setLoading] = useState(true);
+   622→  const [payingBooking, setPayingBooking] = useState<BookingItem | null>(null);
+   623→  const [paymentMethod, setPaymentMethod] = useState<string>('CASH');
+   624→  const [cashReceived, setCashReceived] = useState('');
+   625→  const [processing, setProcessing] = useState(false);
+   626→  const [dialogOpen, setDialogOpen] = useState(false);
+   627→
+   628→  const fetchData = useCallback(async () => {
+   629→    try {
+   630→      const [bookingsRes, paymentsRes] = await Promise.all([
+   631→        fetch('/api/bookings'),
+   632→        fetch('/api/payments/recent'),
+   633→      ]);
+   634→      const bookingsData = await bookingsRes.json();
+   635→      const paymentsData = await paymentsRes.json();
+   636→      setPendingBookings(bookingsData.bookings || []);
+   637→      setRecentPayments(paymentsData.payments || []);
+   638→    } catch (err) {
+   639→      console.error(err);
+   640→    } finally {
+   641→      setLoading(false);
+   642→    }
+   643→  }, []);
+   644→
+   645→  useEffect(() => {
+   646→    fetchData();
+   647→    const interval = setInterval(fetchData, 5000);
+   648→    return () => clearInterval(interval);
+   649→  }, [fetchData]);
+   650→
+   651→  const todayTotal = recentPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+   652→
+   653→  const openPayment = (booking: BookingItem) => {
+   654→    setPayingBooking(booking);
+   655→    setPaymentMethod('CASH');
+   656→    setCashReceived('');
+   657→    setDialogOpen(true);
+   658→  };
+   659→
+   660→  const processPayment = async () => {
+   661→    if (!payingBooking) return;
+   662→    setProcessing(true);
+   663→    try {
+   664→      const amount = payingBooking.fare;
+   665→      const cashR = paymentMethod === 'CASH' ? parseFloat(cashReceived) || 0 : null;
+   666→      const change = cashR ? cashR - amount : null;
+   667→
+   668→      if (paymentMethod === 'CASH' && cashR < amount) {
+   669→        toast({ title: 'Insufficient cash', description: 'Amount received is less than fare', variant: 'destructive' });
+   670→        setProcessing(false);
+   671→        return;
+   672→      }
+   673→
+   674→      const res = await fetch('/api/payments', {
+   675→        method: 'POST',
+   676→        headers: { 'Content-Type': 'application/json' },
+   677→        body: JSON.stringify({
+   678→          bookingId: payingBooking.id,
+   679→          staffId: user.id,
+   680→          amount,
+   681→          method: paymentMethod,
+   682→          cashReceived: cashR,
+   683→          changeGiven: change,
+   684→        }),
+   685→      });
+   686→      const data = await res.json();
+   687→      if (data.payment) {
+   688→        toast({
+   689→          title: 'Payment Complete! ✅',
+   690→          description: `${payingBooking.reference} — KES ${amount.toLocaleString()} via ${paymentMethod}${change ? ` (Change: KES ${change.toLocaleString()})` : ''}`,
+   691→        });
+   692→        setDialogOpen(false);
+   693→        fetchData();
+   694→      } else {
+   695→        toast({ title: 'Error', description: data.error, variant: 'destructive' });
+   696→      }
+   697→    } catch {
+   698→      toast({ title: 'Error', description: 'Network error', variant: 'destructive' });
+   699→    } finally {
+   700→      setProcessing(false);
+   701→    }
+   702→  };
+   703→
+   704→  const change = cashReceived ? parseFloat(cashReceived) - (payingBooking?.fare || 0) : 0;
+   705→
+   706→  return (
+   707→    <div className="h-screen flex flex-col bg-background">
+   708→      <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
+   709→        <div className="flex items-center gap-3">
+   710→          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-600 text-white">
+   711→            <CreditCard className="h-4 w-4" />
+   712→          </div>
+   713→          <span className="font-semibold">Cashier: {user.name}</span>
+   714→          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 ml-2">
+   715→            Today: KES {todayTotal.toLocaleString()}
+   716→          </Badge>
+   717→        </div>
+   718→        <Button variant="ghost" size="sm" onClick={onLogout} className="gap-2">
+   719→          <LogOut className="h-4 w-4" /> Logout
+   720→        </Button>
+   721→      </header>
+   722→
+   723→      <div className="flex-1 flex overflow-hidden">
+   724→        {/* Main - Pending Bookings */}
+   725→        <main className="flex-1 p-4 overflow-y-auto">
+   726→          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+   727→            <Clock className="h-5 w-5" /> Pending Payments
+   728→            <Badge variant="secondary" className="ml-1">{pendingBookings.length}</Badge>
+   729→          </h2>
+   730→
+   731→          {loading ? (
+   732→            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+   733→              {Array.from({ length: 4 }).map((_, i) => (
+   734→                <Skeleton key={i} className="h-28 w-full rounded-xl" />
+   735→              ))}
+   736→            </div>
+   737→          ) : pendingBookings.length === 0 ? (
+   738→            <div className="text-center py-16 text-muted-foreground">
+   739→              <Check className="h-12 w-12 mx-auto mb-3 opacity-30" />
+   740→              <p>All caught up! No pending payments.</p>
+   741→            </div>
+   742→          ) : (
+   743→            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+   744→              {pendingBookings.map((b) => (
+   745→                <Card key={b.id} className="hover:shadow-sm transition-shadow">
+   746→                  <CardContent className="p-4">
+   747→                    <div className="flex justify-between items-start mb-2">
+   748→                      <div>
+   749→                        <p className="font-mono text-sm font-bold">{b.reference}</p>
+   750→                        <p className="text-sm font-medium">{b.passengerName}</p>
+   751→                        <p className="text-xs text-muted-foreground">{b.passengerPhone}</p>
+   752→                      </div>
+   753→                      <div className="text-right">
+   754→                        <p className="text-lg font-bold text-primary">KES {b.fare.toLocaleString()}</p>
+   755→                      </div>
+   756→                    </div>
+   757→                    <Separator className="my-2" />
+   758→                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+   759→                      <span>{b.schedule.route.origin} → {b.schedule.route.destination}</span>
+   760→                      <span>Seat {b.seatNumber} · {b.schedule.departureTime}</span>
+   761→                    </div>
+   762→                    <Button size="sm" className="w-full" onClick={() => openPayment(b)}>
+   763→                      <Wallet className="h-4 w-4 mr-2" /> Process Payment
+   764→                    </Button>
+   765→                  </CardContent>
+   766→                </Card>
+   767→              ))}
+   768→            </div>
+   769→          )}
+   770→        </main>
+   771→
+   772→        {/* Right - Recent Transactions */}
+   773→        <aside className="w-80 border-l bg-card p-4 overflow-y-auto shrink-0">
+   774→          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+   775→            <Activity className="h-4 w-4" /> Recent Transactions
+   776→          </h3>
+   777→          <div className="space-y-2">
+   778→            {recentPayments.length === 0 ? (
+   779→              <p className="text-xs text-muted-foreground text-center py-4">No transactions yet</p>
+   780→            ) : (
+   781→              recentPayments.map((p: any) => (
+   782→                <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
+   783→                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 shrink-0">
+   784→                    {PAYMENT_METHOD_ICONS[p.method]}
+   785→                  </div>
+   786→                  <div className="flex-1 min-w-0">
+   787→                    <p className="text-xs font-medium truncate">{p.booking?.schedule?.route?.origin} → {p.booking?.schedule?.route?.destination}</p>
+   788→                    <p className="text-[10px] text-muted-foreground">{new Date(p.createdAt).toLocaleTimeString()}</p>
+   789→                  </div>
+   790→                  <span className="text-sm font-semibold">KES {p.amount.toLocaleString()}</span>
+   791→                </div>
+   792→              ))
+   793→            )}
+   794→          </div>
+   795→        </aside>
+   796→      </div>
+   797→
+   798→      {/* Payment Dialog */}
+   799→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+   800→        <DialogContent className="sm:max-w-md">
+   801→          <DialogHeader>
+   802→            <DialogTitle>Process Payment</DialogTitle>
+   803→            <DialogDescription>
+   804→              {payingBooking?.reference} — {payingBooking?.passengerName}
+   805→            </DialogDescription>
+   806→          </DialogHeader>
+   807→
+   808→          {/* Amount Display */}
+   809→          <div className="text-center py-4">
+   810→            <p className="text-sm text-muted-foreground">Amount Due</p>
+   811→            <p className="text-4xl font-bold text-primary">
+   812→              KES {payingBooking?.fare.toLocaleString()}
+   813→            </p>
+   814→          </div>
+   815→
+   816→          {/* Payment Method */}
+   817→          <div className="space-y-3">
+   818→            <Label className="text-xs font-medium">Payment Method</Label>
+   819→            <div className="grid grid-cols-2 gap-2">
+   820→              {(['CASH', 'MOBILE_MONEY', 'CARD', 'QR_CODE'] as const).map((method) => (
+   821→                <Button
+   822→                  key={method}
+   823→                  variant={paymentMethod === method ? 'default' : 'outline'}
+   824→                  className="justify-start gap-2 h-11"
+   825→                  onClick={() => setPaymentMethod(method)}
+   826→                >
+   827→                  {PAYMENT_METHOD_ICONS[method]}
+   828→                  <span className="text-xs">{method.replace('_', ' ')}</span>
+   829→                </Button>
+   830→              ))}
+   831→            </div>
+   832→          </div>
+   833→
+   834→          {/* Cash Calculator */}
+   835→          {paymentMethod === 'CASH' && (
+   836→            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3">
+   837→              <Separator />
+   838→              <Label className="text-xs font-medium">Cash Received</Label>
+   839→              <Input
+   840→                type="number"
+   841→                placeholder="0"
+   842→                value={cashReceived}
+   843→                onChange={(e) => setCashReceived(e.target.value)}
+   844→                className="text-xl font-bold text-center h-14"
+   845→                autoFocus
+   846→              />
+   847→              {/* Quick cash buttons */}
+   848→              <div className="grid grid-cols-4 gap-1.5">
+   849→                {[100, 200, 500, 1000, 1500, 2000, 3000, 5000].map((amt) => (
+   850→                  <Button
+   851→                    key={amt}
+   852→                    variant="outline"
+   853→                    size="sm"
+   854→                    className="h-8 text-xs"
+   855→                    onClick={() => setCashReceived(String(amt))}
+   856→                  >
+   857→                    {amt}
+   858→                  </Button>
+   859→                ))}
+   860→              </div>
+   861→              {parseFloat(cashReceived) >= (payingBooking?.fare || 0) && (
+   862→                <motion.div
+   863→                  initial={{ opacity: 0, y: 5 }}
+   864→                  animate={{ opacity: 1, y: 0 }}
+   865→                  className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center"
+   866→                >
+   867→                  <p className="text-xs text-emerald-600">Change to Give</p>
+   868→                  <p className="text-2xl font-bold text-emerald-700">KES {change.toLocaleString()}</p>
+   869→                </motion.div>
+   870→              )}
+   871→            </motion.div>
+   872→          )}
+   873→
+   874→          <DialogFooter className="mt-4">
+   875→            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+   876→            <Button onClick={processPayment} disabled={processing || (paymentMethod === 'CASH' && parseFloat(cashReceived) < (payingBooking?.fare || 0))}>
+   877→              {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Complete Payment'}
+   878→            </Button>
+   879→          </DialogFooter>
+   880→        </DialogContent>
+   881→      </Dialog>
+   882→    </div>
+   883→  );
+   884→}
+   885→
+   886→// ═══════════════════════════════════════════════════════════════════════
+   887→// GATEMAN INTERFACE
+   888→// ═══════════════════════════════════════════════════════════════════════
+   889→function GatemanInterface({ user, onLogout, toast }: { user: StaffUser; onLogout: () => void; toast: any }) {
+   890→  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+   891→  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
+   892→  const [reference, setReference] = useState('');
+   893→  const [validationResult, setValidationResult] = useState<any>(null);
+   894→  const [validating, setValidating] = useState(false);
+   895→  const [boardingInfo, setBoardingInfo] = useState<any>(null);
+   896→  const [inputRef, setInputRef] = useState<HTMLInputElement | null>(null);
+   897→
+   898→  const fetchSchedules = useCallback(async () => {
+   899→    try {
+   900→      const res = await fetch('/api/schedules/today');
+   901→      const data = await res.json();
+   902→      const boardingSchedules = (data.schedules || []).filter((s: ScheduleItem) =>
+   903→        ['SCHEDULED', 'BOARDING', 'DELAYED'].includes(s.status)
+   904→      );
+   905→      setSchedules(boardingSchedules);
+   906→      if (boardingSchedules.length > 0 && !selectedSchedule) {
+   907→        const boarding = boardingSchedules.find((s: ScheduleItem) => s.status === 'BOARDING') || boardingSchedules[0];
+   908→        setSelectedSchedule(boarding);
+   909→      }
+   910→    } catch (err) {
+   911→      console.error(err);
+   912→    }
+   913→  }, [selectedSchedule]);
+   914→
+   915→  const fetchBoardingInfo = useCallback(async () => {
+   916→    if (!selectedSchedule) return;
+   917→    try {
+   918→      const res = await fetch(`/api/gate/boarding?scheduleId=${selectedSchedule.id}`);
+   919→      const data = await res.json();
+   920→      setBoardingInfo(data);
+   921→    } catch (err) {
+   922→      console.error(err);
+   923→    }
+   924→  }, [selectedSchedule]);
+   925→
+   926→  useEffect(() => {
+   927→    fetchSchedules();
+   928→  }, []);
+   929→
+   930→  useEffect(() => {
+   931→    if (selectedSchedule) {
+   932→      fetchBoardingInfo();
+   933→      const interval = setInterval(fetchBoardingInfo, 3000);
+   934→      return () => clearInterval(interval);
+   935→    }
+   936→  }, [selectedSchedule, fetchBoardingInfo]);
+   937→
+   938→  const handleValidate = async () => {
+   939→    if (!reference.trim() || !selectedSchedule) return;
+   940→    setValidating(true);
+   941→    try {
+   942→      const res = await fetch('/api/gate/validate', {
+   943→        method: 'POST',
+   944→        headers: { 'Content-Type': 'application/json' },
+   945→        body: JSON.stringify({
+   946→          reference: reference.trim(),
+   947→          scheduleId: selectedSchedule.id,
+   948→          staffId: user.id,
+   949→        }),
+   950→      });
+   951→      const data = await res.json();
+   952→      setValidationResult(data);
+   953→      if (data.result === 'VALID') {
+   954→        toast({ title: 'Valid Ticket ✅', description: `${data.passengerName} — Seat ${data.seatNumber}` });
+   955→        fetchBoardingInfo();
+   956→      }
+   957→    } catch {
+   958→      setValidationResult({ result: 'INVALID', reason: 'Network error' });
+   959→    } finally {
+   960→      setValidating(false);
+   961→      setReference('');
+   962→      inputRef?.focus();
+   963→    }
+   964→  };
+   965→
+   966→  const resultConfig: Record<string, { bg: string; text: string; icon: React.ReactNode; border: string }> = {
+   967→    VALID: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: <Check className="h-16 w-16" />, border: 'border-emerald-300' },
+   968→    INVALID: { bg: 'bg-red-50', text: 'text-red-700', icon: <X className="h-16 w-16" />, border: 'border-red-300' },
+   969→    WRONG_GATE: { bg: 'bg-amber-50', text: 'text-amber-700', icon: <AlertTriangle className="h-16 w-16" />, border: 'border-amber-300' },
+   970→    ALREADY_BOARDED: { bg: 'bg-orange-50', text: 'text-orange-700', icon: <AlertTriangle className="h-16 w-16" />, border: 'border-orange-300' },
+   971→    CANCELLED: { bg: 'bg-gray-100', text: 'text-gray-600', icon: <X className="h-16 w-16" />, border: 'border-gray-300' },
+   972→  };
+   973→
+   974→  return (
+   975→    <div className="h-screen flex flex-col bg-background">
+   976→      {/* Top - Bus Info */}
+   977→      <header className="bg-primary text-primary-foreground px-6 py-4 shrink-0">
+   978→        <div className="flex items-center justify-between">
+   979→          <div className="flex items-center gap-4">
+   980→            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20">
+   981→              <Bus className="h-6 w-6" />
+   982→            </div>
+   983→            <div>
+   984→              <h1 className="text-2xl font-bold">{selectedSchedule?.routeName || 'Select a Bus'}</h1>
+   985→              <div className="flex items-center gap-4 text-sm opacity-90 mt-1">
+   986→                {selectedSchedule && (
+   987→                  <>
+   988→                    <span className="flex items-center gap-1"><Car className="h-4 w-4" /> {selectedSchedule.busPlate}</span>
+   989→                    <span className="flex items-center gap-1"><DoorOpen className="h-4 w-4" /> Gate {selectedSchedule.gateNumber || 'TBD'}</span>
+   990→                    <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {selectedSchedule.departureTime}</span>
+   991→                  </>
+   992→                )}
+   993→              </div>
+   994→            </div>
+   995→          </div>
+   996→          <div className="flex items-center gap-2">
+   997→            {schedules.length > 1 && (
+   998→              <Select value={selectedSchedule?.id || ''} onValueChange={(v) => {
+   999→                const s = schedules.find(s => s.id === v);
+  1000→                if (s) {
+  1001→                  setSelectedSchedule(s);
+  1002→                  setValidationResult(null);
+  1003→                }
+  1004→              }}>
+  1005→                <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
+  1006→                  <SelectValue />
+  1007→                </SelectTrigger>
+  1008→                <SelectContent>
+  1009→                  {schedules.map((s) => (
+  1010→                    <SelectItem key={s.id} value={s.id}>{s.routeName} - {s.departureTime}</SelectItem>
+  1011→                  ))}
+  1012→                </SelectContent>
+  1013→              </Select>
+  1014→            )}
+  1015→            <Button variant="ghost" size="sm" onClick={onLogout} className="text-white hover:bg-white/10 gap-2">
+  1016→              <LogOut className="h-4 w-4" /> Logout
+  1017→            </Button>
+  1018→          </div>
+  1019→        </div>
+  1020→      </header>
+  1021→
+  1022→      {/* Main Content */}
+  1023→      <div className="flex-1 flex overflow-hidden">
+  1024→        {/* Center - Scanner */}
+  1025→        <main className="flex-1 flex flex-col items-center justify-center p-8">
+  1026→          <div className="w-full max-w-xl">
+  1027→            <div className="flex gap-2 mb-6">
+  1028→              <Input
+  1029→                ref={setInputRef}
+  1030→                placeholder="Scan or type booking reference..."
+  1031→                value={reference}
+  1032→                onChange={(e) => setReference(e.target.value)}
+  1033→                onKeyDown={(e) => e.key === 'Enter' && handleValidate()}
+  1034→                className="h-16 text-2xl font-mono text-center tracking-widest"
+  1035→                autoFocus
+  1036→              />
+  1037→              <Button
+  1038→                size="lg"
+  1039→                className="h-16 px-8 text-lg"
+  1040→                onClick={handleValidate}
+  1041→                disabled={validating || !reference.trim()}
+  1042→              >
+  1043→                {validating ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+  1044→                  <><ShieldCheck className="h-6 w-6 mr-2" /> Validate</>
+  1045→                )}
+  1046→              </Button>
+  1047→            </div>
+  1048→
+  1049→            {/* Result Display */}
+  1050→            <AnimatePresence mode="wait">
+  1051→              {validationResult && (
+  1052→                <motion.div
+  1053→                  key={validationResult.result}
+  1054→                  initial={{ opacity: 0, scale: 0.9 }}
+  1055→                  animate={{ opacity: 1, scale: 1 }}
+  1056→                  exit={{ opacity: 0, scale: 0.9 }}
+  1057→                  className={`
+  1058→                    rounded-2xl border-2 p-8 text-center ${resultConfig[validationResult.result]?.bg || 'bg-gray-50'}
+  1059→                    ${resultConfig[validationResult.result]?.border || 'border-gray-300'}
+  1060→                  `}
+  1061→                >
+  1062→                  <div className={`flex justify-center mb-4 ${resultConfig[validationResult.result]?.text || ''}`}>
+  1063→                    {resultConfig[validationResult.result]?.icon}
+  1064→                  </div>
+  1065→                  <h2 className={`text-3xl font-bold ${resultConfig[validationResult.result]?.text || ''}`}>
+  1066→                    {validationResult.result}
+  1067→                  </h2>
+  1068→                  {validationResult.result === 'VALID' && (
+  1069→                    <div className="mt-3 space-y-1">
+  1070→                      <p className="text-lg font-semibold text-foreground">{validationResult.passengerName}</p>
+  1071→                      <p className="text-xl font-bold text-primary">Seat {validationResult.seatNumber}</p>
+  1072→                      <p className="text-sm text-muted-foreground font-mono">{validationResult.reference}</p>
+  1073→                    </div>
+  1074→                  )}
+  1075→                  {validationResult.reason && validationResult.result !== 'VALID' && (
+  1076→                    <p className="mt-2 text-sm opacity-80">{validationResult.reason}</p>
+  1077→                  )}
+  1078→                </motion.div>
+  1079→              )}
+  1080→            </AnimatePresence>
+  1081→
+  1082→            {!validationResult && (
+  1083→              <div className="text-center text-muted-foreground mt-8">
+  1084→                <QrCode className="h-16 w-16 mx-auto mb-3 opacity-20" />
+  1085→                <p className="text-lg">Waiting for scan...</p>
+  1086→                <p className="text-sm">Scan a ticket QR code or type the reference manually</p>
+  1087→              </div>
+  1088→            )}
+  1089→          </div>
+  1090→        </main>
+  1091→
+  1092→        {/* Right - Boarding Progress */}
+  1093→        <aside className="w-72 border-l bg-card p-4 overflow-y-auto shrink-0">
+  1094→          <h3 className="font-semibold text-sm mb-3">Boarding Progress</h3>
+  1095→          {boardingInfo && (
+  1096→            <>
+  1097→              <div className="text-center mb-4">
+  1098→                <div className="relative inline-flex items-center justify-center w-24 h-24">
+  1099→                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+  1100→                    <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="6" fill="none" className="text-muted/30" />
+  1101→                    <circle
+  1102→                      cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="6" fill="none"
+  1103→                      className="text-primary"
+  1104→                      strokeDasharray={`${(boardingInfo.boardedCount / Math.max(boardingInfo.totalActive, 1)) * 264} 264`}
+  1105→                      strokeLinecap="round"
+  1106→                    />
+  1107→                  </svg>
+  1108→                  <div className="absolute text-center">
+  1109→                    <p className="text-xl font-bold">{boardingInfo.boardedCount}</p>
+  1110→                    <p className="text-[10px] text-muted-foreground">/{boardingInfo.totalActive}</p>
+  1111→                  </div>
+  1112→                </div>
+  1113→                <p className="text-sm font-medium mt-2">
+  1114→                  {Math.round((boardingInfo.boardedCount / Math.max(boardingInfo.totalActive, 1)) * 100)}% Boarded
+  1115→                </p>
+  1116→              </div>
+  1117→
+  1118→              <Separator className="my-3" />
+  1119→
+  1120→              <h4 className="text-xs font-medium text-muted-foreground mb-2">Boarded Passengers</h4>
+  1121→              <div className="space-y-1.5 max-h-64 overflow-y-auto">
+  1122→                {boardingInfo.boarded.map((b: any, i: number) => (
+  1123→                  <div key={b.id} className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/50 text-xs">
+  1124→                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 text-[10px] font-bold">
+  1125→                      {i + 1}
+  1126→                    </span>
+  1127→                    <span className="flex-1 truncate">{b.passengerName}</span>
+  1128→                    <Badge variant="outline" className="text-[10px] h-5">{b.seatNumber}</Badge>
+  1129→                  </div>
+  1130→                ))}
+  1131→              </div>
+  1132→            </>
+  1133→          )}
+  1134→        </aside>
+  1135→      </div>
+  1136→    </div>
+  1137→  );
+  1138→}
+  1139→
+  1140→// ═══════════════════════════════════════════════════════════════════════
+  1141→// MANAGER INTERFACE
+  1142→// ═══════════════════════════════════════════════════════════════════════
+  1143→function ManagerInterface({ user, onLogout, toast }: { user: StaffUser; onLogout: () => void; toast: any }) {
+  1144→  const [stats, setStats] = useState<any>(null);
+  1145→  const [departures, setDepartures] = useState<any[]>([]);
+  1146→  const [staffList, setStaffList] = useState<any[]>([]);
+  1147→  const [loading, setLoading] = useState(true);
+  1148→
+  1149→  const fetchData = useCallback(async () => {
+  1150→    try {
+  1151→      const [statsRes, depRes, staffRes] = await Promise.all([
+  1152→        fetch('/api/dashboard/stats'),
+  1153→        fetch('/api/dashboard/departures'),
+  1154→        fetch('/api/admin/staff'),
+  1155→      ]);
+  1156→      setStats(await statsRes.json());
+  1157→      const depData = await depRes.json();
+  1158→      setDepartures(depData.departures || []);
+  1159→      const staffData = await staffRes.json();
+  1160→      setStaffList(staffData.staff || []);
+  1161→    } catch (err) {
+  1162→      console.error(err);
+  1163→    } finally {
+  1164→      setLoading(false);
+  1165→    }
+  1166→  }, []);
+  1167→
+  1168→  useEffect(() => {
+  1169→    fetchData();
+  1170→    const interval = setInterval(fetchData, 15000);
+  1171→    return () => clearInterval(interval);
+  1172→  }, [fetchData]);
+  1173→
+  1174→  const kpis = stats ? [
+  1175→    {
+  1176→      label: 'Revenue', value: `KES ${(stats.totalRevenue || 0).toLocaleString()}`, icon: <DollarSign className="h-5 w-5" />,
+  1177→      color: 'text-emerald-600 bg-emerald-50', change: '+12%'
+  1178→    },
+  1179→    {
+  1180→      label: 'Passengers', value: stats.totalPassengers || 0, icon: <Users className="h-5 w-5" />,
+  1181→      color: 'text-blue-600 bg-blue-50', change: '+8%'
+  1182→    },
+  1183→    {
+  1184→      label: 'Buses Departed', value: `${stats.busesDeparted || 0}/${stats.totalBuses || 0}`, icon: <Bus className="h-5 w-5" />,
+  1185→      color: 'text-purple-600 bg-purple-50', change: 'On Track'
+  1186→    },
+  1187→    {
+  1188→      label: 'On-Time Rate', value: `${stats.onTimeRate || 0}%`, icon: <TrendingUp className="h-5 w-5" />,
+  1189→      color: 'text-amber-600 bg-amber-50', change: 'vs 94% yesterday'
+  1190→    },
+  1191→  ] : [];
+  1192→
+  1193→  return (
+  1194→    <div className="h-screen flex flex-col bg-background">
+  1195→      <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
+  1196→        <div className="flex items-center gap-3">
+  1197→          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-600 text-white">
+  1198→            <LayoutDashboard className="h-4 w-4" />
+  1199→          </div>
+  1200→          <span className="font-semibold">Manager: {user.name}</span>
+  1201→        </div>
+  1202→        <Button variant="ghost" size="sm" onClick={onLogout} className="gap-2">
+  1203→          <LogOut className="h-4 w-4" /> Logout
+  1204→        </Button>
+  1205→      </header>
+  1206→
+  1207→      <div className="flex-1 flex overflow-hidden">
+  1208→        <main className="flex-1 overflow-y-auto p-4 space-y-4">
+  1209→          {/* KPI Cards */}
+  1210→          {loading ? (
+  1211→            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+  1212→              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+  1213→            </div>
+  1214→          ) : (
+  1215→            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+  1216→              {kpis.map((kpi, i) => (
+  1217→                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+  1218→                  <Card className="h-full">
+  1219→                    <CardContent className="p-4">
+  1220→                      <div className="flex items-center justify-between mb-2">
+  1221→                        <span className="text-xs text-muted-foreground">{kpi.label}</span>
+  1222→                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${kpi.color}`}>{kpi.icon}</div>
+  1223→                      </div>
+  1224→                      <p className="text-2xl font-bold">{kpi.value}</p>
+  1225→                      <p className="text-xs text-muted-foreground mt-1">{kpi.change}</p>
+  1226→                    </CardContent>
+  1227→                  </Card>
+  1228→                </motion.div>
+  1229→              ))}
+  1230→            </div>
+  1231→          )}
+  1232→
+  1233→          {/* Departure Board */}
+  1234→          <Card>
+  1235→            <CardHeader className="pb-3">
+  1236→              <CardTitle className="text-base flex items-center gap-2">
+  1237→                <Activity className="h-4 w-4" /> Live Departure Board
+  1238→              </CardTitle>
+  1239→            </CardHeader>
+  1240→            <CardContent className="p-0">
+  1241→              <Table>
+  1242→                <TableHeader>
+  1243→                  <TableRow>
+  1244→                    <TableHead>Route</TableHead>
+  1245→                    <TableHead>Bus</TableHead>
+  1246→                    <TableHead>Gate</TableHead>
+  1247→                    <TableHead>Time</TableHead>
+  1248→                    <TableHead>Status</TableHead>
+  1249→                    <TableHead>Occupancy</TableHead>
+  1250→                  </TableRow>
+  1251→                </TableHeader>
+  1252→                <TableBody>
+  1253→                  {departures.map((d: any) => (
+  1254→                    <TableRow key={d.id}>
+  1255→                      <TableCell className="font-medium">{d.routeName}</TableCell>
+  1256→                      <TableCell>
+  1257→                        <span className="text-xs">{d.busPlate}</span>
+  1258→                        <Badge variant="outline" className="ml-1 text-[10px]">{d.busType}</Badge>
+  1259→                      </TableCell>
+  1260→                      <TableCell>{d.gateNumber || '—'}</TableCell>
+  1261→                      <TableCell className="font-mono">{d.departureTime}</TableCell>
+  1262→                      <TableCell><Badge className={STATUS_COLORS[d.status] || ''}>{d.status}</Badge></TableCell>
+  1263→                      <TableCell>
+  1264→                        <div className="flex items-center gap-2">
+  1265→                          <Progress value={d.occupancy} className="w-16 h-2" />
+  1266→                          <span className="text-xs text-muted-foreground">{d.occupancy}%</span>
+  1267→                        </div>
+  1268→                      </TableCell>
+  1269→                    </TableRow>
+  1270→                  ))}
+  1271→                </TableBody>
+  1272→              </Table>
+  1273→            </CardContent>
+  1274→          </Card>
+  1275→
+  1276→          {/* AI Insights */}
+  1277→          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+  1278→            <Card className="border-primary/20 bg-primary/5">
+  1279→              <CardContent className="p-4 flex gap-3">
+  1280→                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+  1281→                  <AlertTriangle className="h-5 w-5" />
+  1282→                </div>
+  1283→                <div>
+  1284→                  <p className="text-sm font-medium">High Demand Alert</p>
+  1285→                  <p className="text-xs text-muted-foreground mt-1">
+  1286→                    Route Nairobi → Mombasa is showing {stats?.bookingsByRoute?.[0]?.count || 0} bookings today.
+  1287→                    Consider adding an extra bus for the 11:00 slot.
+  1288→                  </p>
+  1289→                </div>
+  1290→              </CardContent>
+  1291→            </Card>
+  1292→            <Card className="border-emerald-200 bg-emerald-50/50">
+  1293→              <CardContent className="p-4 flex gap-3">
+  1294→                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+  1295→                  <TrendingUp className="h-5 w-5" />
+  1296→                </div>
+  1297→                <div>
+  1298→                  <p className="text-sm font-medium">Revenue Trending Up</p>
+  1299→                  <p className="text-xs text-muted-foreground mt-1">
+  1300→                    Today&apos;s revenue is tracking 12% above yesterday at the same time. Payment processing is smooth.
+  1301→                  </p>
+  1302→                </div>
+  1303→              </CardContent>
+  1304→            </Card>
+  1305→          </div>
+  1306→        </main>
+  1307→
+  1308→        {/* Right - Staff Activity */}
+  1309→        <aside className="w-64 border-l bg-card p-4 overflow-y-auto shrink-0">
+  1310→          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+  1311→            <Users className="h-4 w-4" /> Staff Activity
+  1312→          </h3>
+  1313→          <div className="space-y-2">
+  1314→            {staffList.filter((s: any) => s.active).map((s: any) => (
+  1315→              <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+  1316→                <div className="relative">
+  1317→                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+  1318→                    {s.name.split(' ').map((n: string) => n[0]).join('')}
+  1319→                  </div>
+  1320→                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-card" />
+  1321→                </div>
+  1322→                <div className="flex-1 min-w-0">
+  1323→                  <p className="text-xs font-medium truncate">{s.name}</p>
+  1324→                  <Badge variant="outline" className="text-[10px] h-4">{s.role}</Badge>
+  1325→                </div>
+  1326→              </div>
+  1327→            ))}
+  1328→          </div>
+  1329→        </aside>
+  1330→      </div>
+  1331→    </div>
+  1332→  );
+  1333→}
+  1334→
+  1335→// ═══════════════════════════════════════════════════════════════════════
+  1336→// SUPERADMIN INTERFACE
+  1337→// ═══════════════════════════════════════════════════════════════════════
+  1338→function SuperadminInterface({ user, onLogout, toast }: { user: StaffUser; onLogout: () => void; toast: any }) {
+  1339→  const [activeTab, setActiveTab] = useState('overview');
+  1340→  const [stats, setStats] = useState<any>(null);
+  1341→  const [departures, setDepartures] = useState<any[]>([]);
+  1342→  const [routes, setRoutes] = useState<any[]>([]);
+  1343→  const [buses, setBuses] = useState<any[]>([]);
+  1344→  const [staff, setStaff] = useState<any[]>([]);
+  1345→  const [analytics, setAnalytics] = useState<any>(null);
+  1346→  const [loading, setLoading] = useState(true);
+  1347→
+  1348→  // Dialog states
+  1349→  const [addRouteOpen, setAddRouteOpen] = useState(false);
+  1350→  const [addBusOpen, setAddBusOpen] = useState(false);
+  1351→  const [addStaffOpen, setAddStaffOpen] = useState(false);
+  1352→  const [newRoute, setNewRoute] = useState({ origin: '', destination: '', distanceKm: '', baseFare: '', estimatedMin: '' });
+  1353→  const [newBus, setNewBus] = useState({ plateNumber: '', busType: 'STANDARD', totalSeats: '', rows: '', cols: '4' });
+  1354→  const [newStaff, setNewStaff] = useState({ name: '', email: '', password: 'password', role: 'TICKETER' });
+  1355→
+  1356→  const fetchAll = useCallback(async () => {
+  1357→    try {
+  1358→      const [statsRes, depRes, routesRes, busesRes, staffRes, analyticsRes] = await Promise.all([
+  1359→        fetch('/api/dashboard/stats'),
+  1360→        fetch('/api/dashboard/departures'),
+  1361→        fetch('/api/admin/routes'),
+  1362→        fetch('/api/admin/buses'),
+  1363→        fetch('/api/admin/staff'),
+  1364→        fetch('/api/admin/analytics'),
+  1365→      ]);
+  1366→      setStats(await statsRes.json());
+  1367→      const depData = await depRes.json();
+  1368→      setDepartures(depData.departures || []);
+  1369→      const routesData = await routesRes.json();
+  1370→      setRoutes(routesData.routes || []);
+  1371→      const busesData = await busesRes.json();
+  1372→      setBuses(busesData.buses || []);
+  1373→      const staffData = await staffRes.json();
+  1374→      setStaff(staffData.staff || []);
+  1375→      setAnalytics(await analyticsRes.json());
+  1376→    } catch (err) {
+  1377→      console.error(err);
+  1378→    } finally {
+  1379→      setLoading(false);
+  1380→    }
+  1381→  }, []);
+  1382→
+  1383→  useEffect(() => {
+  1384→    fetchAll();
+  1385→  }, [fetchAll]);
+  1386→
+  1387→  const handleAddRoute = async () => {
+  1388→    if (!newRoute.origin || !newRoute.destination || !newRoute.distanceKm || !newRoute.baseFare || !newRoute.estimatedMin) return;
+  1389→    try {
+  1390→      const stationId = routes[0]?.stationId || staff[0]?.stationId || '';
+  1391→      const res = await fetch('/api/admin/routes', {
+  1392→        method: 'POST',
+  1393→        headers: { 'Content-Type': 'application/json' },
+  1394→        body: JSON.stringify({ ...newRoute, stationId }),
+  1395→      });
+  1396→      const data = await res.json();
+  1397→      if (data.route) {
+  1398→        toast({ title: 'Route Created', description: `${newRoute.origin} → ${newRoute.destination}` });
+  1399→        setAddRouteOpen(false);
+  1400→        setNewRoute({ origin: '', destination: '', distanceKm: '', baseFare: '', estimatedMin: '' });
+  1401→        fetchAll();
+  1402→      }
+  1403→    } catch {
+  1404→      toast({ title: 'Error', description: 'Failed to create route', variant: 'destructive' });
+  1405→    }
+  1406→  };
+  1407→
+  1408→  const handleAddBus = async () => {
+  1409→    if (!newBus.plateNumber || !newBus.totalSeats || !newBus.rows || !newBus.cols) return;
+  1410→    try {
+  1411→      const res = await fetch('/api/admin/buses', {
+  1412→        method: 'POST',
+  1413→        headers: { 'Content-Type': 'application/json' },
+  1414→        body: JSON.stringify(newBus),
+  1415→      });
+  1416→      const data = await res.json();
+  1417→      if (data.bus) {
+  1418→        toast({ title: 'Bus Added', description: `${newBus.plateNumber}` });
+  1419→        setAddBusOpen(false);
+  1420→        setNewBus({ plateNumber: '', busType: 'STANDARD', totalSeats: '', rows: '', cols: '4' });
+  1421→        fetchAll();
+  1422→      } else {
+  1423→        toast({ title: 'Error', description: data.error, variant: 'destructive' });
+  1424→      }
+  1425→    } catch {
+  1426→      toast({ title: 'Error', description: 'Failed to add bus', variant: 'destructive' });
+  1427→    }
+  1428→  };
+  1429→
+  1430→  const kpis = stats ? [
+  1431→    { label: 'Revenue', value: `KES ${(stats.totalRevenue || 0).toLocaleString()}`, icon: <DollarSign className="h-5 w-5" />, color: 'text-emerald-600 bg-emerald-50' },
+  1432→    { label: 'Passengers', value: stats.totalPassengers || 0, icon: <Users className="h-5 w-5" />, color: 'text-blue-600 bg-blue-50' },
+  1433→    { label: 'Buses', value: `${stats.busesDeparted || 0}/${stats.totalBuses || 0}`, icon: <Bus className="h-5 w-5" />, color: 'text-purple-600 bg-purple-50' },
+  1434→    { label: 'On-Time', value: `${stats.onTimeRate || 0}%`, icon: <TrendingUp className="h-5 w-5" />, color: 'text-amber-600 bg-amber-50' },
+  1435→  ] : [];
+  1436→
+  1437→  const sidebarItems = [
+  1438→    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="h-4 w-4" /> },
+  1439→    { id: 'routes', label: 'Routes', icon: <Route className="h-4 w-4" /> },
+  1440→    { id: 'buses', label: 'Buses', icon: <Car className="h-4 w-4" /> },
+  1441→    { id: 'staff', label: 'Staff', icon: <UserCog className="h-4 w-4" /> },
+  1442→    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
+  1443→  ];
+  1444→
+  1445→  return (
+  1446→    <div className="h-screen flex bg-background">
+  1447→      {/* Sidebar */}
+  1448→      <aside className="w-56 border-r bg-card flex flex-col shrink-0">
+  1449→        <div className="p-4 border-b">
+  1450→          <div className="flex items-center gap-2">
+  1451→            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
+  1452→              <Bus className="h-4 w-4" />
+  1453→            </div>
+  1454→            <div>
+  1455→              <p className="font-bold text-sm">BusTrack</p>
+  1456→              <p className="text-[10px] text-muted-foreground">Superadmin</p>
+  1457→            </div>
+  1458→          </div>
+  1459→        </div>
+  1460→        <nav className="flex-1 p-2 space-y-0.5">
+  1461→          {sidebarItems.map((item) => (
+  1462→            <Button
+  1463→              key={item.id}
+  1464→              variant={activeTab === item.id ? 'secondary' : 'ghost'}
+  1465→              className={`w-full justify-start gap-2 h-9 text-sm ${activeTab === item.id ? 'bg-primary/10 text-primary font-medium' : ''}`}
+  1466→              onClick={() => setActiveTab(item.id)}
+  1467→            >
+  1468→              {item.icon} {item.label}
+  1469→            </Button>
+  1470→          ))}
+  1471→        </nav>
+  1472→        <div className="p-2 border-t">
+  1473→          <div className="flex items-center gap-2 px-2 py-1.5">
+  1474→            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+  1475→              {user.name.split(' ').map((n) => n[0]).join('')}
+  1476→            </div>
+  1477→            <div className="flex-1 min-w-0">
+  1478→              <p className="text-xs font-medium truncate">{user.name}</p>
+  1479→              <p className="text-[10px] text-muted-foreground">Superadmin</p>
+  1480→            </div>
+  1481→          </div>
+  1482→          <Button variant="ghost" size="sm" onClick={onLogout} className="w-full justify-start gap-2 text-xs h-8 mt-1">
+  1483→            <LogOut className="h-3 w-3" /> Logout
+  1484→          </Button>
+  1485→        </div>
+  1486→      </aside>
+  1487→
+  1488→      {/* Main Content */}
+  1489→      <main className="flex-1 overflow-y-auto p-6">
+  1490→        {/* OVERVIEW TAB */}
+  1491→        {activeTab === 'overview' && (
+  1492→          <div className="space-y-4">
+  1493→            <h2 className="text-xl font-bold">Overview</h2>
+  1494→            {loading ? (
+  1495→              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+  1496→                {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+  1497→              </div>
+  1498→            ) : (
+  1499→              <>
+  1500→                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+  1501→                  {kpis.map((kpi, i) => (
+  1502→                    <Card key={i}>
+  1503→                      <CardContent className="p-4">
+  1504→                        <div className="flex items-center justify-between mb-2">
+  1505→                          <span className="text-xs text-muted-foreground">{kpi.label}</span>
+  1506→                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${kpi.color}`}>{kpi.icon}</div>
+  1507→                        </div>
+  1508→                        <p className="text-2xl font-bold">{kpi.value}</p>
+  1509→                      </CardContent>
+  1510→                    </Card>
+  1511→                  ))}
+  1512→                </div>
+  1513→                <Card>
+  1514→                  <CardHeader className="pb-3">
+  1515→                    <CardTitle className="text-base">Today&apos;s Departures</CardTitle>
+  1516→                  </CardHeader>
+  1517→                  <CardContent className="p-0">
+  1518→                    <Table>
+  1519→                      <TableHeader>
+  1520→                        <TableRow>
+  1521→                          <TableHead>Route</TableHead>
+  1522→                          <TableHead>Bus</TableHead>
+  1523→                          <TableHead>Gate</TableHead>
+  1524→                          <TableHead>Time</TableHead>
+  1525→                          <TableHead>Status</TableHead>
+  1526→                          <TableHead>Occupancy</TableHead>
+  1527→                        </TableRow>
+  1528→                      </TableHeader>
+  1529→                      <TableBody>
+  1530→                        {departures.map((d: any) => (
+  1531→                          <TableRow key={d.id}>
+  1532→                            <TableCell className="font-medium">{d.routeName}</TableCell>
+  1533→                            <TableCell>{d.busPlate}</TableCell>
+  1534→                            <TableCell>{d.gateNumber || '—'}</TableCell>
+  1535→                            <TableCell className="font-mono">{d.departureTime}</TableCell>
+  1536→                            <TableCell><Badge className={STATUS_COLORS[d.status] || ''}>{d.status}</Badge></TableCell>
+  1537→                            <TableCell>
+  1538→                              <div className="flex items-center gap-2">
+  1539→                                <Progress value={d.occupancy} className="w-16 h-2" />
+  1540→                                <span className="text-xs">{d.occupancy}%</span>
+  1541→                              </div>
+  1542→                            </TableCell>
+  1543→                          </TableRow>
+  1544→                        ))}
+  1545→                      </TableBody>
+  1546→                    </Table>
+  1547→                  </CardContent>
+  1548→                </Card>
+  1549→              </>
+  1550→            )}
+  1551→          </div>
+  1552→        )}
+  1553→
+  1554→        {/* ROUTES TAB */}
+  1555→        {activeTab === 'routes' && (
+  1556→          <div className="space-y-4">
+  1557→            <div className="flex items-center justify-between">
+  1558→              <h2 className="text-xl font-bold">Routes</h2>
+  1559→              <Button size="sm" onClick={() => setAddRouteOpen(true)} className="gap-1">
+  1560→                <Plus className="h-4 w-4" /> Add Route
+  1561→              </Button>
+  1562→            </div>
+  1563→            <Card>
+  1564→              <CardContent className="p-0">
+  1565→                <Table>
+  1566→                  <TableHeader>
+  1567→                    <TableRow>
+  1568→                      <TableHead>Origin</TableHead>
+  1569→                      <TableHead>Destination</TableHead>
+  1570→                      <TableHead>Distance</TableHead>
+  1571→                      <TableHead>Base Fare</TableHead>
+  1572→                      <TableHead>Est. Time</TableHead>
+  1573→                      <TableHead>Schedules</TableHead>
+  1574→                    </TableRow>
+  1575→                  </TableHeader>
+  1576→                  <TableBody>
+  1577→                    {routes.map((r: any) => (
+  1578→                      <TableRow key={r.id}>
+  1579→                        <TableCell className="font-medium flex items-center gap-1.5"><MapPin className="h-3 w-3 text-muted-foreground" /> {r.origin}</TableCell>
+  1580→                        <TableCell className="flex items-center gap-1.5"><MapPin className="h-3 w-3 text-muted-foreground" /> {r.destination}</TableCell>
+  1581→                        <TableCell>{r.distanceKm} km</TableCell>
+  1582→                        <TableCell>KES {r.baseFare.toLocaleString()}</TableCell>
+  1583→                        <TableCell>{r.estimatedMin} min</TableCell>
+  1584→                        <TableCell><Badge variant="secondary">{r._count?.schedules || 0}</Badge></TableCell>
+  1585→                      </TableRow>
+  1586→                    ))}
+  1587→                  </TableBody>
+  1588→                </Table>
+  1589→              </CardContent>
+  1590→            </Card>
+  1591→
+  1592→            <Dialog open={addRouteOpen} onOpenChange={setAddRouteOpen}>
+  1593→              <DialogContent>
+  1594→                <DialogHeader>
+  1595→                  <DialogTitle>Add New Route</DialogTitle>
+  1596→                </DialogHeader>
+  1597→                <div className="grid grid-cols-2 gap-3">
+  1598→                  <div><Label className="text-xs">Origin</Label><Input value={newRoute.origin} onChange={(e) => setNewRoute({ ...newRoute, origin: e.target.value })} className="mt-1" /></div>
+  1599→                  <div><Label className="text-xs">Destination</Label><Input value={newRoute.destination} onChange={(e) => setNewRoute({ ...newRoute, destination: e.target.value })} className="mt-1" /></div>
+  1600→                  <div><Label className="text-xs">Distance (km)</Label><Input type="number" value={newRoute.distanceKm} onChange={(e) => setNewRoute({ ...newRoute, distanceKm: e.target.value })} className="mt-1" /></div>
+  1601→                  <div><Label className="text-xs">Base Fare (KES)</Label><Input type="number" value={newRoute.baseFare} onChange={(e) => setNewRoute({ ...newRoute, baseFare: e.target.value })} className="mt-1" /></div>
+  1602→                  <div><Label className="text-xs">Est. Time (min)</Label><Input type="number" value={newRoute.estimatedMin} onChange={(e) => setNewRoute({ ...newRoute, estimatedMin: e.target.value })} className="mt-1" /></div>
+  1603→                </div>
+  1604→                <DialogFooter>
+  1605→                  <Button variant="outline" onClick={() => setAddRouteOpen(false)}>Cancel</Button>
+  1606→                  <Button onClick={handleAddRoute}>Create Route</Button>
+  1607→                </DialogFooter>
+  1608→              </DialogContent>
+  1609→            </Dialog>
+  1610→          </div>
+  1611→        )}
+  1612→
+  1613→        {/* BUSES TAB */}
+  1614→        {activeTab === 'buses' && (
+  1615→          <div className="space-y-4">
+  1616→            <div className="flex items-center justify-between">
+  1617→              <h2 className="text-xl font-bold">Buses</h2>
+  1618→              <Button size="sm" onClick={() => setAddBusOpen(true)} className="gap-1">
+  1619→                <Plus className="h-4 w-4" /> Add Bus
+  1620→              </Button>
+  1621→            </div>
+  1622→            <Card>
+  1623→              <CardContent className="p-0">
+  1624→                <Table>
+  1625→                  <TableHeader>
+  1626→                    <TableRow>
+  1627→                      <TableHead>Plate Number</TableHead>
+  1628→                      <TableHead>Type</TableHead>
+  1629→                      <TableHead>Total Seats</TableHead>
+  1630→                      <TableHead>Layout</TableHead>
+  1631→                      <TableHead>Schedules</TableHead>
+  1632→                      <TableHead>Status</TableHead>
+  1633→                    </TableRow>
+  1634→                  </TableHeader>
+  1635→                  <TableBody>
+  1636→                    {buses.map((b: any) => (
+  1637→                      <TableRow key={b.id}>
+  1638→                        <TableCell className="font-mono font-medium">{b.plateNumber}</TableCell>
+  1639→                        <TableCell><Badge variant="outline">{b.busType}</Badge></TableCell>
+  1640→                        <TableCell>{b.totalSeats}</TableCell>
+  1641→                        <TableCell>{b.rows} × {b.cols}</TableCell>
+  1642→                        <TableCell><Badge variant="secondary">{b._count?.schedules || 0}</Badge></TableCell>
+  1643→                        <TableCell>
+  1644→                          <Badge className={b.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}>
+  1645→                            {b.active ? 'Active' : 'Inactive'}
+  1646→                          </Badge>
+  1647→                        </TableCell>
+  1648→                      </TableRow>
+  1649→                    ))}
+  1650→                  </TableBody>
+  1651→                </Table>
+  1652→              </CardContent>
+  1653→            </Card>
+  1654→
+  1655→            <Dialog open={addBusOpen} onOpenChange={setAddBusOpen}>
+  1656→              <DialogContent>
+  1657→                <DialogHeader>
+  1658→                  <DialogTitle>Add New Bus</DialogTitle>
+  1659→                </DialogHeader>
+  1660→                <div className="grid grid-cols-2 gap-3">
+  1661→                  <div className="col-span-2"><Label className="text-xs">Plate Number</Label><Input value={newBus.plateNumber} onChange={(e) => setNewBus({ ...newBus, plateNumber: e.target.value })} className="mt-1" placeholder="KBA 123A" /></div>
+  1662→                  <div>
+  1663→                    <Label className="text-xs">Type</Label>
+  1664→                    <Select value={newBus.busType} onValueChange={(v) => setNewBus({ ...newBus, busType: v })}>
+  1665→                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+  1666→                      <SelectContent>
+  1667→                        <SelectItem value="STANDARD">Standard</SelectItem>
+  1668→                        <SelectItem value="EXECUTIVE">Executive</SelectItem>
+  1669→                        <SelectItem value="VIP">VIP</SelectItem>
+  1670→                        <SelectItem value="PREMIUM">Premium</SelectItem>
+  1671→                      </SelectContent>
+  1672→                    </Select>
+  1673→                  </div>
+  1674→                  <div><Label className="text-xs">Total Seats</Label><Input type="number" value={newBus.totalSeats} onChange={(e) => setNewBus({ ...newBus, totalSeats: e.target.value })} className="mt-1" /></div>
+  1675→                  <div><Label className="text-xs">Rows</Label><Input type="number" value={newBus.rows} onChange={(e) => setNewBus({ ...newBus, rows: e.target.value })} className="mt-1" /></div>
+  1676→                  <div><Label className="text-xs">Columns</Label><Input type="number" value={newBus.cols} onChange={(e) => setNewBus({ ...newBus, cols: e.target.value })} className="mt-1" /></div>
+  1677→                </div>
+  1678→                <DialogFooter>
+  1679→                  <Button variant="outline" onClick={() => setAddBusOpen(false)}>Cancel</Button>
+  1680→                  <Button onClick={handleAddBus}>Add Bus</Button>
+  1681→                </DialogFooter>
+  1682→              </DialogContent>
+  1683→            </Dialog>
+  1684→          </div>
+  1685→        )}
+  1686→
+  1687→        {/* STAFF TAB */}
+  1688→        {activeTab === 'staff' && (
+  1689→          <div className="space-y-4">
+  1690→            <div className="flex items-center justify-between">
+  1691→              <h2 className="text-xl font-bold">Staff</h2>
+  1692→              <Button size="sm" onClick={() => setAddStaffOpen(true)} className="gap-1">
+  1693→                <Plus className="h-4 w-4" /> Add Staff
+  1694→              </Button>
+  1695→            </div>
+  1696→            <Card>
+  1697→              <CardContent className="p-0">
+  1698→                <Table>
+  1699→                  <TableHeader>
+  1700→                    <TableRow>
+  1701→                      <TableHead>Name</TableHead>
+  1702→                      <TableHead>Email</TableHead>
+  1703→                      <TableHead>Role</TableHead>
+  1704→                      <TableHead>Phone</TableHead>
+  1705→                      <TableHead>Bookings</TableHead>
+  1706→                      <TableHead>Status</TableHead>
+  1707→                    </TableRow>
+  1708→                  </TableHeader>
+  1709→                  <TableBody>
+  1710→                    {staff.map((s: any) => (
+  1711→                      <TableRow key={s.id}>
+  1712→                        <TableCell className="font-medium">{s.name}</TableCell>
+  1713→                        <TableCell className="text-sm text-muted-foreground">{s.email}</TableCell>
+  1714→                        <TableCell><Badge variant="outline">{s.role}</Badge></TableCell>
+  1715→                        <TableCell className="text-sm">{s.phone || '—'}</TableCell>
+  1716→                        <TableCell>{s._count?.bookings || 0}</TableCell>
+  1717→                        <TableCell>
+  1718→                          <Badge className={s.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}>
+  1719→                            {s.active ? 'Active' : 'Inactive'}
+  1720→                          </Badge>
+  1721→                        </TableCell>
+  1722→                      </TableRow>
+  1723→                    ))}
+  1724→                  </TableBody>
+  1725→                </Table>
+  1726→              </CardContent>
+  1727→            </Card>
+  1728→
+  1729→            <Dialog open={addStaffOpen} onOpenChange={setAddStaffOpen}>
+  1730→              <DialogContent>
+  1731→                <DialogHeader>
+  1732→                  <DialogTitle>Add New Staff</DialogTitle>
+  1733→                </DialogHeader>
+  1734→                <div className="space-y-3">
+  1735→                  <div><Label className="text-xs">Full Name</Label><Input value={newStaff.name} onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} className="mt-1" /></div>
+  1736→                  <div><Label className="text-xs">Email</Label><Input type="email" value={newStaff.email} onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })} className="mt-1" /></div>
+  1737→                  <div>
+  1738→                    <Label className="text-xs">Role</Label>
+  1739→                    <Select value={newStaff.role} onValueChange={(v) => setNewStaff({ ...newStaff, role: v })}>
+  1740→                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+  1741→                      <SelectContent>
+  1742→                        <SelectItem value="TICKETER">Ticketer</SelectItem>
+  1743→                        <SelectItem value="CASHIER">Cashier</SelectItem>
+  1744→                        <SelectItem value="GATEMAN">Gateman</SelectItem>
+  1745→                        <SelectItem value="MANAGER">Manager</SelectItem>
+  1746→                        <SelectItem value="SUPERADMIN">Superadmin</SelectItem>
+  1747→                      </SelectContent>
+  1748→                    </Select>
+  1749→                  </div>
+  1750→                </div>
+  1751→                <DialogFooter>
+  1752→                  <Button variant="outline" onClick={() => setAddStaffOpen(false)}>Cancel</Button>
+  1753→                  <Button onClick={async () => {
+  1754→                    if (!newStaff.name || !newStaff.email) return;
+  1755→                    try {
+  1756→                      const stationId = staff[0]?.stationId || routes[0]?.stationId || '';
+  1757→                      const res = await fetch('/api/admin/staff', {
+  1758→                        method: 'POST',
+  1759→                        headers: { 'Content-Type': 'application/json' },
+  1760→                        body: JSON.stringify({ ...newStaff, stationId }),
+  1761→                      });
+  1762→                      if (res.ok) {
+  1763→                        toast({ title: 'Staff Added', description: newStaff.name });
+  1764→                        setAddStaffOpen(false);
+  1765→                        setNewStaff({ name: '', email: '', password: 'password', role: 'TICKETER' });
+  1766→                        fetchAll();
+  1767→                      }
+  1768→                    } catch {
+  1769→                      toast({ title: 'Error', variant: 'destructive' });
+  1770→                    }
+  1771→                  }}>Add Staff</Button>
+  1772→                </DialogFooter>
+  1773→              </DialogContent>
+  1774→            </Dialog>
+  1775→          </div>
+  1776→        )}
+  1777→
+  1778→        {/* ANALYTICS TAB */}
+  1779→        {activeTab === 'analytics' && (
+  1780→          <div className="space-y-4">
+  1781→            <h2 className="text-xl font-bold">Analytics</h2>
+  1782→            {loading || !analytics ? (
+  1783→              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  1784→                <Skeleton className="h-80 rounded-xl" />
+  1785→                <Skeleton className="h-80 rounded-xl" />
+  1786→              </div>
+  1787→            ) : (
+  1788→              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  1789→                {/* Revenue Bar Chart */}
+  1790→                <Card>
+  1791→                  <CardHeader className="pb-2">
+  1792→                    <CardTitle className="text-base">Revenue by Route</CardTitle>
+  1793→                  </CardHeader>
+  1794→                  <CardContent>
+  1795→                    {analytics.revenueByRoute?.length > 0 ? (
+  1796→                      <ResponsiveContainer width="100%" height={300}>
+  1797→                        <BarChart data={analytics.revenueByRoute}>
+  1798→                          <CartesianGrid strokeDasharray="3 3" />
+  1799→                          <XAxis dataKey="routeName" tick={{ fontSize: 11 }} />
+  1800→                          <YAxis tick={{ fontSize: 11 }} />
+  1801→                          <RTooltip
+  1802→                            formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Revenue']}
+  1803→                          />
+  1804→                          <Bar dataKey="revenue" fill="oklch(0.55 0.2 260)" radius={[4, 4, 0, 0]} />
+  1805→                        </BarChart>
+  1806→                      </ResponsiveContainer>
+  1807→                    ) : (
+  1808→                      <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+  1809→                        No data yet
+  1810→                      </div>
+  1811→                    )}
+  1812→                  </CardContent>
+  1813→                </Card>
+  1814→
+  1815→                {/* Occupancy Pie Chart */}
+  1816→                <Card>
+  1817→                  <CardHeader className="pb-2">
+  1818→                    <CardTitle className="text-base">Passengers by Route</CardTitle>
+  1819→                  </CardHeader>
+  1820→                  <CardContent>
+  1821→                    {analytics.seatOccupancy?.length > 0 ? (
+  1822→                      <ResponsiveContainer width="100%" height={300}>
+  1823→                        <PieChart>
+  1824→                          <Pie
+  1825→                            data={analytics.seatOccupancy}
+  1826→                            cx="50%"
+  1827→                            cy="50%"
+  1828→                            innerRadius={60}
+  1829→                            outerRadius={100}
+  1830→                            dataKey="value"
+  1831→                            nameKey="name"
+  1832→                            label={({ name, percentage }) => `${name.split('→')[1]?.trim() || name} ${percentage}%`}
+  1833→                          >
+  1834→                            {analytics.seatOccupancy.map((_: any, index: number) => (
+  1835→                              <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+  1836→                            ))}
+  1837→                          </Pie>
+  1838→                          <RTooltip />
+  1839→                          <Legend />
+  1840→                        </PieChart>
+  1841→                      </ResponsiveContainer>
+  1842→                    ) : (
+  1843→                      <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+  1844→                        No data yet
+  1845→                      </div>
+  1846→                    )}
+  1847→                  </CardContent>
+  1848→                </Card>
+  1849→              </div>
+  1850→            )}
+  1851→          </div>
+  1852→        )}
+  1853→      </main>
+  1854→    </div>
+  1855→  );
+  1856→}
