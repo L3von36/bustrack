@@ -15,19 +15,19 @@ async function main() {
   // ─── STAFF ───────────────────────────────────────
   const staff = await Promise.all([
     prisma.staff.create({
-      data: { name: "Alice Wanjiku", email: "alice@bus.com", password: "password", role: "TICKETER", stationId: station.id },
+      data: { name: "Alice Wanjiku", email: "alice@bustrack.com", password: "password", role: "TICKETER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Bob Ochieng", email: "bob@bus.com", password: "password", role: "CASHIER", stationId: station.id },
+      data: { name: "Bob Ochieng", email: "bob@bustrack.com", password: "password", role: "CASHIER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Charles Mwangi", email: "charles@bus.com", password: "password", role: "GATEMAN", stationId: station.id },
+      data: { name: "Charles Mwangi", email: "charles@bustrack.com", password: "password", role: "GATEMAN", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Diana Akinyi", email: "diana@bus.com", password: "password", role: "MANAGER", stationId: station.id },
+      data: { name: "Diana Akinyi", email: "diana@bustrack.com", password: "password", role: "MANAGER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Edward Kamau", email: "edward@bus.com", password: "password", role: "SUPERADMIN" },
+      data: { name: "Edward Kamau", email: "edward@bustrack.com", password: "password", role: "SUPERADMIN" },
     }),
   ]);
 
