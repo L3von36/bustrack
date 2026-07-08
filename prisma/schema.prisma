@@ -1,0 +1,241 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── STAFF & AUTH ────────────────────────────────────────────
+
+enum Role {
+  GATEMAN
+  TICKETER
+  CASHIER
+  MANAGER
+  SUPERADMIN
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      Role
+  stationId String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  station Station?  @relation(fields: [stationId], references: [id])
+  bookings  Booking[]
+  payments  Payment[]
+  gateLogs  GateLog[]
+
+  @@index([role])
+  @@index([stationId])
+}
+
+// ─── STATIONS ────────────────────────────────────────────────
+
+model Station {
+  id        String   @id @default(cuid())
+  name      String
+  city      String
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  staff    Staff[]
+  routes   Route[]
+  schedules Schedule[]
+}
+
+// ─── ROUTES ──────────────────────────────────────────────────
+
+model Route {
+  id          String   @id @default(cuid())
+  origin      String
+  destination String
+  distanceKm  Int      @map("distance_km")
+  baseFare    Float
+  estimatedMin Int     @map("estimated_min")
+  active      Boolean  @default(true)
+  stationId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  station   Station    @relation(fields: [stationId], references: [id])
+  schedules Schedule[]
+
+  @@index([origin])
+  @@index([destination])
+  @@index([stationId])
+}
+
+// ─── BUSES ───────────────────────────────────────────────────
+
+enum BusType {
+  STANDARD
+  EXECUTIVE
+  VIP
+  PREMIUM
+}
+
+model Bus {
+  id        String   @id @default(cuid())
+  plateNumber String @map("plate_number")
+  busType   BusType  @map("bus_type")
+  totalSeats Int     @map("total_seats")
+  rows      Int
+  cols      Int      @default(2)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules Schedule[]
+
+  @@unique([plateNumber])
+}
+
+// ─── SCHEDULES ───────────────────────────────────────────────
+
+enum ScheduleStatus {
+  SCHEDULED
+  BOARDING
+  DEPARTED
+  CANCELLED
+  DELAYED
+}
+
+model Schedule {
+  id          String          @id @default(cuid())
+  routeId     String
+  busId       String
+  stationId   String
+  departureDate String        @map("departure_date")
+  departureTime String        @map("departure_time")
+  fare        Float
+  status      ScheduleStatus  @default(SCHEDULED)
+  gateNumber  String?
+  actualDeparture String?     @map("actual_departure")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  route    Route    @relation(fields: [routeId], references: [id])
+  bus      Bus      @relation(fields: [busId], references: [id])
+  station  Station  @relation(fields: [stationId], references: [id])
+  bookings Booking[]
+  gateLogs GateLog[]
+
+  @@index([routeId])
+  @@index([busId])
+  @@index([departureDate])
+  @@index([status])
+}
+
+// ─── BOOKINGS ────────────────────────────────────────────────
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  BOARDED
+  NO_SHOW
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  reference     String        @unique
+  scheduleId    String
+  staffId       String
+  passengerName String        @map("passenger_name")
+  passengerPhone String       @map("passenger_phone")
+  seatNumber    String        @map("seat_number")
+  fare          Float
+  status        BookingStatus @default(PENDING_PAYMENT)
+  boardedAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id])
+  staff    Staff    @relation(fields: [staffId], references: [id])
+  payments Payment[]
+  gateLogs GateLog[]
+
+  @@unique([scheduleId, seatNumber])
+  @@index([reference])
+  @@index([status])
+  @@index([staffId])
+  @@index([passengerPhone])
+}
+
+// ─── PAYMENTS ────────────────────────────────────────────────
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  CARD
+  QR_CODE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  bookingId    String
+  staffId      String
+  amount       Float
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+  reference    String?       // External payment reference (M-Pesa, etc.)
+  cashReceived Float?        @map("cash_received")
+  changeGiven  Float?        @map("change_given")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  staff   Staff   @relation(fields: [staffId], references: [id])
+
+  @@index([bookingId])
+  @@index([staffId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ─── GATE LOGS ───────────────────────────────────────────────
+
+enum GateResult {
+  VALID
+  INVALID
+  WRONG_GATE
+  ALREADY_BOARDED
+  CANCELLED
+  DUPLICATE
+}
+
+model GateLog {
+  id          String     @id @default(cuid())
+  bookingId   String
+  scheduleId  String
+  staffId     String     // Gateman who scanned
+  result      GateResult
+  reason      String?
+  createdAt   DateTime   @default(now())
+
+  booking  Booking  @relation(fields: [bookingId], references: [id])
+  schedule Schedule @relation(fields: [scheduleId], references: [id])
+  staff    Staff    @relation(fields: [staffId], references: [id])
+
+  @@index([bookingId])
+  @@index([scheduleId])
+  @@index([createdAt])
+}
