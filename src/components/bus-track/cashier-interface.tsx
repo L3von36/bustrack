@@ -115,6 +115,9 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
   const [cashReceived, setCashReceived] = useState('');
   const [processing, setProcessing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [telebirrPhone, setTelebirrPhone] = useState('');
+  const [telebirrWaiting, setTelebirrWaiting] = useState(false);
+  const [telebirrSuccess, setTelebirrSuccess] = useState(false);
 
   /* ─── Data fetching ──────────────────────────────────────── */
   const fetchData = useCallback(async () => {
@@ -163,7 +166,27 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
     setPayingBooking(booking);
     setPaymentMethod('CASH');
     setCashReceived('');
+    setTelebirrPhone('');
+    setTelebirrWaiting(false);
+    setTelebirrSuccess(false);
     setDialogOpen(true);
+  };
+
+  /* ─── Telebirr payment handler ───────────────────────────── */
+  const handleTelebirrPayment = async () => {
+    if (!payingBooking || !telebirrPhone.trim()) return;
+    setTelebirrWaiting(true);
+    setTelebirrSuccess(false);
+    // Simulate 2-second wait for Telebirr confirmation
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setTelebirrWaiting(false);
+    setTelebirrSuccess(true);
+    toast.success(`Telebirr payment of ETB ${payingBooking.fare.toLocaleString()} received`);
+    // Auto-complete after brief display
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    // Proceed with the normal payment flow
+    setPaymentMethod('MOBILE_MONEY');
+    processPayment();
   };
 
   const processPayment = async () => {
@@ -611,6 +634,84 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                 </div>
               </div>
 
+              {/* ── Telebirr prompt (only for MOBILE_MONEY) ── */}
+              {paymentMethod === 'MOBILE_MONEY' && (
+                <div>
+                  <Separator className="bg-border/50" />
+                  <div className="px-7 pt-6 pb-5 space-y-4">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                      Telebirr Payment
+                    </Label>
+
+                    {/* Telebirr branding card */}
+                    <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 dark:from-emerald-500/15 dark:to-emerald-600/5 p-5">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-11 h-11 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                          <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                          <span className="text-base font-bold text-emerald-700 dark:text-emerald-300">Telebirr</span>
+                          <p className="text-[11px] text-muted-foreground">Mobile money payment</p>
+                        </div>
+                      </div>
+                      <p className="text-[13px] text-muted-foreground leading-relaxed">
+                        Enter the passenger&apos;s Telebirr number or scan QR code
+                      </p>
+                    </div>
+
+                    {/* Telebirr phone input */}
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium pointer-events-none">
+                        🇪🇹 +251
+                      </span>
+                      <Input
+                        type="tel"
+                        placeholder="0912 345 678"
+                        value={telebirrPhone}
+                        onChange={(e) => {
+                          setTelebirrPhone(e.target.value);
+                          setTelebirrSuccess(false);
+                        }}
+                        disabled={telebirrWaiting || telebirrSuccess}
+                        className="h-14 pl-24 pr-4 text-lg font-semibold tabular-nums bg-card border-border/60 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40 rounded-xl"
+                      />
+                    </div>
+
+                    {/* Waiting state */}
+                    {telebirrWaiting && (
+                      <div className="flex items-center justify-center gap-3 py-4 rounded-xl bg-emerald-500/5 border border-emerald-500/15 animate-bt-fade-in">
+                        <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
+                        <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                          Waiting for payment…
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Success state */}
+                    {telebirrSuccess && (
+                      <div className="flex items-center justify-center gap-2.5 py-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 animate-bt-fade-in">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                          Payment received! Processing…
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Send Payment Request button */}
+                    {!telebirrWaiting && !telebirrSuccess && (
+                      <Button
+                        onClick={handleTelebirrPayment}
+                        disabled={!telebirrPhone.trim() || telebirrPhone.replace(/\s/g, '').length < 10}
+                        className="w-full h-12 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-shadow disabled:opacity-40 disabled:hover:shadow-none"
+                      >
+                        <Smartphone className="h-4 w-4 mr-2" />
+                        Send Payment Request
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* ── Cash calculator (only for CASH) ── */}
               {paymentMethod === 'CASH' && (
                 <div>
@@ -691,23 +792,25 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={processPayment}
-                  disabled={processing || !canCompleteCash}
-                  className="flex-1 h-12 text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-shadow"
-                >
-                  {processing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Complete Payment
-                    </>
-                  )}
-                </Button>
+                {paymentMethod !== 'MOBILE_MONEY' && (
+                  <Button
+                    onClick={processPayment}
+                    disabled={processing || !canCompleteCash}
+                    className="flex-1 h-12 text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-shadow"
+                  >
+                    {processing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Complete Payment
+                      </>
+                    )}
+                  </Button>
+                )}
               </DialogFooter>
             </div>
           )}

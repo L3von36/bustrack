@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   DollarSign, Users, Bus, TrendingUp, Activity, Sparkles,
   ArrowUpRight, ArrowDownRight, BarChart3,
+  Search, X, ChevronRight, AlertTriangle, Plus, Megaphone, FileText,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -33,6 +35,7 @@ interface KpiData {
   borderColor: string;
   change: string | null;
   changeDirection: 'up' | 'down' | 'neutral';
+  sparkColor: string;
 }
 
 interface DepartureRow {
@@ -48,36 +51,54 @@ interface DepartureRow {
   totalSeats?: number;
 }
 
+interface FakePassenger {
+  name: string;
+  seat: string;
+  status: string;
+}
+
 // ─── AI Insights (Static) ───────────────────────────────────────
 
 const AI_INSIGHTS = [
   {
     accent: 'bg-amber-500',
-    tagBg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-    title: 'High Demand Predicted',
-    description: 'Addis Ababa → Dire Dawa shows 40% higher booking rate. Consider adding buses at 11:00 and 14:00.',
-    tag: 'Demand',
+    accentText: 'text-amber-600 dark:text-amber-400',
+    accentBg: 'bg-amber-50 dark:bg-amber-900/10',
+    accentBorder: 'border-amber-500/20 hover:border-amber-500/40',
+    issue: 'High Demand',
+    insight: 'Addis Ababa → Dire Dawa shows 40% higher booking rate than usual',
+    action: 'Add 11:00 Bus',
+    actionIcon: <Plus className="h-3 w-3" />,
   },
   {
     accent: 'bg-emerald-500',
-    tagBg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    title: 'Revenue Above Average',
-    description: "Today's revenue is tracking 12% above the 7-day rolling average. Payment processing improved by 0.8s.",
-    tag: 'Revenue',
+    accentText: 'text-emerald-600 dark:text-emerald-400',
+    accentBg: 'bg-emerald-50 dark:bg-emerald-900/10',
+    accentBorder: 'border-emerald-500/20 hover:border-emerald-500/40',
+    issue: 'Revenue Above Target',
+    insight: "Today's revenue tracking 12% above 7-day rolling average",
+    action: 'View Revenue Report',
+    actionIcon: <FileText className="h-3 w-3" />,
   },
   {
     accent: 'bg-orange-500',
-    tagBg: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-    title: 'Departure Delay Risk',
-    description: 'The 09:30 Bahir Dar bus has 45% boarding with 12 min to departure. PA announcements may help.',
-    tag: 'Operations',
+    accentText: 'text-orange-600 dark:text-orange-400',
+    accentBg: 'bg-orange-50 dark:bg-orange-900/10',
+    accentBorder: 'border-orange-500/20 hover:border-orange-500/40',
+    issue: 'Delay Risk',
+    insight: '45% boarded with 12min to departure on 09:30 Bahir Dar',
+    action: 'Send PA Alert',
+    actionIcon: <Megaphone className="h-3 w-3" />,
   },
   {
     accent: 'bg-zinc-400',
-    tagBg: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300',
-    title: 'Staff Utilization Optimal',
-    description: 'All 3 tills active with balanced queues (avg 2.3 waiting). No reallocation needed.',
-    tag: 'Staff',
+    accentText: 'text-zinc-500 dark:text-zinc-400',
+    accentBg: 'bg-zinc-50 dark:bg-zinc-900/10',
+    accentBorder: 'border-zinc-400/20 hover:border-zinc-400/40',
+    issue: 'Staff Optimal',
+    insight: 'All 3 tills active with balanced queues (avg 2.3 waiting)',
+    action: 'Staff Overview',
+    actionIcon: <Users className="h-3 w-3" />,
   },
 ];
 
@@ -124,9 +145,124 @@ function formatRelativeTime(timestamp: string): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// ─── Seeded random for sparkline data ────────────────────────────
+
+function seededRandom(seed: string, index: number): number {
+  let hash = 0;
+  const str = seed + '-' + index.toString();
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return (Math.abs(hash) % 100) / 100;
+}
+
+function generateSparklineData(label: string): number[] {
+  const values: number[] = [];
+  for (let i = 0; i < 7; i++) {
+    values.push(seededRandom(label, i));
+  }
+  // Normalize so the last value is typically higher to create a slight upward trend
+  const base = 0.3 + seededRandom(label, 100) * 0.4;
+  return values.map((v, i) => {
+    const trend = (i / 6) * 0.3;
+    return Math.max(0.05, Math.min(0.95, base + v * 0.3 + trend - 0.15));
+  });
+}
+
+// ─── Sparkline SVG Component ─────────────────────────────────────
+
+function Sparkline({ data, color, width = 80, height = 24 }: {
+  data: number[];
+  color: string;
+  width?: number;
+  height?: number;
+}) {
+  const pad = 2;
+  const w = width;
+  const h = height;
+  const innerW = w - pad * 2;
+  const innerH = h - pad * 2;
+
+  const points = data.map((v, i) => ({
+    x: pad + (i / (data.length - 1)) * innerW,
+    y: pad + (1 - v) * innerH,
+  }));
+
+  // Build smooth cubic bezier path (Catmull-Rom to Bezier conversion)
+  let pathD = `M ${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+  }
+
+  // Area path: same curve but closes at the bottom
+  const areaD = `${pathD} L ${points[points.length - 1].x},${pad + innerH} L ${points[0].x},${pad + innerH} Z`;
+
+  const gradientId = `spark-grad-${color.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="block mt-2" aria-hidden="true">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#${gradientId})`} />
+      <path d={pathD} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ─── Fake passenger manifest for drill-down ──────────────────────
+
+const FAKE_PASSENGER_NAMES = [
+  'Abebe Kebede', 'Tigist Mengistu', 'Dawit Assefa', 'Hana Tadesse',
+  'Yohannes Girma', 'Selamawit Hailu', 'Bereket Wolde', 'Meron Demeke',
+  'Fikadu Tadesse', 'Nardos Teklu', 'Abel Getachew', 'Sara Worku',
+  'Henok Zewdu', 'Mekdes Alemu', 'Teshome Bekele',
+];
+
+function generatePassengerManifest(departure: DepartureRow): FakePassenger[] {
+  const seed = departure.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const count = 3 + (seed % 2); // 3 or 4 passengers
+  const statuses = ['Boarded', 'Boarded', 'Checked In', 'Pending'];
+  const passengers: FakePassenger[] = [];
+  for (let i = 0; i < count; i++) {
+    const nameIdx = (seed + i * 7) % FAKE_PASSENGER_NAMES.length;
+    const seatNum = ((seed + i * 3) % (departure.totalSeats || 45)) + 1;
+    const statusIdx = Math.min(i, statuses.length - 1);
+    passengers.push({
+      name: FAKE_PASSENGER_NAMES[nameIdx],
+      seat: `${seatNum}A`,
+      status: statuses[statusIdx],
+    });
+  }
+  return passengers;
+}
+
+const PASSENGER_STATUS_DOT: Record<string, string> = {
+  Boarded: 'bg-emerald-500',
+  'Checked In': 'bg-amber-500',
+  Pending: 'bg-zinc-400',
+};
+
 // ─── KPI Card Component ──────────────────────────────────────────
 
 function KpiCard({ kpi, index }: { kpi: KpiData; index: number }) {
+  const sparkData = useMemo(() => generateSparklineData(kpi.label), [kpi.label]);
+
   return (
     <div
       className="animate-bt-slide-up relative bg-card rounded-xl p-5 shadow-sm border border-border/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ease-out cursor-default overflow-hidden"
@@ -137,7 +273,7 @@ function KpiCard({ kpi, index }: { kpi: KpiData; index: number }) {
         className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${kpi.borderColor}`}
       />
 
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-3">
         <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
           {kpi.label}
         </span>
@@ -176,6 +312,9 @@ function KpiCard({ kpi, index }: { kpi: KpiData; index: number }) {
           {kpi.icon}
         </div>
       </div>
+
+      {/* Sparkline */}
+      <Sparkline data={sparkData} color={kpi.sparkColor} />
     </div>
   );
 }
@@ -189,6 +328,8 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
   const [stats, setStats] = useState<any>(null);
   const [departures, setDepartures] = useState<DepartureRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDeparture, setSelectedDeparture] = useState<DepartureRow | null>(null);
 
   // ── Data fetch (15s poll) ──
 
@@ -226,6 +367,23 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
     return () => offs.forEach(off => off());
   }, [on, fetchData]);
 
+  // ── Filtered departures ──
+
+  const filteredDepartures = useMemo(() => {
+    if (!searchQuery.trim()) return departures;
+    const q = searchQuery.toLowerCase().trim();
+    return departures.filter((d: DepartureRow) =>
+      d.routeName.toLowerCase().includes(q)
+    );
+  }, [departures, searchQuery]);
+
+  // ── Passenger manifest for selected departure ──
+
+  const passengerManifest = useMemo(() => {
+    if (!selectedDeparture) return [];
+    return generatePassengerManifest(selectedDeparture);
+  }, [selectedDeparture]);
+
   // ── Derive KPIs ──
 
   const kpis: KpiData[] = stats
@@ -240,6 +398,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
           borderColor: 'bg-emerald-500',
           change: '+8%',
           changeDirection: 'up',
+          sparkColor: '#10b981',
         },
         {
           label: 'Passengers',
@@ -251,6 +410,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
           borderColor: 'bg-teal-500',
           change: '+3',
           changeDirection: 'up',
+          sparkColor: '#14b8a6',
         },
         {
           label: 'Buses Departed',
@@ -262,6 +422,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
           borderColor: 'bg-amber-500',
           change: null,
           changeDirection: 'neutral',
+          sparkColor: '#f59e0b',
         },
         {
           label: 'On-Time Rate',
@@ -273,6 +434,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
           borderColor: 'bg-orange-500',
           change: '-1%',
           changeDirection: 'down',
+          sparkColor: '#f97316',
         },
       ]
     : [];
@@ -293,7 +455,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
             {loading ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[124px] rounded-xl" />
+                  <Skeleton key={i} className="h-[140px] rounded-xl" />
                 ))}
               </div>
             ) : (
@@ -309,14 +471,35 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
             ═══════════════════════════════════════════════════════ */}
             <section className="animate-bt-slide-up" style={{ animationDelay: '120ms' }}>
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
                   Live Departures
                 </span>
+
+                {/* Search input */}
+                <div className="relative flex-1 max-w-[200px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="text"
+                    placeholder="Search routes..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-7 text-xs pl-8 pr-7 bg-muted/40 border-border/50 focus:bg-background focus:border-border"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
                 <div className="flex-1 h-px bg-border/60" />
 
                 {/* LIVE indicator */}
                 {isConnected && (
-                  <div className="flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full px-2.5 py-1">
+                  <div className="flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full px-2.5 py-1 shrink-0">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -343,6 +526,138 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                     <span className="text-xs">No departures scheduled</span>
                   </div>
                 </div>
+              ) : selectedDeparture ? (
+                /* ─── Departure Detail Panel ─── */
+                <div className="bg-card rounded-xl shadow-sm border border-border/50 overflow-hidden animate-bt-fade-in">
+                  {/* Header bar */}
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-border/30 bg-muted/20">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedDeparture(null)}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5 rotate-180" />
+                        <span>Back</span>
+                      </button>
+                      <span className="text-border mx-1">/</span>
+                      <span className="text-xs font-medium text-foreground truncate max-w-[200px] sm:max-w-[300px]">
+                        {selectedDeparture.routeName}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedDeparture(null)}
+                      className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="p-5 space-y-5">
+                    {/* Route info grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-1">Bus Plate</span>
+                        <span className="text-sm font-semibold text-foreground">{selectedDeparture.busPlate}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-1">Gate</span>
+                        <span className="text-sm font-semibold text-foreground">{selectedDeparture.gateNumber || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-1">Time</span>
+                        <span className="text-sm font-mono font-semibold text-foreground tabular-nums tracking-tight">{selectedDeparture.departureTime}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-1">Status</span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`shrink-0 h-2 w-2 rounded-full ${
+                              STATUS_DOT_COLOR[selectedDeparture.status] || 'bg-zinc-400'
+                            }`}
+                          />
+                          <span className={`text-sm font-semibold capitalize ${STATUS_COLORS[selectedDeparture.status] || ''}`}>
+                            {selectedDeparture.status.toLowerCase()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Occupancy bar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Occupancy</span>
+                        <span className="text-xs font-semibold text-muted-foreground tabular-nums">
+                          {selectedDeparture.bookedCount || '—'} / {selectedDeparture.totalSeats || '—'} seats
+                        </span>
+                      </div>
+                      <div className={`w-full h-2.5 rounded-full overflow-hidden ${getOccupancyTrackColor(selectedDeparture.occupancy)}`}>
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${getOccupancyColor(selectedDeparture.occupancy)}`}
+                          style={{ width: `${selectedDeparture.occupancy}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Passenger Manifest */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                          Passenger Manifest
+                        </span>
+                        <span className="text-[11px] text-muted-foreground tabular-nums font-medium">
+                          {passengerManifest.length} shown
+                        </span>
+                      </div>
+
+                      <div className="rounded-lg border border-border/40 overflow-hidden">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-muted/40 border-b border-border/30">
+                              <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 py-2">Passenger</th>
+                              <th className="text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 py-2">Seat</th>
+                              <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 py-2">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {passengerManifest.map((p, i) => (
+                              <tr
+                                key={`${p.seat}-${i}`}
+                                className={`border-b border-border/15 last:border-0 ${i % 2 === 1 ? 'bg-muted/20' : ''}`}
+                              >
+                                <td className="px-3 py-2.5 text-xs font-medium text-foreground">{p.name}</td>
+                                <td className="px-3 py-2.5 text-xs font-mono font-medium text-foreground text-center tabular-nums">{p.seat}</td>
+                                <td className="px-3 py-2.5 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <span className={`shrink-0 h-1.5 w-1.5 rounded-full ${PASSENGER_STATUS_DOT[p.status] || 'bg-zinc-400'}`} />
+                                    <span className="text-xs text-muted-foreground">{p.status}</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Close button */}
+                    <div className="flex justify-end pt-1">
+                      <button
+                        onClick={() => setSelectedDeparture(null)}
+                        className="h-8 px-4 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg border border-border/50 transition-colors"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : filteredDepartures.length === 0 ? (
+                <div className="bg-card rounded-xl shadow-sm border border-border/50">
+                  <div className="p-12 flex flex-col items-center gap-2 text-muted-foreground">
+                    <Search className="h-5 w-5" />
+                    <span className="text-xs">No routes match &quot;{searchQuery}&quot;</span>
+                  </div>
+                </div>
               ) : (
                 <div className="bg-card rounded-xl shadow-sm border border-border/50 overflow-hidden">
                   <div className="overflow-x-auto">
@@ -364,15 +679,17 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                           <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right">
                             Boarded
                           </TableHead>
+                          <TableHead className="w-8 h-11" />
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {departures.map((d: DepartureRow, i: number) => (
+                        {filteredDepartures.map((d: DepartureRow, i: number) => (
                           <TableRow
                             key={d.id}
-                            className={`table-row-alt border-border/20 hover:bg-muted/40 transition-colors ${
+                            className={`table-row-alt border-border/20 hover:bg-muted/40 transition-colors cursor-pointer group ${
                               i % 2 === 0 ? '' : ''
                             }`}
+                            onClick={() => setSelectedDeparture(d)}
                           >
                             {/* Route with Bus icon */}
                             <TableCell className="py-3.5">
@@ -437,6 +754,11 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                                 </span>
                               </div>
                             </TableCell>
+
+                            {/* Chevron indicator */}
+                            <TableCell className="py-3.5 pr-3">
+                              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors ml-auto" />
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -467,26 +789,40 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {AI_INSIGHTS.map((insight, i) => (
                     <div
-                      key={insight.title}
-                      className="bg-card rounded-xl shadow-sm border border-border/50 overflow-hidden group hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ease-out cursor-default animate-bt-slide-up"
+                      key={insight.issue}
+                      className={`bg-card rounded-xl shadow-sm border overflow-hidden group hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ease-out animate-bt-slide-up ${insight.accentBorder}`}
                       style={{ animationDelay: `${280 + i * 70}ms` }}
                     >
-                      {/* Colored top border (3px) */}
-                      <div className={`h-[3px] w-full ${insight.accent} opacity-60 group-hover:opacity-100 transition-opacity`} />
+                      <div className="flex">
+                        {/* Left accent bar (3px) */}
+                        <div className={`w-[3px] shrink-0 ${insight.accent}`} />
 
-                      <div className="p-4">
-                        <div className="space-y-2.5">
-                          <span className="text-sm font-semibold text-foreground block truncate">
-                            {insight.title}
-                          </span>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            {insight.description}
-                          </p>
-                          <Badge
-                            className={`text-[10px] h-5 px-2 rounded-md font-semibold border-0 ${insight.tagBg}`}
-                          >
-                            {insight.tag}
-                          </Badge>
+                        <div className="flex-1 p-4 flex flex-col justify-between min-h-[100px]">
+                          <div className="space-y-1.5">
+                            {/* Issue title (bold) */}
+                            <div className="flex items-center gap-1.5">
+                              <AlertTriangle className={`h-3 w-3 shrink-0 ${insight.accentText}`} />
+                              <span className="text-sm font-bold text-foreground truncate">
+                                {insight.issue}
+                              </span>
+                            </div>
+
+                            {/* Insight text (muted, max 1 line) */}
+                            <p className="text-xs text-muted-foreground leading-relaxed truncate">
+                              {insight.insight}
+                            </p>
+                          </div>
+
+                          {/* Action button */}
+                          <div className="flex justify-end mt-3">
+                            <button
+                              onClick={() => toast.success(`Action triggered: ${insight.action}`)}
+                              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${insight.accentBg} ${insight.accentText} hover:opacity-80 active:scale-[0.97]`}
+                            >
+                              {insight.actionIcon}
+                              {insight.action}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

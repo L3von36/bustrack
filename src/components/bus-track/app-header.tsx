@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { LogOut, Sun, Moon, Bus } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { LogOut, Sun, Moon, Bus, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import type { Role } from './types';
@@ -30,6 +30,28 @@ const ROLE_AVATAR_STYLES: Record<Role, string> = {
   SUPERADMIN: 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300',
 };
 
+/* ─── Notification data ─────────────────────────────────── */
+const NOTIFICATIONS = [
+  {
+    id: '1',
+    text: 'ETB 2,200 payment completed — Dire Dawa route',
+    time: '2m ago',
+    dotColor: 'bg-emerald-500',
+  },
+  {
+    id: '2',
+    text: 'Gate G3: Bus departing in 5 min',
+    time: '8m ago',
+    dotColor: 'bg-amber-500',
+  },
+  {
+    id: '3',
+    text: 'New booking: Seat 3B — Bahir Dar',
+    time: '15m ago',
+    dotColor: 'bg-blue-500',
+  },
+];
+
 function getInitials(name: string): string {
   return name
     .split(' ')
@@ -47,6 +69,19 @@ interface AppHeaderProps {
 
 export function AppHeader({ user, onLogout, isConnected = false }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  /* Click outside to close dropdown */
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="h-16 flex items-center justify-between px-5 border-b border-border bg-card/80 backdrop-blur-md flex-shrink-0">
@@ -92,6 +127,58 @@ export function AppHeader({ user, onLogout, isConnected = false }: AppHeaderProp
           <span className="text-[11px] text-muted-foreground font-medium tabular-nums">
             {isConnected ? 'Connected' : 'Offline'}
           </span>
+        </div>
+
+        {/* Notification Bell */}
+        <div className="relative" ref={notifRef}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setNotifOpen(!notifOpen)}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground relative"
+            aria-label="Notifications"
+          >
+            <Bell className="h-4 w-4" />
+            {/* Red dot with count */}
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+              3
+            </span>
+          </Button>
+
+          {/* Notification Dropdown */}
+          {notifOpen && (
+            <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-50 animate-bt-scale-in origin-top-right">
+              {/* Dropdown header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+                <span className="text-sm font-semibold text-foreground">Notifications</span>
+                <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 cursor-pointer hover:underline">
+                  Mark all read
+                </span>
+              </div>
+
+              {/* Notification items */}
+              <div className="max-h-80 overflow-y-auto">
+                {NOTIFICATIONS.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className="flex items-start gap-3 px-4 py-3.5 hover:bg-muted/40 transition-colors cursor-pointer"
+                  >
+                    <div className="flex flex-col items-center gap-1.5 mt-1.5">
+                      <span className={`w-2 h-2 rounded-full ${notif.dotColor} shrink-0`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] text-foreground leading-snug font-medium">
+                        {notif.text}
+                      </p>
+                      <span className="text-[11px] text-muted-foreground mt-1 block">
+                        {notif.time}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* User avatar */}

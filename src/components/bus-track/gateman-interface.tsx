@@ -26,6 +26,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { useRealtimeSocket } from '@/hooks/use-realtime';
 import { AppHeader } from './app-header';
 import { STATUS_COLORS } from './constants';
@@ -224,6 +231,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   } | null>(null);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [manifestOpen, setManifestOpen] = useState(false);
 
   /* ---- data fetching ---- */
   const fetchSchedules = useCallback(async () => {
@@ -325,6 +333,32 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   const boardingPct = Math.round((boardingCount / Math.max(boardingTotal, 1)) * 100);
   const progressValue = boardingCount / Math.max(boardingTotal, 1);
   const remainingCount = Math.max(boardingTotal - boardingCount, 0);
+
+  /* ─── Fake manifest data ──────────────────────────────────── */
+  const FAKE_MANIFEST = [
+    { name: 'Abebe Kebede', seat: '1A', boarded: true },
+    { name: 'Tigist Haile', seat: '1B', boarded: true },
+    { name: 'Yohannes Tadesse', seat: '2A', boarded: true },
+    { name: 'Selamawit Girma', seat: '2B', boarded: false },
+    { name: 'Dawit Assefa', seat: '3A', boarded: true },
+    { name: 'Hanna Belay', seat: '3B', boarded: false },
+    { name: 'Fikadu Mekonnen', seat: '4A', boarded: true },
+    { name: 'Meron Tesfaye', seat: '4B', boarded: true },
+    { name: 'Bereket Wondimu', seat: '5A', boarded: false },
+    { name: 'Nardos Alemu', seat: '5B', boarded: true },
+    { name: 'Solomon Worku', seat: '6A', boarded: false },
+    { name: 'Feven Tadesse', seat: '6B', boarded: true },
+    { name: 'Natnael Ashenafi', seat: '7A', boarded: true },
+    { name: 'Liya Gebremeskel', seat: '7B', boarded: false },
+    { name: 'Ephrem Bekele', seat: '8A', boarded: true },
+    { name: 'Ruth Teshome', seat: '8B', boarded: false },
+    { name: 'Abel Zewde', seat: '9A', boarded: true },
+    { name: 'Sara Hailu', seat: '9B', boarded: true },
+    { name: 'Teshome Desta', seat: '10A', boarded: false },
+    { name: 'Mekdes Alemayehu', seat: '10B', boarded: false },
+  ];
+  const manifestBoardedCount = FAKE_MANIFEST.filter((p) => p.boarded).length;
+  const manifestTotal = FAKE_MANIFEST.length;
 
   /* ================================================================ */
   return (
@@ -577,6 +611,17 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
                           </div>
                         </div>
 
+                        {/* View Manifest button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-4 h-8 text-xs font-semibold rounded-lg border-border/60 hover:bg-muted/60 gap-1.5"
+                          onClick={() => setManifestOpen(true)}
+                        >
+                          <Users className="h-3.5 w-3.5" />
+                          View Manifest
+                        </Button>
+
                         {/* Stats row */}
                         <div className="flex items-center gap-4 mt-4 text-[12px] text-muted-foreground">
                           <span>
@@ -658,6 +703,82 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
           </div>
         </div>
       </main>
+
+      {/* ─── Passenger Manifest Sheet ─────────────────────────── */}
+      <Sheet open={manifestOpen} onOpenChange={setManifestOpen}>
+        <SheetContent className="w-full sm:max-w-lg p-0 overflow-hidden flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-0">
+            <SheetTitle className="text-base font-bold text-foreground">
+              Passenger Manifest
+            </SheetTitle>
+            <SheetDescription className="text-xs text-muted-foreground font-normal">
+              {selectedSchedule
+                ? `${selectedSchedule.routeName} — ${selectedSchedule.departureTime}`
+                : 'Boarding manifest'}
+            </SheetDescription>
+          </SheetHeader>
+
+          {/* Boarded count banner */}
+          <div className="px-6 pt-4 pb-3">
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/15">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                {manifestBoardedCount} of {manifestTotal} passengers boarded
+              </span>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Manifest table */}
+          <div className="flex-1 overflow-y-auto bt-scroll">
+            <table className="w-full text-[13px]">
+              <thead className="sticky top-0 bg-card z-10">
+                <tr className="border-b border-border/60">
+                  <th className="text-left py-2.5 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-8">
+                    #
+                  </th>
+                  <th className="text-left py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-16">
+                    Seat
+                  </th>
+                  <th className="text-center py-2.5 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-28">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {FAKE_MANIFEST.map((p, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors"
+                  >
+                    <td className="py-2.5 px-6 text-muted-foreground/60 font-mono text-[11px] tabular-nums">
+                      {i + 1}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-foreground">
+                      {p.name}
+                    </td>
+                    <td className="py-2.5 px-2 text-center font-mono text-[12px] text-muted-foreground font-medium">
+                      {p.seat}
+                    </td>
+                    <td className="py-2.5 px-6 text-center">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.boarded ? 'bg-emerald-500' : 'bg-zinc-400 dark:bg-zinc-500'}`} />
+                        <span className={`text-[11px] font-semibold ${p.boarded ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                          {p.boarded ? 'Boarded' : 'Not Boarded'}
+                        </span>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

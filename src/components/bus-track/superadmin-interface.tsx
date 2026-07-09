@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Bus, Plus, MapPin, DollarSign, Users, TrendingUp, Clock,
   LayoutDashboard, Route, UserCog, BarChart3, Car, ArrowRight,
-  Activity, BarChart2, PieChart as PieChartIcon,
+  Activity, BarChart2, PieChart as PieChartIcon, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,6 +76,46 @@ const BUS_TYPE_BADGE_COLORS: Record<string, string> = {
   PREMIUM: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400',
 };
 
+/* ─── Sparkline ─── */
+function Sparkline({ data, color, width = 80, height = 20 }: { data: number[]; color: string; width?: number; height?: number }) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * (height - 4) - 2;
+    return `${x},${y}`;
+  }).join(' ');
+  const areaPoints = `0,${height} ${points} ${width},${height}`;
+  const gradientId = `spark-${color.replace(/[^a-z0-9]/gi, '')}`;
+  return (
+    <svg width={width} height={height} className="mt-2" viewBox={`0 0 ${width} ${height}`}>
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={areaPoints} fill={`url(#${gradientId})`} />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+const SPARK_DATA: Record<string, number[]> = {
+  Revenue: [42, 55, 48, 62, 58, 71, 68],
+  Passengers: [30, 35, 28, 40, 38, 45, 42],
+  Buses: [3, 4, 3, 5, 4, 5, 4],
+  'On-Time': [92, 88, 95, 91, 87, 93, 89],
+};
+
+const SPARK_COLORS: Record<string, string> = {
+  Revenue: '#10b981',
+  Passengers: '#14b8a6',
+  Buses: '#f59e0b',
+  'On-Time': '#f97316',
+};
+
 /* ─── Component ─── */
 export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfaceProps) {
   const { isConnected, on, joinDashboard } = useRealtimeSocket();
@@ -112,6 +152,12 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   const [submittingRoute, setSubmittingRoute] = useState(false);
   const [submittingBus, setSubmittingBus] = useState(false);
   const [submittingStaff, setSubmittingStaff] = useState(false);
+
+  // Search states
+  const [searchDepartures, setSearchDepartures] = useState('');
+  const [searchRoutes, setSearchRoutes] = useState('');
+  const [searchBuses, setSearchBuses] = useState('');
+  const [searchStaff, setSearchStaff] = useState('');
 
   /* ─── Data fetching ─── */
   const fetchAll = useCallback(async () => {
@@ -243,6 +289,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
       icon: <DollarSign className="h-5 w-5" />,
       gradient: 'from-emerald-500 to-emerald-600',
       shadowColor: 'shadow-emerald-500/20',
+      sparkKey: 'Revenue',
     },
     {
       label: 'Total Passengers',
@@ -250,6 +297,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
       icon: <Users className="h-5 w-5" />,
       gradient: 'from-teal-500 to-teal-600',
       shadowColor: 'shadow-teal-500/20',
+      sparkKey: 'Passengers',
     },
     {
       label: 'Fleet Deployed',
@@ -257,6 +305,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
       icon: <Bus className="h-5 w-5" />,
       gradient: 'from-amber-500 to-amber-600',
       shadowColor: 'shadow-amber-500/20',
+      sparkKey: 'Buses',
     },
     {
       label: 'On-Time Rate',
@@ -264,6 +313,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
       icon: <TrendingUp className="h-5 w-5" />,
       gradient: 'from-orange-500 to-orange-600',
       shadowColor: 'shadow-orange-500/20',
+      sparkKey: 'On-Time',
     },
   ] : [];
 
@@ -303,6 +353,9 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
             <p className="text-3xl font-bold tracking-tight text-foreground leading-none">
               {kpi.value}
             </p>
+            {SPARK_DATA[kpi.sparkKey] && (
+              <Sparkline data={SPARK_DATA[kpi.sparkKey]} color={SPARK_COLORS[kpi.sparkKey]} />
+            )}
           </div>
         ))}
       </div>
@@ -311,6 +364,18 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
 
   /* ─── Render: Departures Table ─── */
   const renderDeparturesTable = () => {
+    const filteredDepartures = departures.filter((d: any) => {
+      if (!searchDepartures.trim()) return true;
+      const q = searchDepartures.toLowerCase();
+      return (
+        (d.routeName || '').toLowerCase().includes(q) ||
+        (d.busPlate || '').toLowerCase().includes(q) ||
+        (d.gateNumber || '').toLowerCase().includes(q) ||
+        (d.departureTime || '').toLowerCase().includes(q) ||
+        (d.status || '').toLowerCase().includes(q)
+      );
+    });
+
     if (loading) {
       return (
         <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden animate-bt-fade-in" style={{ animationDelay: '300ms' }}>
@@ -330,13 +395,24 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     return (
       <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden animate-bt-fade-in" style={{ animationDelay: '300ms' }}>
         <div className="px-6 py-4 border-b border-border/50">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-              <Activity className="h-3.5 w-3.5 text-white" />
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                <Activity className="h-3.5 w-3.5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Live Departures</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{filteredDepartures.length} scheduled today</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Live Departures</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{departures.length} scheduled today</p>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+              <Input
+                value={searchDepartures}
+                onChange={(e) => setSearchDepartures(e.target.value)}
+                placeholder="Search departures..."
+                className="h-8 w-44 text-xs pl-8 rounded-lg border-border/50 bg-muted/40 focus:bg-background"
+              />
             </div>
           </div>
         </div>
@@ -353,19 +429,21 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               </TableRow>
             </TableHeader>
             <TableBody>
-              {departures.length === 0 ? (
+              {filteredDepartures.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={6} className="h-28 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                         <Bus className="h-5 w-5 text-muted-foreground" />
                       </div>
-                      <p className="text-sm text-muted-foreground">No departures scheduled today</p>
+                      <p className="text-sm text-muted-foreground">
+                        {searchDepartures ? 'No departures match your search' : 'No departures scheduled today'}
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                departures.map((d: any) => {
+                filteredDepartures.map((d: any) => {
                   const statusColor = d.status === 'SCHEDULED'
                     ? 'bg-emerald-500'
                     : d.status === 'BOARDING'
@@ -417,534 +495,621 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   };
 
   /* ─── Render: Routes Tab ─── */
-  const renderRoutesTab = () => (
-    <div className="space-y-5 animate-bt-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md shadow-emerald-500/20">
-            <Route className="h-4.5 w-4.5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold tracking-tight text-foreground">Route Management</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">{routes.length} routes configured</p>
-          </div>
-        </div>
-        <Button
-          size="sm"
-          onClick={() => setAddRouteOpen(true)}
-          className="gap-1.5 rounded-full px-4 shadow-sm"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Add Route</span>
-        </Button>
-      </div>
+  const renderRoutesTab = () => {
+    const filteredRoutes = routes.filter((r: any) => {
+      if (!searchRoutes.trim()) return true;
+      const q = searchRoutes.toLowerCase();
+      return (
+        (r.origin || '').toLowerCase().includes(q) ||
+        (r.destination || '').toLowerCase().includes(q) ||
+        (r.distanceKm || '').toString().includes(q) ||
+        (r.baseFare || '').toString().includes(q) ||
+        (r.estimatedMin || '').toString().includes(q)
+      );
+    });
 
-      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto bt-scroll">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Origin</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Destination</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Distance</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Fare</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden md:table-cell">Est. Time</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right">Schedules</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {routes.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="h-28 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                        <MapPin className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">No routes configured yet</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setAddRouteOpen(true)}
-                        className="mt-1 gap-1.5 text-xs rounded-full"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Add your first route
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                routes.map((r: any) => (
-                  <TableRow
-                    key={r.id}
-                    className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
-                  >
-                    <TableCell className="text-sm">
-                      <span className="flex items-center gap-2">
-                        <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span className="font-medium text-foreground">{r.origin}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <span className="flex items-center gap-2">
-                        <MapPin className="h-3.5 w-3.5 text-rose-400 shrink-0" />
-                        <span className="font-medium text-foreground">{r.destination}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{r.distanceKm} km</TableCell>
-                    <TableCell className="text-sm font-bold text-foreground tabular-nums">ETB {r.baseFare?.toLocaleString()}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="h-3 w-3" />
-                        {r.estimatedMin} min
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="inline-flex items-center justify-center h-6 min-w-[28px] rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
-                        {r._count?.schedules || 0}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Add Route Dialog */}
-      <Dialog open={addRouteOpen} onOpenChange={setAddRouteOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-foreground text-lg">Add New Route</DialogTitle>
-            <DialogDescription className="text-muted-foreground text-sm">
-              Define a new route with origin, destination, and fare details.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Origin</Label>
-              <Input
-                value={newRoute.origin}
-                onChange={(e) => setNewRoute({ ...newRoute, origin: e.target.value })}
-                placeholder="e.g. Addis Ababa"
-                className="h-10 text-sm rounded-lg"
-              />
+    return (
+      <div className="space-y-5 animate-bt-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md shadow-emerald-500/20">
+              <Route className="h-4.5 w-4.5 text-white" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Destination</Label>
-              <Input
-                value={newRoute.destination}
-                onChange={(e) => setNewRoute({ ...newRoute, destination: e.target.value })}
-                placeholder="e.g. Dire Dawa"
-                className="h-10 text-sm rounded-lg"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Distance (km)</Label>
-              <Input
-                type="number"
-                value={newRoute.distanceKm}
-                onChange={(e) => setNewRoute({ ...newRoute, distanceKm: e.target.value })}
-                placeholder="480"
-                className="h-10 text-sm rounded-lg"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Base fare (ETB)</Label>
-              <Input
-                type="number"
-                value={newRoute.baseFare}
-                onChange={(e) => setNewRoute({ ...newRoute, baseFare: e.target.value })}
-                placeholder="1200"
-                className="h-10 text-sm rounded-lg"
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Estimated time (min)</Label>
-              <Input
-                type="number"
-                value={newRoute.estimatedMin}
-                onChange={(e) => setNewRoute({ ...newRoute, estimatedMin: e.target.value })}
-                placeholder="360"
-                className="h-10 text-sm rounded-lg"
-              />
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-foreground">Route Management</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{filteredRoutes.length} routes configured</p>
             </div>
           </div>
-          <DialogFooter className="gap-2 pt-3">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+              <Input
+                value={searchRoutes}
+                onChange={(e) => setSearchRoutes(e.target.value)}
+                placeholder="Search routes..."
+                className="h-8 w-44 text-xs pl-8 rounded-lg border-border/50 bg-muted/40 focus:bg-background"
+              />
+            </div>
             <Button
-              variant="ghost"
-              onClick={() => setAddRouteOpen(false)}
-              className="text-sm rounded-lg"
+              size="sm"
+              onClick={() => setAddRouteOpen(true)}
+              className="gap-1.5 rounded-full px-4 shadow-sm"
             >
-              Cancel
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Route</span>
             </Button>
-            <Button
-              onClick={handleAddRoute}
-              disabled={submittingRoute || !newRoute.origin || !newRoute.destination || !newRoute.distanceKm || !newRoute.baseFare || !newRoute.estimatedMin}
-              className="text-sm rounded-lg shadow-sm"
-            >
-              {submittingRoute ? 'Creating...' : 'Create Route'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-
-  /* ─── Render: Buses Tab ─── */
-  const renderBusesTab = () => (
-    <div className="space-y-5 animate-bt-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/20">
-            <Car className="h-4.5 w-4.5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold tracking-tight text-foreground">Fleet Management</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">{buses.length} buses in fleet</p>
           </div>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setAddBusOpen(true)}
-          className="gap-1.5 rounded-full px-4 shadow-sm"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Add Bus</span>
-        </Button>
-      </div>
 
-      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto bt-scroll">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Plate Number</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Type</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Seats</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Layout</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right hidden sm:table-cell">Schedules</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {buses.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="h-28 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                        <Bus className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">No buses registered yet</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setAddBusOpen(true)}
-                        className="mt-1 gap-1.5 text-xs rounded-full"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Register your first bus
-                      </Button>
-                    </div>
-                  </TableCell>
+        <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto bt-scroll">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Origin</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Destination</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Distance</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Fare</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden md:table-cell">Est. Time</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right">Schedules</TableHead>
                 </TableRow>
-              ) : (
-                buses.map((b: any) => (
-                  <TableRow
-                    key={b.id}
-                    className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
-                  >
-                    <TableCell className="text-sm font-mono font-semibold text-foreground tracking-wide">
-                      {b.plateNumber}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${BUS_TYPE_BADGE_COLORS[b.busType] || ''}`}>
-                        {b.busType}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm tabular-nums font-semibold text-foreground">{b.totalSeats}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
-                      <span className="inline-flex items-center gap-1 font-mono">
-                        {b.rows} <span className="text-muted-foreground/50">&times;</span> {b.cols}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right hidden sm:table-cell">
-                      <span className="inline-flex items-center justify-center h-6 min-w-[28px] rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
-                        {b._count?.schedules || 0}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2.5 w-2.5 rounded-full ${b.active ? 'bg-emerald-500' : 'bg-zinc-400 dark:bg-zinc-500'}`} />
-                        <span className="text-xs font-medium text-foreground">
-                          {b.active ? 'Active' : 'Inactive'}
-                        </span>
+              </TableHeader>
+              <TableBody>
+                {filteredRoutes.length === 0 ? (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={6} className="h-28 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                          <MapPin className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {searchRoutes ? 'No routes match your search' : 'No routes configured yet'}
+                        </p>
+                        {!searchRoutes && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAddRouteOpen(true)}
+                            className="mt-1 gap-1.5 text-xs rounded-full"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Add your first route
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Add Bus Dialog */}
-      <Dialog open={addBusOpen} onOpenChange={setAddBusOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-foreground text-lg">Add New Bus</DialogTitle>
-            <DialogDescription className="text-muted-foreground text-sm">
-              Register a new bus with its seat configuration.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
-            <div className="space-y-2 sm:col-span-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Plate Number</Label>
-              <Input
-                value={newBus.plateNumber}
-                onChange={(e) => setNewBus({ ...newBus, plateNumber: e.target.value })}
-                placeholder="KBA 123A"
-                className="h-10 text-sm font-mono rounded-lg"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Bus Type</Label>
-              <Select value={newBus.busType} onValueChange={(v) => setNewBus({ ...newBus, busType: v })}>
-                <SelectTrigger className="h-10 text-sm rounded-lg">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {BUS_TYPES.map((t) => (
-                    <SelectItem key={t} value={t} className="text-sm">
-                      {t.charAt(0) + t.slice(1).toLowerCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Total Seats</Label>
-              <Input
-                type="number"
-                value={newBus.totalSeats}
-                onChange={(e) => setNewBus({ ...newBus, totalSeats: e.target.value })}
-                placeholder="36"
-                className="h-10 text-sm rounded-lg"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Rows</Label>
-              <Input
-                type="number"
-                value={newBus.rows}
-                onChange={(e) => setNewBus({ ...newBus, rows: e.target.value })}
-                placeholder="9"
-                className="h-10 text-sm rounded-lg"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Columns</Label>
-              <Input
-                type="number"
-                value={newBus.cols}
-                onChange={(e) => setNewBus({ ...newBus, cols: e.target.value })}
-                placeholder="4"
-                className="h-10 text-sm rounded-lg"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 pt-3">
-            <Button
-              variant="ghost"
-              onClick={() => setAddBusOpen(false)}
-              className="text-sm rounded-lg"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddBus}
-              disabled={submittingBus || !newBus.plateNumber || !newBus.totalSeats || !newBus.rows || !newBus.cols}
-              className="text-sm rounded-lg shadow-sm"
-            >
-              {submittingBus ? 'Adding...' : 'Add Bus'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-
-  /* ─── Render: Staff Tab ─── */
-  const renderStaffTab = () => (
-    <div className="space-y-5 animate-bt-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-md shadow-violet-500/20">
-            <UserCog className="h-4.5 w-4.5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold tracking-tight text-foreground">Team Management</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">{staff.length} team members</p>
-          </div>
-        </div>
-        <Button
-          size="sm"
-          onClick={() => setAddStaffOpen(true)}
-          className="gap-1.5 rounded-full px-4 shadow-sm"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Add Staff</span>
-        </Button>
-      </div>
-
-      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto bt-scroll">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Name</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Email</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Role</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right hidden sm:table-cell">Bookings</TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {staff.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={5} className="h-28 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">No staff members yet</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setAddStaffOpen(true)}
-                        className="mt-1 gap-1.5 text-xs rounded-full"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Add your first team member
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                staff.map((s: any, idx: number) => {
-                  const staffInitials = s.name
-                    ?.split(' ')
-                    .map((n: string) => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2) || '??';
-
-                  return (
+                ) : (
+                  filteredRoutes.map((r: any) => (
                     <TableRow
-                      key={s.id}
+                      key={r.id}
                       className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
                     >
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 shadow-sm ${AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]}`}>
-                            {staffInitials}
-                          </div>
-                          <span className="text-sm font-medium text-foreground">{s.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{s.email}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${ROLE_BADGE_COLORS[s.role] || ''}`}>
-                          {s.role}
+                      <TableCell className="text-sm">
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                          <span className="font-medium text-foreground">{r.origin}</span>
                         </span>
                       </TableCell>
-                      <TableCell className="text-sm tabular-nums font-semibold text-foreground text-right hidden sm:table-cell">
-                        {s._count?.bookings || 0}
+                      <TableCell className="text-sm">
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                          <span className="font-medium text-foreground">{r.destination}</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{r.distanceKm} km</TableCell>
+                      <TableCell className="text-sm font-bold text-foreground tabular-nums">ETB {r.baseFare?.toLocaleString()}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="h-3 w-3" />
+                          {r.estimatedMin} min
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="inline-flex items-center justify-center h-6 min-w-[28px] rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
+                          {r._count?.schedules || 0}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        {/* Add Route Dialog */}
+        <Dialog open={addRouteOpen} onOpenChange={setAddRouteOpen}>
+          <DialogContent className="sm:max-w-md rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-foreground text-lg">Add New Route</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
+                Define a new route with origin, destination, and fare details.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Origin</Label>
+                <Input
+                  value={newRoute.origin}
+                  onChange={(e) => setNewRoute({ ...newRoute, origin: e.target.value })}
+                  placeholder="e.g. Addis Ababa"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Destination</Label>
+                <Input
+                  value={newRoute.destination}
+                  onChange={(e) => setNewRoute({ ...newRoute, destination: e.target.value })}
+                  placeholder="e.g. Dire Dawa"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Distance (km)</Label>
+                <Input
+                  type="number"
+                  value={newRoute.distanceKm}
+                  onChange={(e) => setNewRoute({ ...newRoute, distanceKm: e.target.value })}
+                  placeholder="480"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Base fare (ETB)</Label>
+                <Input
+                  type="number"
+                  value={newRoute.baseFare}
+                  onChange={(e) => setNewRoute({ ...newRoute, baseFare: e.target.value })}
+                  placeholder="1200"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Estimated time (min)</Label>
+                <Input
+                  type="number"
+                  value={newRoute.estimatedMin}
+                  onChange={(e) => setNewRoute({ ...newRoute, estimatedMin: e.target.value })}
+                  placeholder="360"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2 pt-3">
+              <Button
+                variant="ghost"
+                onClick={() => setAddRouteOpen(false)}
+                className="text-sm rounded-lg"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddRoute}
+                disabled={submittingRoute || !newRoute.origin || !newRoute.destination || !newRoute.distanceKm || !newRoute.baseFare || !newRoute.estimatedMin}
+                className="text-sm rounded-lg shadow-sm"
+              >
+                {submittingRoute ? 'Creating...' : 'Create Route'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  };
+
+  /* ─── Render: Buses Tab ─── */
+  const renderBusesTab = () => {
+    const filteredBuses = buses.filter((b: any) => {
+      if (!searchBuses.trim()) return true;
+      const q = searchBuses.toLowerCase();
+      return (
+        (b.plateNumber || '').toLowerCase().includes(q) ||
+        (b.busType || '').toLowerCase().includes(q) ||
+        (b.totalSeats || '').toString().includes(q) ||
+        (b.rows || '').toString().includes(q) ||
+        (b.cols || '').toString().includes(q) ||
+        (b.active ? 'active' : 'inactive').includes(q)
+      );
+    });
+
+    return (
+      <div className="space-y-5 animate-bt-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/20">
+              <Car className="h-4.5 w-4.5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-foreground">Fleet Management</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{filteredBuses.length} buses in fleet</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+              <Input
+                value={searchBuses}
+                onChange={(e) => setSearchBuses(e.target.value)}
+                placeholder="Search buses..."
+                className="h-8 w-44 text-xs pl-8 rounded-lg border-border/50 bg-muted/40 focus:bg-background"
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setAddBusOpen(true)}
+              className="gap-1.5 rounded-full px-4 shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Bus</span>
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto bt-scroll">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Plate Number</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Type</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Seats</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Layout</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right hidden sm:table-cell">Schedules</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBuses.length === 0 ? (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={6} className="h-28 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                          <Bus className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {searchBuses ? 'No buses match your search' : 'No buses registered yet'}
+                        </p>
+                        {!searchBuses && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAddBusOpen(true)}
+                            className="mt-1 gap-1.5 text-xs rounded-full"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Register your first bus
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredBuses.map((b: any) => (
+                    <TableRow
+                      key={b.id}
+                      className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
+                    >
+                      <TableCell className="text-sm font-mono font-semibold text-foreground tracking-wide">
+                        {b.plateNumber}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${BUS_TYPE_BADGE_COLORS[b.busType] || ''}`}>
+                          {b.busType}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm tabular-nums font-semibold text-foreground">{b.totalSeats}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                        <span className="inline-flex items-center gap-1 font-mono">
+                          {b.rows} <span className="text-muted-foreground/50">&times;</span> {b.cols}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right hidden sm:table-cell">
+                        <span className="inline-flex items-center justify-center h-6 min-w-[28px] rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
+                          {b._count?.schedules || 0}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className={`h-2.5 w-2.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-zinc-400 dark:bg-zinc-500'}`} />
+                          <span className={`h-2.5 w-2.5 rounded-full ${b.active ? 'bg-emerald-500' : 'bg-zinc-400 dark:bg-zinc-500'}`} />
                           <span className="text-xs font-medium text-foreground">
-                            {s.active ? 'Active' : 'Inactive'}
+                            {b.active ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                       </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-      </div>
 
-      {/* Add Staff Dialog */}
-      <Dialog open={addStaffOpen} onOpenChange={setAddStaffOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-foreground text-lg">Add New Staff</DialogTitle>
-            <DialogDescription className="text-muted-foreground text-sm">
-              Invite a new team member. They can reset their password on first login.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5 pt-3">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Full Name</Label>
-              <Input
-                value={newStaff.name}
-                onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                placeholder="John Doe"
-                className="h-10 text-sm rounded-lg"
-              />
+        {/* Add Bus Dialog */}
+        <Dialog open={addBusOpen} onOpenChange={setAddBusOpen}>
+          <DialogContent className="sm:max-w-md rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-foreground text-lg">Add New Bus</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
+                Register a new bus with its seat configuration.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Plate Number</Label>
+                <Input
+                  value={newBus.plateNumber}
+                  onChange={(e) => setNewBus({ ...newBus, plateNumber: e.target.value })}
+                  placeholder="KBA 123A"
+                  className="h-10 text-sm font-mono rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Bus Type</Label>
+                <Select value={newBus.busType} onValueChange={(v) => setNewBus({ ...newBus, busType: v })}>
+                  <SelectTrigger className="h-10 text-sm rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BUS_TYPES.map((t) => (
+                      <SelectItem key={t} value={t} className="text-sm">
+                        {t.charAt(0) + t.slice(1).toLowerCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Total Seats</Label>
+                <Input
+                  type="number"
+                  value={newBus.totalSeats}
+                  onChange={(e) => setNewBus({ ...newBus, totalSeats: e.target.value })}
+                  placeholder="36"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Rows</Label>
+                <Input
+                  type="number"
+                  value={newBus.rows}
+                  onChange={(e) => setNewBus({ ...newBus, rows: e.target.value })}
+                  placeholder="9"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Columns</Label>
+                <Input
+                  type="number"
+                  value={newBus.cols}
+                  onChange={(e) => setNewBus({ ...newBus, cols: e.target.value })}
+                  placeholder="4"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Email</Label>
-              <Input
-                type="email"
-                value={newStaff.email}
-                onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
-                placeholder="john@bustrack.com"
-                className="h-10 text-sm rounded-lg"
-              />
+            <DialogFooter className="gap-2 pt-3">
+              <Button
+                variant="ghost"
+                onClick={() => setAddBusOpen(false)}
+                className="text-sm rounded-lg"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddBus}
+                disabled={submittingBus || !newBus.plateNumber || !newBus.totalSeats || !newBus.rows || !newBus.cols}
+                className="text-sm rounded-lg shadow-sm"
+              >
+                {submittingBus ? 'Adding...' : 'Add Bus'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  };
+
+  /* ─── Render: Staff Tab ─── */
+  const renderStaffTab = () => {
+    const filteredStaff = staff.filter((s: any) => {
+      if (!searchStaff.trim()) return true;
+      const q = searchStaff.toLowerCase();
+      return (
+        (s.name || '').toLowerCase().includes(q) ||
+        (s.email || '').toLowerCase().includes(q) ||
+        (s.role || '').toLowerCase().includes(q) ||
+        (s.active ? 'active' : 'inactive').includes(q)
+      );
+    });
+
+    return (
+      <div className="space-y-5 animate-bt-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-md shadow-violet-500/20">
+              <UserCog className="h-4.5 w-4.5 text-white" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Role</Label>
-              <Select value={newStaff.role} onValueChange={(v) => setNewStaff({ ...newStaff, role: v })}>
-                <SelectTrigger className="h-10 text-sm rounded-lg">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STAFF_ROLES.map((r) => (
-                    <SelectItem key={r} value={r} className="text-sm">
-                      {r.charAt(0) + r.slice(1).toLowerCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-foreground">Team Management</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{filteredStaff.length} team members</p>
             </div>
           </div>
-          <DialogFooter className="gap-2 pt-3">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+              <Input
+                value={searchStaff}
+                onChange={(e) => setSearchStaff(e.target.value)}
+                placeholder="Search staff..."
+                className="h-8 w-44 text-xs pl-8 rounded-lg border-border/50 bg-muted/40 focus:bg-background"
+              />
+            </div>
             <Button
-              variant="ghost"
-              onClick={() => setAddStaffOpen(false)}
-              className="text-sm rounded-lg"
+              size="sm"
+              onClick={() => setAddStaffOpen(true)}
+              className="gap-1.5 rounded-full px-4 shadow-sm"
             >
-              Cancel
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Staff</span>
             </Button>
-            <Button
-              onClick={handleAddStaff}
-              disabled={submittingStaff || !newStaff.name || !newStaff.email}
-              className="text-sm rounded-lg shadow-sm"
-            >
-              {submittingStaff ? 'Adding...' : 'Add Staff'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+          </div>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto bt-scroll">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-border/30 bg-muted/30">
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Name</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 hidden sm:table-cell">Email</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Role</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11 text-right hidden sm:table-cell">Bookings</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest h-11">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStaff.length === 0 ? (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={5} className="h-28 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                          <Users className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {searchStaff ? 'No staff match your search' : 'No staff members yet'}
+                        </p>
+                        {!searchStaff && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAddStaffOpen(true)}
+                            className="mt-1 gap-1.5 text-xs rounded-full"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Add your first team member
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredStaff.map((s: any, idx: number) => {
+                    const staffInitials = s.name
+                      ?.split(' ')
+                      .map((n: string) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2) || '??';
+
+                    return (
+                      <TableRow
+                        key={s.id}
+                        className="h-12 border-border/20 hover:bg-muted/40 transition-colors duration-150"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 shadow-sm ${AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]}`}>
+                              {staffInitials}
+                            </div>
+                            <span className="text-sm font-medium text-foreground">{s.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{s.email}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${ROLE_BADGE_COLORS[s.role] || ''}`}>
+                            {s.role}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm tabular-nums font-semibold text-foreground text-right hidden sm:table-cell">
+                          {s._count?.bookings || 0}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className={`h-2.5 w-2.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-zinc-400 dark:bg-zinc-500'}`} />
+                            <span className="text-xs font-medium text-foreground">
+                              {s.active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        {/* Add Staff Dialog */}
+        <Dialog open={addStaffOpen} onOpenChange={setAddStaffOpen}>
+          <DialogContent className="sm:max-w-md rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-foreground text-lg">Add New Staff</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
+                Invite a new team member. They can reset their password on first login.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-5 pt-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Full Name</Label>
+                <Input
+                  value={newStaff.name}
+                  onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                  placeholder="John Doe"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Email</Label>
+                <Input
+                  type="email"
+                  value={newStaff.email}
+                  onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                  placeholder="john@bustrack.com"
+                  className="h-10 text-sm rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Role</Label>
+                <Select value={newStaff.role} onValueChange={(v) => setNewStaff({ ...newStaff, role: v })}>
+                  <SelectTrigger className="h-10 text-sm rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STAFF_ROLES.map((r) => (
+                      <SelectItem key={r} value={r} className="text-sm">
+                        {r.charAt(0) + r.slice(1).toLowerCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="gap-2 pt-3">
+              <Button
+                variant="ghost"
+                onClick={() => setAddStaffOpen(false)}
+                className="text-sm rounded-lg"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddStaff}
+                disabled={submittingStaff || !newStaff.name || !newStaff.email}
+                className="text-sm rounded-lg shadow-sm"
+              >
+                {submittingStaff ? 'Adding...' : 'Add Staff'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  };
 
   /* ─── Render: Analytics Tab ─── */
   const renderAnalyticsTab = () => {
