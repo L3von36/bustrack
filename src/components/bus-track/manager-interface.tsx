@@ -55,7 +55,7 @@ const AI_INSIGHTS = [
     accent: 'bg-amber-500',
     tagBg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
     title: 'High Demand Predicted',
-    description: 'Nairobi → Mombasa shows 40% higher booking rate. Consider adding buses at 11:00 and 14:00.',
+    description: 'Addis Ababa → Dire Dawa shows 40% higher booking rate. Consider adding buses at 11:00 and 14:00.',
     tag: 'Demand',
   },
   {
@@ -69,7 +69,7 @@ const AI_INSIGHTS = [
     accent: 'bg-orange-500',
     tagBg: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
     title: 'Departure Delay Risk',
-    description: 'The 09:30 Kisumu bus has 45% boarding with 12 min to departure. PA announcements may help.',
+    description: 'The 09:30 Bahir Dar bus has 45% boarding with 12 min to departure. PA announcements may help.',
     tag: 'Operations',
   },
   {
@@ -232,7 +232,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
     ? [
         {
           label: 'Revenue',
-          value: `KES ${Math.round((stats.totalRevenue || 0) / 1000)}K`,
+          value: `ETB ${Math.round((stats.totalRevenue || 0) / 1000)}K`,
           raw: stats.totalRevenue || 0,
           icon: <DollarSign className="h-5 w-5 text-white" />,
           iconGradient: 'bg-gradient-to-br from-emerald-500 to-emerald-600',

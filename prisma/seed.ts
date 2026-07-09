@@ -6,54 +6,54 @@ async function main() {
   // ─── STATION ─────────────────────────────────────
   const station = await prisma.station.create({
     data: {
-      name: "Central Bus Terminal",
-      city: "Nairobi",
-      address: "Accra Road, Nairobi CBD",
+      name: "Addis Ababa Central Bus Terminal",
+      city: "Addis Ababa",
+      address: "Ras Mekonnen Avenue, Merkato",
     },
   });
 
   // ─── STAFF ───────────────────────────────────────
   const staff = await Promise.all([
     prisma.staff.create({
-      data: { name: "Alice Wanjiku", email: "alice@bustrack.com", password: "password", role: "TICKETER", stationId: station.id },
+      data: { name: "Abebech Bekele", email: "alice@bustrack.com", password: "password", role: "TICKETER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Bob Ochieng", email: "bob@bustrack.com", password: "password", role: "CASHIER", stationId: station.id },
+      data: { name: "Bereket Tadesse", email: "bob@bustrack.com", password: "password", role: "CASHIER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Charles Mwangi", email: "charles@bustrack.com", password: "password", role: "GATEMAN", stationId: station.id },
+      data: { name: "Chala Hailu", email: "charles@bustrack.com", password: "password", role: "GATEMAN", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Diana Akinyi", email: "diana@bustrack.com", password: "password", role: "MANAGER", stationId: station.id },
+      data: { name: "Dinknesh Girma", email: "diana@bustrack.com", password: "password", role: "MANAGER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Edward Kamau", email: "edward@bustrack.com", password: "password", role: "SUPERADMIN" },
+      data: { name: "Eyasu Tesfaye", email: "edward@bustrack.com", password: "password", role: "SUPERADMIN" },
     }),
   ]);
 
   // ─── ROUTES ──────────────────────────────────────
   const routes = await Promise.all([
     prisma.route.create({
-      data: { origin: "Nairobi", destination: "Mombasa", distanceKm: 483, baseFare: 1200, estimatedMin: 480, stationId: station.id },
+      data: { origin: "Addis Ababa", destination: "Dire Dawa", distanceKm: 445, baseFare: 1800, estimatedMin: 420, stationId: station.id },
     }),
     prisma.route.create({
-      data: { origin: "Nairobi", destination: "Kisumu", distanceKm: 347, baseFare: 900, estimatedMin: 360, stationId: station.id },
+      data: { origin: "Addis Ababa", destination: "Bahir Dar", distanceKm: 565, baseFare: 2200, estimatedMin: 540, stationId: station.id },
     }),
     prisma.route.create({
-      data: { origin: "Nairobi", destination: "Eldoret", distanceKm: 310, baseFare: 800, estimatedMin: 300, stationId: station.id },
+      data: { origin: "Addis Ababa", destination: "Hawassa", distanceKm: 275, baseFare: 1200, estimatedMin: 270, stationId: station.id },
     }),
     prisma.route.create({
-      data: { origin: "Nairobi", destination: "Nakuru", distanceKm: 160, baseFare: 500, estimatedMin: 150, stationId: station.id },
+      data: { origin: "Addis Ababa", destination: "Adama", distanceKm: 100, baseFare: 500, estimatedMin: 90, stationId: station.id },
     }),
   ]);
 
   // ─── BUSES ────────────────────────────────────────
   const buses = await Promise.all([
-    prisma.bus.create({ data: { plateNumber: "KBA 234X", busType: "VIP", totalSeats: 33, rows: 11, cols: 3 } }),
-    prisma.bus.create({ data: { plateNumber: "KCB 567Y", busType: "EXECUTIVE", totalSeats: 40, rows: 10, cols: 4 } }),
-    prisma.bus.create({ data: { plateNumber: "KCC 890Z", busType: "STANDARD", totalSeats: 44, rows: 11, cols: 4 } }),
-    prisma.bus.create({ data: { plateNumber: "KDE 123A", busType: "VIP", totalSeats: 33, rows: 11, cols: 3 } }),
-    prisma.bus.create({ data: { plateNumber: "KDF 456B", busType: "EXECUTIVE", totalSeats: 40, rows: 10, cols: 4 } }),
+    prisma.bus.create({ data: { plateNumber: "AA 2345", busType: "VIP", totalSeats: 33, rows: 11, cols: 3 } }),
+    prisma.bus.create({ data: { plateNumber: "AA 5678", busType: "EXECUTIVE", totalSeats: 40, rows: 10, cols: 4 } }),
+    prisma.bus.create({ data: { plateNumber: "AA 9012", busType: "STANDARD", totalSeats: 44, rows: 11, cols: 4 } }),
+    prisma.bus.create({ data: { plateNumber: "AA 3456", busType: "VIP", totalSeats: 33, rows: 11, cols: 3 } }),
+    prisma.bus.create({ data: { plateNumber: "AA 7890", busType: "EXECUTIVE", totalSeats: 40, rows: 10, cols: 4 } }),
   ]);
 
   // ─── SCHEDULES (today and tomorrow) ───────────────
@@ -117,7 +117,7 @@ async function main() {
           scheduleId: schedule.id,
           staffId: staff[0].id,
           passengerName: "John Doe",
-          passengerPhone: "+254712345678",
+          passengerPhone: "+251912345678",
           seatNumber: seat,
           fare: schedule.fare,
           status: "CONFIRMED",

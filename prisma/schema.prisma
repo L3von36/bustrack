@@ -196,7 +196,7 @@ model Payment {
   amount       Float
   method       PaymentMethod
   status       PaymentStatus @default(PENDING)
-  reference    String?       // External payment reference (M-Pesa, etc.)
+  reference    String?       // External payment reference (Telebirr, etc.)
   cashReceived Float?        @map("cash_received")
   changeGiven  Float?        @map("change_given")
   createdAt    DateTime      @default(now())

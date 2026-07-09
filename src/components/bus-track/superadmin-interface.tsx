@@ -239,7 +239,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   const kpis = stats ? [
     {
       label: 'Total Revenue',
-      value: `KES ${(stats.totalRevenue || 0).toLocaleString()}`,
+      value: `ETB ${(stats.totalRevenue || 0).toLocaleString()}`,
       icon: <DollarSign className="h-5 w-5" />,
       gradient: 'from-emerald-500 to-emerald-600',
       shadowColor: 'shadow-emerald-500/20',
@@ -492,7 +492,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{r.distanceKm} km</TableCell>
-                    <TableCell className="text-sm font-bold text-foreground tabular-nums">KES {r.baseFare?.toLocaleString()}</TableCell>
+                    <TableCell className="text-sm font-bold text-foreground tabular-nums">ETB {r.baseFare?.toLocaleString()}</TableCell>
                     <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                       <span className="flex items-center gap-1.5">
                         <Clock className="h-3 w-3" />
@@ -527,7 +527,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               <Input
                 value={newRoute.origin}
                 onChange={(e) => setNewRoute({ ...newRoute, origin: e.target.value })}
-                placeholder="e.g. Nairobi"
+                placeholder="e.g. Addis Ababa"
                 className="h-10 text-sm rounded-lg"
               />
             </div>
@@ -536,7 +536,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               <Input
                 value={newRoute.destination}
                 onChange={(e) => setNewRoute({ ...newRoute, destination: e.target.value })}
-                placeholder="e.g. Mombasa"
+                placeholder="e.g. Dire Dawa"
                 className="h-10 text-sm rounded-lg"
               />
             </div>
@@ -551,7 +551,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Base fare (KES)</Label>
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Base fare (ETB)</Label>
               <Input
                 type="number"
                 value={newRoute.baseFare}
@@ -1039,7 +1039,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
                         color: 'var(--popover-foreground)',
                         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                       }}
-                      formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Revenue']}
+                      formatter={(value: number) => [`ETB ${value.toLocaleString()}`, 'Revenue']}
                     />
                     <Bar
                       dataKey="revenue"

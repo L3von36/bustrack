@@ -55,7 +55,7 @@ const STATUS_DOT: Record<string, string> = {
 /*  Popular route chips                                                       */
 /* -------------------------------------------------------------------------- */
 
-const POPULAR_ROUTES = ['Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'];
+const POPULAR_ROUTES = ['Dire Dawa', 'Bahir Dar', 'Hawassa', 'Adama'];
 
 /* -------------------------------------------------------------------------- */
 /*  Component                                                                 */
@@ -299,7 +299,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
         {/* Bottom: fare + fill bar */}
         <div className="flex items-end justify-between">
           <span className="text-lg font-bold tracking-tight text-foreground">
-            KES {s.fare.toLocaleString()}
+            ETB {s.fare.toLocaleString()}
           </span>
           <div className="text-right">
             <span className="text-[11px] text-muted-foreground">
@@ -517,7 +517,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
               </p>
 
               <div className="flex items-baseline gap-1.5 mt-2">
-                <span className="text-[11px] text-muted-foreground font-medium">KES</span>
+                <span className="text-[11px] text-muted-foreground font-medium">ETB</span>
                 <span className="text-4xl font-extrabold tracking-tight text-foreground">
                   {selectedSchedule?.fare.toLocaleString()}
                 </span>
@@ -566,7 +566,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
             Phone Number
           </Label>
           <Input
-            placeholder="+254..."
+            placeholder="+251..."
             value={passengerPhone}
             onChange={(e) => setPassengerPhone(e.target.value)}
             className="h-11 text-sm bg-background/80 border-border/60 rounded-xl focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/40 placeholder:text-muted-foreground/40"
@@ -776,7 +776,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
                         {selectedSeat ? (
                           <>
                             <Ticket className="h-4 w-4 mr-2" />
-                            Book Seat {selectedSeat} — KES {selectedSchedule.fare.toLocaleString()}
+                            Book Seat {selectedSeat} — ETB {selectedSchedule.fare.toLocaleString()}
                           </>
                         ) : (
                           'Select a Seat First'

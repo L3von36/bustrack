@@ -42,7 +42,7 @@ import type { StaffUser, BookingItem } from './types';
 /* ─── Payment method config ─────────────────────────────────── */
 const PAYMENT_METHODS = [
   { key: 'CASH', label: 'Cash', icon: Banknote },
-  { key: 'MOBILE_MONEY', label: 'M-Pesa', icon: Smartphone },
+  { key: 'MOBILE_MONEY', label: 'Telebirr', icon: Smartphone },
   { key: 'CARD', label: 'Card', icon: CreditCard },
   { key: 'QR_CODE', label: 'QR', icon: QrCode },
 ] as const;
@@ -195,7 +195,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
       const data = await res.json();
 
       if (data.payment) {
-        toast.success(`${payingBooking.reference} — KES ${amount.toLocaleString()} via ${paymentMethod.replace('_', ' ')}${change ? ` · Change: KES ${change.toLocaleString()}` : ''}`);
+        toast.success(`${payingBooking.reference} — ETB ${amount.toLocaleString()} via ${paymentMethod.replace('_', ' ')}${change ? ` · Change: ETB ${change.toLocaleString()}` : ''}`);
         emit('payment:completed', {
           bookingRef: payingBooking.reference,
           amount,
@@ -261,7 +261,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                     </p>
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-none">
-                        KES {todayTotal.toLocaleString()}
+                        ETB {todayTotal.toLocaleString()}
                       </span>
                       <TrendingUp className="h-6 w-6 text-emerald-500 mt-1" />
                     </div>
@@ -292,7 +292,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                           Avg Fare
                         </span>
                         <span className="text-sm font-bold text-foreground leading-tight mt-0.5">
-                          KES {averageFare.toLocaleString()}
+                          ETB {averageFare.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -416,7 +416,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                           <div className="flex items-center gap-4 shrink-0">
                             <div className="text-right">
                               <span className="text-lg font-bold text-foreground tabular-nums leading-none">
-                                KES {booking.fare.toLocaleString()}
+                                ETB {booking.fare.toLocaleString()}
                               </span>
                             </div>
                             <Button
@@ -505,7 +505,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                           {/* Amount */}
                           <div className="flex flex-col items-end shrink-0 pt-0.5">
                             <span className="text-sm font-bold text-foreground tabular-nums leading-tight">
-                              KES {p.amount.toLocaleString()}
+                              ETB {p.amount.toLocaleString()}
                             </span>
                             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
                               Completed
@@ -561,7 +561,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                       Amount Due
                     </span>
                     <span className="text-5xl font-extrabold tracking-tight text-foreground leading-none">
-                      KES {payingBooking.fare.toLocaleString()}
+                      ETB {payingBooking.fare.toLocaleString()}
                     </span>
                     <div className="flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full bg-muted/60">
                       <span className="text-xs font-medium text-muted-foreground">
@@ -621,7 +621,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                     </Label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold pointer-events-none">
-                        KES
+                        ETB
                       </span>
                       <Input
                         type="number"
@@ -663,7 +663,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                           </span>
                         </div>
                         <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                          KES {changeAmount.toLocaleString()}
+                          ETB {changeAmount.toLocaleString()}
                         </span>
                       </div>
                     )}
@@ -672,7 +672,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
                     {cashReceivedNum > 0 && cashReceivedNum < fareAmount && (
                       <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-destructive/5 border border-destructive/15 animate-bt-fade-in">
                         <span className="text-sm font-medium text-destructive">
-                          Insufficient amount — need KES {(fareAmount - cashReceivedNum).toLocaleString()} more
+                          Insufficient amount — need ETB {(fareAmount - cashReceivedNum).toLocaleString()} more
                         </span>
                       </div>
                     )}
