@@ -25,15 +25,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!booking) {
-      await db.gateLog.create({
-        data: {
-          bookingId: 'unknown',
-          scheduleId,
-          staffId: auth.staffId,
-          result: 'INVALID',
-          reason: 'Reference not found',
-        },
-      });
+      // Don't log gate entries for non-existent bookings (no valid bookingId for FK)
       return NextResponse.json({ result: 'INVALID', reason: 'Booking reference not found' });
     }
 

@@ -9,6 +9,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (!['MANAGER', 'SUPERADMIN'].includes(auth.role)) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     const today = new Date().toISOString().split('T')[0];
 
     const scheduleWhere: any = { departureDate: today };

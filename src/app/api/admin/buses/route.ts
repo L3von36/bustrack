@@ -10,6 +10,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (auth.role !== 'SUPERADMIN') {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     const buses = await db.bus.findMany({
       include: {
         _count: { select: { schedules: true } },
@@ -28,6 +32,10 @@ export async function POST(request: NextRequest) {
     const auth = await getAuthStaff();
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (auth.role !== 'SUPERADMIN') {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     const body = await request.json();

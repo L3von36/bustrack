@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { db } from '@/lib/db';
+import { verifyToken, type JwtPayload } from '@/lib/auth';
 
 export interface AuthContext {
   staffId: string;
@@ -7,18 +8,55 @@ export interface AuthContext {
   stationId: string | null;
 }
 
+// RBAC: which roles can access which API path prefixes
+const ROLE_ACCESS: Record<string, string[]> = {
+  '/api/admin': ['SUPERADMIN'],
+  '/api/gate': ['GATEMAN', 'MANAGER', 'SUPERADMIN'],
+  '/api/bookings': ['TICKETER', 'CASHIER', 'MANAGER', 'SUPERADMIN'],
+  '/api/payments': ['CASHIER', 'MANAGER', 'SUPERADMIN'],
+  '/api/dashboard': ['MANAGER', 'SUPERADMIN'],
+  '/api/schedules': ['TICKETER', 'CASHIER', 'MANAGER', 'SUPERADMIN', 'GATEMAN'],
+  '/api/routes': ['TICKETER', 'CASHIER', 'MANAGER', 'SUPERADMIN'],
+  '/api/luggage': ['TICKETER', 'CASHIER', 'MANAGER', 'SUPERADMIN', 'GATEMAN'],
+  '/api/notifications': ['TICKETER', 'CASHIER', 'MANAGER', 'SUPERADMIN', 'GATEMAN'],
+};
+
 /**
- * Get the authenticated staff member from request headers.
- * Call this inside API route handlers (after middleware has validated the JWT).
+ * Get the authenticated staff member from the Authorization header.
+ * Performs JWT verification AND RBAC enforcement using the request path.
+ * Returns null if unauthorized or insufficient permissions.
  */
 export async function getAuthStaff(): Promise<AuthContext | null> {
   const headersList = await headers();
-  const staffId = headersList.get('x-staff-id');
-  const role = headersList.get('x-staff-role');
-  const stationId = headersList.get('x-station-id') || null;
+  const authHeader = headersList.get('authorization');
 
-  if (!staffId || !role) return null;
-  return { staffId, role, stationId };
+  if (!authHeader?.startsWith('Bearer ')) return null;
+
+  const token = authHeader.slice(7);
+  const payload: JwtPayload | null = verifyToken(token);
+
+  if (!payload) return null;
+
+  const auth: AuthContext = {
+    staffId: payload.staffId,
+    role: payload.role,
+    stationId: payload.stationId,
+  };
+
+  // Auto-detect request path from Next.js headers for RBAC
+  const xPath = headersList.get('x-nextjs-path') || headersList.get('x-invoke-path') || '';
+  if (xPath) {
+    for (const [routePrefix, allowedRoles] of Object.entries(ROLE_ACCESS)) {
+      if (xPath.startsWith(routePrefix)) {
+        if (!allowedRoles.includes(auth.role)) {
+          return null; // Insufficient permissions
+        }
+        break;
+      }
+    }
+  }
+
+  return auth;
 }
 
 /**

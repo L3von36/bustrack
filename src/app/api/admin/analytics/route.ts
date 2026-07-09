@@ -9,6 +9,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (auth.role !== 'SUPERADMIN') {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     const today = new Date().toISOString().split('T')[0];
 
     const stationFilter = (auth.role !== 'SUPERADMIN' && auth.stationId)
