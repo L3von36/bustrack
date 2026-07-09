@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --c-bg: #f3f3f2;
+  --c-accent: #94591d;
+  --c-text: #201e1d;
+  --c-muted: #908c87;
+  --c-mid: #605346;
+  --c-surface: #eceae7;
+  --page-w: 794px;
+  --page-h: 1123px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--c-bg); }
+.cover {
+  position: relative;
+  width: var(--page-w);
+  height: var(--page-h);
+  background: var(--c-bg);
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+.cover-layer-1 {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(96,83,70,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96,83,70,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+.accent-block {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 35%;
+  height: 100%;
+  background: var(--c-mid);
+  opacity: 0.06;
+}
+.cover-layer-2 {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.anchor-line {
+  position: absolute;
+  left: 60px;
+  top: 112px;
+  width: 6px;
+  height: 898px;
+  background: var(--c-mid);
+  border-radius: 3px;
+}
+.h-divider { display: none; }
+.cover-layer-3 {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+.kicker {
+  position: absolute;
+  top: 168px;
+  left: 108px;
+  font-size: 11pt;
+  font-weight: 500;
+  letter-spacing: 3pt;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  opacity: 0.7;
+}
+.hero-title {
+  position: absolute;
+  top: 314px;
+  left: 108px;
+  max-width: 420px;
+  font-size: 52pt;
+  font-weight: 900;
+  line-height: 1.12;
+  color: var(--c-text);
+  letter-spacing: -1pt;
+}
+.summary {
+  position: absolute;
+  top: 562px;
+  left: 108px;
+  max-width: 420px;
+  font-size: 13.5pt;
+  font-weight: 400;
+  line-height: 1.65;
+  color: var(--c-muted);
+  opacity: 0.9;
+}
+.meta {
+  position: absolute;
+  top: 853px;
+  left: 108px;
+  font-size: 11.5pt;
+  font-weight: 400;
+  color: var(--c-muted);
+  line-height: 1.6;
+}
+.meta-item {
+  margin-bottom: 3pt;
+}
+.footer-label {
+  position: absolute;
+  bottom: 67px;
+  left: 108px;
+  font-size: 9pt;
+  font-weight: 500;
+  letter-spacing: 2pt;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  opacity: 0.5;
+}
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="cover-layer-1">
+    <div class="grid-bg"></div>
+    <div class="accent-block"></div>
+  </div>
+  <div class="cover-layer-2">
+    <div class="anchor-line"></div>
+    <div class="h-divider"></div>
+  </div>
+  <div class="cover-layer-3">
+    <div class="kicker">Full-Stack Analysis &amp; Global Benchmark</div>
+    <div class="hero-title">BusTrack</div>
+    <div class="summary">A comprehensive audit of the BusTrack Ethiopian bus station management platform, covering security vulnerabilities, architecture assessment, UI/UX evaluation, global competitive analysis, and a phased roadmap to launch readiness.</div>
+    <div class="meta">
+      <div class="meta-item">Prepared for: BusTrack Engineering Team</div>
+      <div class="meta-item">Date: July 2025</div>
+      <div class="meta-item">Classification: Internal - Confidential</div>
+    </div>
+    <div class="footer-label">BusTrack Platform Audit</div>
+  </div>
+</div>
+</body>
+</html>
