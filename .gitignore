@@ -55,3 +55,4 @@ server.log
 
 # Research downloads (may contain scraped CSS that poisons Tailwind scanning)
 /download/tool-results/
+tool-results/
