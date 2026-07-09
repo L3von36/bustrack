@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthStaff } from '@/lib/auth-context';
 import { validateBody, validateTicketSchema } from '@/lib/validations';
+import { emitGateValidated } from '@/lib/realtime-emit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,6 +69,15 @@ export async function POST(request: NextRequest) {
     await db.booking.update({
       where: { id: booking.id },
       data: { status: 'BOARDED', boardedAt: new Date() },
+    });
+
+    // Realtime: notify gateman and dashboards
+    emitGateValidated({
+      scheduleId,
+      result: 'VALID',
+      passengerName: booking.passengerName,
+      seatNumber: booking.seatNumber,
+      reference: booking.reference,
     });
 
     return NextResponse.json({

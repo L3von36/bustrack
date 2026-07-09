@@ -1,68 +1,59 @@
 'use client';
 
-import React, { Component, type ReactNode, type ErrorInfo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
+import React, { Component, type ReactNode } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-interface ErrorBoundaryProps {
+interface Props {
   children: ReactNode;
-  /** Optional label shown in the error card (e.g. "Dashboard Stats") */
-  label?: string;
+  fallback?: ReactNode;
 }
 
-interface ErrorBoundaryState {
+interface State {
   hasError: boolean;
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error(`[ErrorBoundary${this.props.label ? ` – ${this.props.label}` : ''}]`, error, info.componentStack);
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info.componentStack);
   }
 
-  private handleReset = () => {
+  handleRetry = () => {
     this.setState({ hasError: false, error: null });
   };
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback;
+
       return (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">
-                Something went wrong
-              </p>
-              <p className="text-xs text-muted-foreground max-w-xs">
-                {this.props.label
-                  ? `An error occurred while loading ${this.props.label}.`
-                  : 'An unexpected error occurred in this section.'}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={this.handleReset}
-              className="gap-1.5 text-xs"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8">
+          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+            <AlertTriangle className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="text-center max-w-md">
+            <h3 className="text-lg font-semibold mb-1">Something went wrong</h3>
+            <p className="text-sm text-muted-foreground">
+              {this.state.error?.message || 'An unexpected error occurred. Please try again.'}
+            </p>
+          </div>
+          <button
+            onClick={this.handleRetry}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Try Again
+          </button>
+        </div>
       );
     }
 

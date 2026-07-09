@@ -11,7 +11,10 @@
     "edit": "Edit",
     "search": "Search",
     "noData": "No data available",
-    "currency": "ETB"
+    "currency": "ETB",
+    "online": "Online",
+    "offline": "Offline",
+    "notifications": "Notifications"
   },
   "auth": {
     "login": "Sign In",
@@ -19,7 +22,9 @@
     "email": "Email",
     "password": "Password",
     "invalidCredentials": "Invalid email or password",
-    "sessionExpired": "Session expired. Please sign in again."
+    "sessionExpired": "Session expired. Please sign in again.",
+    "welcomeBack": "Welcome back",
+    "enterCredentials": "Enter your credentials to access the system"
   },
   "roles": {
     "TICKETER": "Ticketer",
@@ -30,6 +35,7 @@
   },
   "ticketer": {
     "selectRoute": "Select a Route",
+    "selectSchedule": "Select Departure",
     "selectSeat": "Choose Your Seat",
     "passengerInfo": "Passenger Information",
     "passengerName": "Passenger Name",
@@ -37,7 +43,14 @@
     "bookTicket": "Book Ticket",
     "available": "Available",
     "occupied": "Occupied",
-    "selected": "Selected"
+    "selected": "Selected",
+    "yourSelection": "Your Selection",
+    "confirmBooking": "Confirm Booking",
+    "bookingSuccess": "Booking created successfully!",
+    "route": "Route",
+    "departure": "Departure",
+    "fare": "Fare",
+    "seat": "Seat"
   },
   "cashier": {
     "pendingPayments": "Pending Payments",
@@ -45,7 +58,12 @@
     "todayRevenue": "Today's Revenue",
     "paymentSuccess": "Payment processed successfully",
     "cashReceived": "Cash Received",
-    "change": "Change"
+    "change": "Change",
+    "totalCollected": "Total Collected",
+    "transactions": "Transactions",
+    "paymentMethod": "Payment Method",
+    "completePayment": "Complete Payment",
+    "amountDue": "Amount Due"
   },
   "gateman": {
     "scanTicket": "Scan Ticket",
@@ -53,13 +71,32 @@
     "valid": "Valid Ticket",
     "invalid": "Invalid Ticket",
     "boarding": "Boarding Progress",
-    "manifest": "Passenger Manifest"
+    "manifest": "Passenger Manifest",
+    "selectSchedule": "Select Today's Departure",
+    "boarded": "Boarded",
+    "confirmed": "Confirmed",
+    "noShow": "No Show",
+    "passengers": "Passengers",
+    "of": "of"
   },
   "manager": {
     "dashboard": "Operations Dashboard",
     "departures": "Today's Departures",
     "insights": "Operational Insights",
-    "activity": "Recent Activity"
+    "activity": "Recent Activity",
+    "revenue": "Revenue",
+    "passengers": "Passengers",
+    "departed": "Departed",
+    "onTimeRate": "On-Time Rate",
+    "totalBuses": "Total Buses",
+    "viewManifest": "View Manifest",
+    "route": "Route",
+    "bus": "Bus",
+    "seats": "Seats",
+    "status": "Status",
+    "time": "Time",
+    "occupancy": "Occupancy",
+    "gate": "Gate"
   },
   "admin": {
     "staff": "Staff Management",
@@ -68,6 +105,20 @@
     "analytics": "Analytics",
     "addStaff": "Add Staff Member",
     "addRoute": "Add Route",
-    "addBus": "Add Bus"
+    "addBus": "Add Bus",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "station": "Station",
+    "origin": "Origin",
+    "destination": "Destination",
+    "distance": "Distance (km)",
+    "fare": "Base Fare (ETB)",
+    "estimatedTime": "Est. Time (min)",
+    "plateNumber": "Plate Number",
+    "busType": "Bus Type",
+    "totalSeats": "Total Seats",
+    "revenueByRoute": "Revenue by Route",
+    "seatOccupancy": "Seat Distribution"
   }
 }

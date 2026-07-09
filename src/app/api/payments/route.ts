@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthStaff } from '@/lib/auth-context';
 import { validateBody, createPaymentSchema } from '@/lib/validations';
+import { emitPaymentCompleted } from '@/lib/realtime-emit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,6 +54,15 @@ export async function POST(request: NextRequest) {
         schedule: { include: { route: true, bus: true } },
         staff: { select: { name: true } },
       },
+    });
+
+    // Realtime: notify dashboards about payment completion
+    emitPaymentCompleted({
+      bookingRef: updatedBooking.reference,
+      amount: booking.fare / 100,
+      method,
+      passengerName: updatedBooking.passengerName,
+      routeName: `${updatedBooking.schedule.route.origin} → ${updatedBooking.schedule.route.destination}`,
     });
 
     return NextResponse.json({

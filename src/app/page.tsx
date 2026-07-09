@@ -4,14 +4,31 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 import { LoginScreen } from '@/components/bus-track/login-screen';
+import { ErrorBoundary } from '@/components/bus-track/error-boundary';
+import { DashboardSkeleton } from '@/components/bus-track/loading-skeleton';
 import type { StaffUser } from '@/components/bus-track/types';
 
-// Dynamic import dashboards — only loaded after login
-const TicketerInterface = dynamic(() => import('@/components/bus-track/ticketer-interface').then(m => ({ default: m.TicketerInterface })), { ssr: false });
-const CashierInterface = dynamic(() => import('@/components/bus-track/cashier-interface').then(m => ({ default: m.CashierInterface })), { ssr: false });
-const GatemanInterface = dynamic(() => import('@/components/bus-track/gateman-interface').then(m => ({ default: m.GatemanInterface })), { ssr: false });
-const ManagerInterface = dynamic(() => import('@/components/bus-track/manager-interface').then(m => ({ default: m.ManagerInterface })), { ssr: false });
-const SuperadminInterface = dynamic(() => import('@/components/bus-track/superadmin-interface').then(m => ({ default: m.SuperadminInterface })), { ssr: false });
+// Dynamic import dashboards — only loaded after login, with loading fallback
+const TicketerInterface = dynamic(() => import('@/components/bus-track/ticketer-interface').then(m => ({ default: m.TicketerInterface })), {
+  ssr: false,
+  loading: () => <DashboardSkeleton />,
+});
+const CashierInterface = dynamic(() => import('@/components/bus-track/cashier-interface').then(m => ({ default: m.CashierInterface })), {
+  ssr: false,
+  loading: () => <DashboardSkeleton />,
+});
+const GatemanInterface = dynamic(() => import('@/components/bus-track/gateman-interface').then(m => ({ default: m.GatemanInterface })), {
+  ssr: false,
+  loading: () => <DashboardSkeleton />,
+});
+const ManagerInterface = dynamic(() => import('@/components/bus-track/manager-interface').then(m => ({ default: m.ManagerInterface })), {
+  ssr: false,
+  loading: () => <DashboardSkeleton />,
+});
+const SuperadminInterface = dynamic(() => import('@/components/bus-track/superadmin-interface').then(m => ({ default: m.SuperadminInterface })), {
+  ssr: false,
+  loading: () => <DashboardSkeleton />,
+});
 
 export default function Home() {
   const [user, setUser] = useState<StaffUser | null>(null);
@@ -26,9 +43,12 @@ export default function Home() {
     if (saved) {
       try {
         const { user: u, token: t } = JSON.parse(saved);
-        setUser(u);
-        setToken(t);
-      } catch { /* ignore */ }
+        // Verify token hasn't expired (basic check)
+        if (u && t) {
+          setUser(u);
+          setToken(t);
+        }
+      } catch { /* ignore corrupt session */ }
     }
   }, []);
 
@@ -73,13 +93,15 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {Dashboard ? (
-        <Dashboard user={user} onLogout={handleLogout} toast={toast} authToken={token} />
-      ) : (
-        <div className="flex items-center justify-center h-full text-muted-foreground">
-          Unknown role: {user.role}
-        </div>
-      )}
+      <ErrorBoundary>
+        {Dashboard ? (
+          <Dashboard user={user} onLogout={handleLogout} toast={toast} authToken={token} />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            Unknown role: {user.role}
+          </div>
+        )}
+      </ErrorBoundary>
     </div>
   );
 }

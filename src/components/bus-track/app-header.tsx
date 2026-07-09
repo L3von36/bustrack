@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { LogOut, Sun, Moon, Bus, Bell, Check } from 'lucide-react';
+import { LogOut, Sun, Moon, Bus, Bell, Check, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
+import { useI18n } from '@/i18n/provider';
 import type { Role } from './types';
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -67,6 +68,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ user, authToken, onLogout, isConnected = false }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
+  const { locale, setLocale } = useI18n();
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -271,6 +273,18 @@ export function AppHeader({ user, authToken, onLogout, isConnected = false }: Ap
         >
           <Sun className="h-4 w-4 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
           <Moon className="absolute h-4 w-4 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+        </Button>
+
+        {/* Language toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocale(locale === 'en' ? 'am' : 'en')}
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          aria-label="Switch language"
+          title={locale === 'en' ? 'አማርኛ' : 'English'}
+        >
+          <Languages className="h-4 w-4" />
         </Button>
 
         {/* Logout */}

@@ -1,10 +1,27 @@
 {
-  "name": "BusTrack",
+  "name": "BusTrack — Ethiopian Bus Station Management",
   "short_name": "BusTrack",
-  "description": "Ethiopian Bus Station Management System",
+  "description": "Digital ticketing, payments, and operations management for Ethiopian bus stations",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
+  "background_color": "#09090b",
   "theme_color": "#10b981",
-  "icons": []
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "transportation"],
+  "lang": "en",
+  "dir": "ltr"
 }
