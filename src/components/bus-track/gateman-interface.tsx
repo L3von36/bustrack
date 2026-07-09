@@ -44,6 +44,7 @@ import type { StaffUser, ScheduleItem } from './types';
 
 interface GatemanInterfaceProps {
   user: StaffUser;
+  authToken: string;
   onLogout: () => void;
   toast: any;
 }
@@ -215,8 +216,13 @@ function ValidationDisplay({ result }: { result: ValidationResult }) {
 /*  Main Component                                                     */
 /* ------------------------------------------------------------------ */
 
-export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProps) {
+export function GatemanInterface({ user, authToken, onLogout, toast }: GatemanInterfaceProps) {
   const { isConnected, emit, on, joinGate } = useRealtimeSocket();
+
+  const authFetch = (url: string, options?: RequestInit) => fetch(url, {
+    ...options,
+    headers: { ...options?.headers, 'Authorization': `Bearer ${authToken}` },
+  });
 
   /* ---- state ---- */
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
@@ -227,7 +233,21 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   const [boardingInfo, setBoardingInfo] = useState<{
     boardedCount: number;
     totalActive: number;
+    totalSeats: number;
     boarded: { id: string; passengerName: string; seatNumber: string }[];
+    passengers?: {
+      confirmed: { passengerName: string; seatNumber: string; status: string; bookedAt: string; boardedAt: string | null }[];
+      boarded: { passengerName: string; seatNumber: string; status: string; bookedAt: string; boardedAt: string | null }[];
+      noShow: { passengerName: string; seatNumber: string; status: string; bookedAt: string; boardedAt: string | null }[];
+    };
+    summary?: {
+      totalBooked: number;
+      boardedCount: number;
+      confirmedCount: number;
+      noShowCount: number;
+      totalSeats: number;
+      boardingProgress: number;
+    };
   } | null>(null);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -237,7 +257,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   const fetchSchedules = useCallback(async () => {
     setLoadingSchedules(true);
     try {
-      const res = await fetch('/api/schedules/today');
+      const res = await authFetch('/api/schedules/today');
       const data = await res.json();
       const boardingSchedules = (data.schedules || []).filter((s: ScheduleItem) =>
         ['SCHEDULED', 'BOARDING', 'DELAYED'].includes(s.status),
@@ -259,7 +279,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   const fetchBoardingInfo = useCallback(async () => {
     if (!selectedSchedule) return;
     try {
-      const res = await fetch(`/api/gate/boarding?scheduleId=${selectedSchedule.id}`);
+      const res = await authFetch(`/api/gate/boarding?scheduleId=${selectedSchedule.id}`);
       const data = await res.json();
       setBoardingInfo(data);
     } catch (err) {
@@ -296,7 +316,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
     setValidating(true);
     setValidationResult(null);
     try {
-      const res = await fetch('/api/gate/validate', {
+      const res = await authFetch('/api/gate/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -334,37 +354,29 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
   const progressValue = boardingCount / Math.max(boardingTotal, 1);
   const remainingCount = Math.max(boardingTotal - boardingCount, 0);
 
-  /* ─── Fake manifest data ──────────────────────────────────── */
-  const FAKE_MANIFEST = [
-    { name: 'Abebe Kebede', seat: '1A', boarded: true },
-    { name: 'Tigist Haile', seat: '1B', boarded: true },
-    { name: 'Yohannes Tadesse', seat: '2A', boarded: true },
-    { name: 'Selamawit Girma', seat: '2B', boarded: false },
-    { name: 'Dawit Assefa', seat: '3A', boarded: true },
-    { name: 'Hanna Belay', seat: '3B', boarded: false },
-    { name: 'Fikadu Mekonnen', seat: '4A', boarded: true },
-    { name: 'Meron Tesfaye', seat: '4B', boarded: true },
-    { name: 'Bereket Wondimu', seat: '5A', boarded: false },
-    { name: 'Nardos Alemu', seat: '5B', boarded: true },
-    { name: 'Solomon Worku', seat: '6A', boarded: false },
-    { name: 'Feven Tadesse', seat: '6B', boarded: true },
-    { name: 'Natnael Ashenafi', seat: '7A', boarded: true },
-    { name: 'Liya Gebremeskel', seat: '7B', boarded: false },
-    { name: 'Ephrem Bekele', seat: '8A', boarded: true },
-    { name: 'Ruth Teshome', seat: '8B', boarded: false },
-    { name: 'Abel Zewde', seat: '9A', boarded: true },
-    { name: 'Sara Hailu', seat: '9B', boarded: true },
-    { name: 'Teshome Desta', seat: '10A', boarded: false },
-    { name: 'Mekdes Alemayehu', seat: '10B', boarded: false },
-  ];
-  const manifestBoardedCount = FAKE_MANIFEST.filter((p) => p.boarded).length;
-  const manifestTotal = FAKE_MANIFEST.length;
+  /* ─── Real manifest from API ──────────────────────────────── */
+  const manifest = React.useMemo(() => {
+    if (!boardingInfo?.passengers) return [];
+    const entries: { name: string; seat: string; boarded: boolean }[] = [];
+    for (const p of boardingInfo.passengers.boarded) {
+      entries.push({ name: p.passengerName, seat: p.seatNumber, boarded: true });
+    }
+    for (const p of boardingInfo.passengers.confirmed) {
+      entries.push({ name: p.passengerName, seat: p.seatNumber, boarded: false });
+    }
+    for (const p of boardingInfo.passengers.noShow) {
+      entries.push({ name: p.passengerName, seat: p.seatNumber, boarded: false });
+    }
+    return entries;
+  }, [boardingInfo]);
+  const manifestBoardedCount = boardingInfo?.summary?.boardedCount ?? 0;
+  const manifestTotal = boardingInfo?.summary?.totalBooked ?? manifest.length;
 
   /* ================================================================ */
   return (
     <div className="h-full flex flex-col bg-background">
       {/* ── Header ── */}
-      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
+      <AppHeader user={user} authToken={authToken} onLogout={onLogout} isConnected={isConnected} />
 
       {/* ── Body ── */}
       <main className="flex-1 overflow-hidden">
@@ -731,6 +743,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
           <Separator />
 
           {/* Manifest table */}
+          {manifest.length > 0 ? (
           <div className="flex-1 overflow-y-auto bt-scroll">
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 bg-card z-10">
@@ -750,7 +763,7 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
                 </tr>
               </thead>
               <tbody>
-                {FAKE_MANIFEST.map((p, i) => (
+                {manifest.map((p, i) => (
                   <tr
                     key={i}
                     className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors"
@@ -777,6 +790,14 @@ export function GatemanInterface({ user, onLogout, toast }: GatemanInterfaceProp
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center py-16 text-center">
+              <div className="space-y-2">
+                <Users className="h-6 w-6 text-muted-foreground/30 mx-auto" />
+                <p className="text-xs text-muted-foreground">No passengers booked for this schedule</p>
+              </div>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
     </div>

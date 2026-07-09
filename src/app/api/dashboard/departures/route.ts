@@ -1,12 +1,23 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { getAuthStaff } from '@/lib/auth-context';
 
 export async function GET() {
   try {
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const today = new Date().toISOString().split('T')[0];
 
+    const scheduleWhere: any = { departureDate: today };
+    if (auth.role !== 'SUPERADMIN' && auth.stationId) {
+      scheduleWhere.stationId = auth.stationId;
+    }
+
     const schedules = await db.schedule.findMany({
-      where: { departureDate: today },
+      where: scheduleWhere,
       include: {
         route: true,
         bus: true,
@@ -28,7 +39,7 @@ export async function GET() {
       bookedCount: s._count.bookings,
       occupancy: Math.round((s._count.bookings / s.bus.totalSeats) * 100),
       departureTime: s.departureTime,
-      fare: s.fare,
+      fare: s.fare / 100,
       status: s.status,
       gateNumber: s.gateNumber,
       actualDeparture: s.actualDeparture,

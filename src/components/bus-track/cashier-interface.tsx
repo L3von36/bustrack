@@ -54,6 +54,7 @@ const STAGGER_DELAYS = ['delay-100', 'delay-200', 'delay-300', 'delay-400', 'del
 /* ─── Props ─────────────────────────────────────────────────── */
 interface CashierInterfaceProps {
   user: StaffUser;
+  authToken: string;
   onLogout: () => void;
   toast: any;
 }
@@ -103,8 +104,13 @@ function getMethodColor(method: string): string {
 }
 
 /* ─── Component ─────────────────────────────────────────────── */
-export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProps) {
+export function CashierInterface({ user, authToken, onLogout, toast }: CashierInterfaceProps) {
   const { isConnected, emit, on } = useRealtimeSocket();
+
+  const authFetch = (url: string, options?: RequestInit) => fetch(url, {
+    ...options,
+    headers: { ...options?.headers, 'Authorization': `Bearer ${authToken}` },
+  });
 
   /* State */
   const [pendingBookings, setPendingBookings] = useState<BookingItem[]>([]);
@@ -123,8 +129,8 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
   const fetchData = useCallback(async () => {
     try {
       const [bookingsRes, paymentsRes] = await Promise.all([
-        fetch('/api/bookings'),
-        fetch('/api/payments/recent'),
+        authFetch('/api/bookings'),
+        authFetch('/api/payments/recent'),
       ]);
       const bookingsData = await bookingsRes.json();
       const paymentsData = await paymentsRes.json();
@@ -203,7 +209,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
         return;
       }
 
-      const res = await fetch('/api/payments', {
+      const res = await authFetch('/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -247,7 +253,7 @@ export function CashierInterface({ user, onLogout, toast }: CashierInterfaceProp
   /* ─── Render ──────────────────────────────────────────────── */
   return (
     <div className="h-full flex flex-col bg-background">
-      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
+      <AppHeader user={user} authToken={authToken} onLogout={onLogout} isConnected={isConnected} />
 
       <main className="flex-1 overflow-hidden">
         <div className="flex h-full">

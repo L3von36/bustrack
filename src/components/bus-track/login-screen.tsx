@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Bus, ArrowRight, Zap, Shield, BarChart3, Ticket, CreditCard, Settings,
 } from 'lucide-react';
@@ -10,7 +10,7 @@ import { ROLE_CONFIG } from './constants';
 import type { StaffUser, Role } from './types';
 
 interface LoginScreenProps {
-  onLogin: (user: StaffUser) => void;
+  onLogin: (user: StaffUser, token: string) => void;
   loginLoading: boolean;
   setLoginLoading: (v: boolean) => void;
   loginEmail: string;
@@ -36,21 +36,34 @@ const FEATURES = [
 ];
 
 export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail, setLoginEmail, loginError, setLoginError, toast }: LoginScreenProps) {
-  const handleLogin = useCallback(async (email?: string) => {
-    const targetEmail = email || loginEmail;
-    if (!targetEmail) return;
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('bustrack_session');
+    if (saved) {
+      try {
+        const { user, token } = JSON.parse(saved);
+        onLogin(user, token);
+      } catch { /* ignore */ }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const doLogin = useCallback(async (email: string, password: string) => {
     setLoginLoading(true);
     setLoginError('');
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail, password: 'password' }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (data.user) {
-        onLogin(data.user);
-        toast.success(`Welcome, ${data.user.name}! — ${data.user.role}`);
+      if (data.user && data.token) {
+        // Persist session
+        localStorage.setItem('bustrack_session', JSON.stringify({ user: data.user, token: data.token }));
+        onLogin(data.user, data.token);
+        toast.success(`Welcome, ${data.user.name}!`);
       } else {
         setLoginError(data.error || 'Login failed');
       }
@@ -59,17 +72,25 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
     } finally {
       setLoginLoading(false);
     }
-  }, [loginEmail, onLogin, setLoginError, setLoginLoading, toast]);
+  }, [onLogin, setLoginError, setLoginLoading, toast]);
+
+  const handleLogin = useCallback((email?: string) => {
+    const targetEmail = email || loginEmail;
+    if (!targetEmail) return;
+    doLogin(targetEmail, loginPassword || 'password');
+  }, [loginEmail, loginPassword, doLogin]);
+
+  const handleDemoLogin = useCallback((email: string) => {
+    doLogin(email, 'password');
+  }, [doLogin]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background" suppressHydrationWarning>
-      {/* ── Main Content ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20">
         <div className="w-full max-w-5xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* ── Left Column ── */}
+            {/* Left Column */}
             <div className="animate-bt-slide-up">
-              {/* Logo */}
               <div className="flex items-center gap-2.5 mb-10">
                 <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
                   <Bus className="h-4.5 w-4.5 text-primary-foreground" />
@@ -77,45 +98,51 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
                 <span className="text-lg font-semibold tracking-tight">BusTrack</span>
               </div>
 
-              {/* Headline */}
               <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.15] text-foreground">
                 The modern way to
                 <span className="block mt-1.5 text-primary">manage your bus station.</span>
               </h1>
 
-              {/* Subheadline */}
               <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground max-w-md">
                 Real-time ticketing, role-based workflows, and powerful analytics — built for stations that move thousands daily.
               </p>
 
               {/* Login Form */}
-              <div className="mt-8 flex gap-2 max-w-md">
-                <div className="relative flex-1">
-                  <Input
-                    placeholder="your@email.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                    className="h-11 rounded-xl bg-card border-border text-sm"
-                  />
+              <div className="mt-8 space-y-3 max-w-md">
+                <Input
+                  placeholder="your@email.com"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  className="h-11 rounded-xl bg-card border-border text-sm"
+                />
+                <Input
+                  placeholder="Password"
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  className="h-11 rounded-xl bg-card border-border text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleLogin()}
+                    disabled={loginLoading}
+                    className="h-11 px-6 rounded-xl text-sm font-medium flex-1"
+                  >
+                    {loginLoading ? (
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                    ) : (
+                      <>Sign In <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></>
+                    )}
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => handleLogin()}
-                  disabled={loginLoading}
-                  className="h-11 px-6 rounded-xl text-sm font-medium"
-                >
-                  {loginLoading ? (
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
-                  ) : (
-                    <>Sign In <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></>
-                  )}
-                </Button>
+                {loginError && (
+                  <p className="text-xs text-destructive font-medium">{loginError}</p>
+                )}
               </div>
-              {loginError && (
-                <p className="mt-2.5 text-xs text-destructive font-medium">{loginError}</p>
-              )}
 
-              {/* Features */}
               <div className="mt-10 grid grid-cols-2 gap-3">
                 {FEATURES.map((f, i) => (
                   <div
@@ -132,7 +159,7 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
               </div>
             </div>
 
-            {/* ── Right Column: Quick Demo ── */}
+            {/* Right Column: Quick Demo */}
             <div className="animate-bt-slide-up delay-200">
               <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-5">
@@ -146,7 +173,7 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
                   {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config], i) => (
                     <button
                       key={role}
-                      onClick={() => handleLogin(config.email)}
+                      onClick={() => handleDemoLogin(config.email)}
                       className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl hover:bg-accent transition-colors duration-150 text-left group animate-bt-fade-in delay-${(i + 2) * 100}`}
                     >
                       <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
@@ -164,12 +191,11 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
                 </div>
               </div>
 
-              {/* Mobile role grid */}
               <div className="lg:hidden mt-6 grid grid-cols-2 gap-2">
                 {(Object.entries(ROLE_CONFIG) as [Role, typeof ROLE_CONFIG[Role]][]).map(([role, config]) => (
                   <button
                     key={role}
-                    onClick={() => handleLogin(config.email)}
+                    onClick={() => handleDemoLogin(config.email)}
                     className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border/60 text-left hover:bg-accent transition-colors"
                   >
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
@@ -188,12 +214,11 @@ export function LoginScreen({ onLogin, loginLoading, setLoginLoading, loginEmail
         </div>
       </main>
 
-      {/* ── Footer ── */}
       <footer className="border-t border-border py-5 px-6">
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5"><Bus className="h-3 w-3" /> 4 Active Routes</span>
-          <span className="flex items-center gap-1.5"><Zap className="h-3 w-3" /> AI-Powered</span>
-          <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" /> Real-time</span>
+          <span className="flex items-center gap-1.5"><Bus className="h-3 w-3" /> Real-time Operations</span>
+          <span className="flex items-center gap-1.5"><Zap className="h-3 w-3" /> Role-Based Security</span>
+          <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" /> JWT Auth</span>
           <span className="flex items-center gap-1.5"><BarChart3 className="h-3 w-3" /> Analytics</span>
         </div>
       </footer>

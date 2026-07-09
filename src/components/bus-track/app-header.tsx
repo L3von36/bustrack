@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, Sun, Moon, Bus, Bell } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { LogOut, Sun, Moon, Bus, Bell, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import type { Role } from './types';
@@ -30,27 +30,24 @@ const ROLE_AVATAR_STYLES: Record<Role, string> = {
   SUPERADMIN: 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300',
 };
 
-/* ─── Notification data ─────────────────────────────────── */
-const NOTIFICATIONS = [
-  {
-    id: '1',
-    text: 'ETB 2,200 payment completed — Dire Dawa route',
-    time: '2m ago',
-    dotColor: 'bg-emerald-500',
-  },
-  {
-    id: '2',
-    text: 'Gate G3: Bus departing in 5 min',
-    time: '8m ago',
-    dotColor: 'bg-amber-500',
-  },
-  {
-    id: '3',
-    text: 'New booking: Seat 3B — Bahir Dar',
-    time: '15m ago',
-    dotColor: 'bg-blue-500',
-  },
-];
+// Notification type → dot color
+const NOTIF_DOT_COLOR: Record<string, string> = {
+  booking_created: 'bg-blue-500',
+  payment_completed: 'bg-emerald-500',
+  gate_validated: 'bg-emerald-500',
+  gate_invalid: 'bg-red-500',
+};
+
+function formatRelativeTime(timestamp: string): string {
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const secs = Math.floor(diff / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 function getInitials(name: string): string {
   return name
@@ -63,14 +60,66 @@ function getInitials(name: string): string {
 
 interface AppHeaderProps {
   user: { name: string; role: Role };
+  authToken: string;
   onLogout: () => void;
   isConnected?: boolean;
 }
 
-export function AppHeader({ user, onLogout, isConnected = false }: AppHeaderProps) {
+export function AppHeader({ user, authToken, onLogout, isConnected = false }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  // Notification state
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    type: string;
+    message: string;
+    timestamp: string;
+    read: boolean;
+  }>>([]);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications', {
+        headers: { 'Authorization': `Bearer ${authToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data);
+      }
+    } catch {
+      // silently fail — notifications are non-critical
+    }
+  }, [authToken]);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
+
+  const markAllRead = useCallback(async () => {
+    const unread = notifications.filter((n) => !readIds.has(n.id));
+    if (unread.length === 0) return;
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: unread.map((n) => n.id) }),
+      });
+      setReadIds(new Set(notifications.map((n) => n.id)));
+    } catch {
+      // silently fail
+    }
+  }, [authToken, notifications, readIds]);
 
   /* Click outside to close dropdown */
   useEffect(() => {
@@ -140,9 +189,11 @@ export function AppHeader({ user, onLogout, isConnected = false }: AppHeaderProp
           >
             <Bell className="h-4 w-4" />
             {/* Red dot with count */}
-            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
-              3
-            </span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </Button>
 
           {/* Notification Dropdown */}
@@ -151,31 +202,48 @@ export function AppHeader({ user, onLogout, isConnected = false }: AppHeaderProp
               {/* Dropdown header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
                 <span className="text-sm font-semibold text-foreground">Notifications</span>
-                <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 cursor-pointer hover:underline">
-                  Mark all read
-                </span>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllRead}
+                    className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 cursor-pointer hover:underline flex items-center gap-1"
+                  >
+                    <Check className="h-3 w-3" />
+                    Mark all read
+                  </button>
+                )}
               </div>
 
               {/* Notification items */}
               <div className="max-h-80 overflow-y-auto">
-                {NOTIFICATIONS.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className="flex items-start gap-3 px-4 py-3.5 hover:bg-muted/40 transition-colors cursor-pointer"
-                  >
-                    <div className="flex flex-col items-center gap-1.5 mt-1.5">
-                      <span className={`w-2 h-2 rounded-full ${notif.dotColor} shrink-0`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-foreground leading-snug font-medium">
-                        {notif.text}
-                      </p>
-                      <span className="text-[11px] text-muted-foreground mt-1 block">
-                        {notif.time}
-                      </span>
-                    </div>
+                {notifications.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center gap-2 text-muted-foreground">
+                    <Bell className="h-4 w-4" />
+                    <span className="text-xs">No notifications yet</span>
                   </div>
-                ))}
+                ) : (
+                  notifications.map((notif) => {
+                    const isRead = readIds.has(notif.id);
+                    return (
+                      <div
+                        key={notif.id}
+                        className={`flex items-start gap-3 px-4 py-3.5 hover:bg-muted/40 transition-colors cursor-pointer ${isRead ? 'opacity-60' : ''}`}
+                        onClick={() => setReadIds((prev) => new Set(prev).add(notif.id))}
+                      >
+                        <div className="flex flex-col items-center gap-1.5 mt-1.5">
+                          <span className={`w-2 h-2 rounded-full ${NOTIF_DOT_COLOR[notif.type] || 'bg-zinc-400'} shrink-0`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[13px] text-foreground leading-snug font-medium ${isRead ? 'font-normal' : ''}`}>
+                            {notif.message}
+                          </p>
+                          <span className="text-[11px] text-muted-foreground mt-1 block">
+                            {formatRelativeTime(notif.timestamp)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}

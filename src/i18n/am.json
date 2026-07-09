@@ -1,0 +1,31 @@
+{
+  "common": {
+    "appName": "ቡራትራርክ",
+    "loading": "በላት ነው...",
+    "error": "ስህ አው አተኝቲና",
+    "retry": "እንደግ ይሞል",
+    "save": "አስብ",
+    "cancel": "ይሰር",
+    "confirm": "አረግር",
+    "delete": "ይሰር",
+    "edit": "ያስብ",
+    "search": "ፈልይ",
+    "noData": "ውስሲ የለው አል",
+    "currency": "ብር"
+  },
+  "auth": {
+    "login": "ይግባል",
+    "logout": "ይወጣ",
+    "email": "ኢሜሜ አድረስ",
+    "password": "ሚልጅ ቁልቅ",
+    "invalidCredentials": "ስህ ትክቲል ኢሜሜ ወይ ሚልጅ",
+    "sessionExpired": "የቆጠው ጊዜ አለፍ። እንደግ ይሞል"
+  },
+  "roles": {
+    "TICKETER": "ትኬቀተር",
+    "CASHIER": "ገንሱ",
+    "GATEMAN": "በረጅ አስብ",
+    "MANAGER": "አስብ",
+    "SUPERADMIN": "ዋር አስብ"
+  }
+}

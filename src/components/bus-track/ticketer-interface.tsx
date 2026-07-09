@@ -35,6 +35,7 @@ import type { StaffUser, ScheduleItem } from './types';
 
 interface TicketerInterfaceProps {
   user: StaffUser;
+  authToken: string;
   onLogout: () => void;
   toast: any;
 }
@@ -61,8 +62,13 @@ const POPULAR_ROUTES = ['Dire Dawa', 'Bahir Dar', 'Hawassa', 'Adama'];
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export function TicketerInterface({ user, onLogout, toast }: TicketerInterfaceProps) {
+export function TicketerInterface({ user, authToken, onLogout, toast }: TicketerInterfaceProps) {
   const { isConnected, emit, on } = useRealtimeSocket();
+
+  const authFetch = (url: string, options?: RequestInit) => fetch(url, {
+    ...options,
+    headers: { ...options?.headers, 'Authorization': `Bearer ${authToken}` },
+  });
 
   /* ---- state ---- */
   const [search, setSearch] = useState('');
@@ -84,7 +90,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
       try {
         const q = searchTerm !== undefined ? searchTerm : search;
         const url = q ? `/api/routes?search=${q}` : '/api/routes';
-        const res = await fetch(url);
+        const res = await authFetch(url);
         const data = await res.json();
         const allSchedules: ScheduleItem[] = [];
         data.routes?.forEach((route: any) => {
@@ -146,7 +152,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
     setPassengerPhone('');
     setDetailLoading(true);
     try {
-      const res = await fetch(`/api/schedules/${schedule.id}`);
+      const res = await authFetch(`/api/schedules/${schedule.id}`);
       const data = await res.json();
       setScheduleDetail(data);
     } catch (err) {
@@ -161,7 +167,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
     if (!selectedSchedule || !selectedSeat || !passengerName || !passengerPhone) return;
     setBookingLoading(true);
     try {
-      const res = await fetch('/api/bookings', {
+      const res = await authFetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -654,7 +660,7 @@ export function TicketerInterface({ user, onLogout, toast }: TicketerInterfacePr
   return (
     <div className="h-full flex flex-col bg-background">
       {/* ---- Header ---- */}
-      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
+      <AppHeader user={user} authToken={authToken} onLogout={onLogout} isConnected={isConnected} />
 
       {/* ---- Main content ---- */}
       <main className="flex-1 flex flex-col overflow-hidden">

@@ -32,6 +32,7 @@ import type { StaffUser } from './types';
 /* ─── Types ─── */
 interface SuperadminInterfaceProps {
   user: StaffUser;
+  authToken: string;
   onLogout: () => void;
   toast: any;
 }
@@ -117,8 +118,13 @@ const SPARK_COLORS: Record<string, string> = {
 };
 
 /* ─── Component ─── */
-export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfaceProps) {
+export function SuperadminInterface({ user, authToken, onLogout, toast }: SuperadminInterfaceProps) {
   const { isConnected, on, joinDashboard } = useRealtimeSocket();
+
+  const authFetch = (url: string, options?: RequestInit) => fetch(url, {
+    ...options,
+    headers: { ...options?.headers, 'Authorization': `Bearer ${authToken}` },
+  });
 
   // Active tab
   const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -164,12 +170,12 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     try {
       const [statsRes, depRes, routesRes, busesRes, staffRes, analyticsRes] =
         await Promise.all([
-          fetch('/api/dashboard/stats'),
-          fetch('/api/dashboard/departures'),
-          fetch('/api/admin/routes'),
-          fetch('/api/admin/buses'),
-          fetch('/api/admin/staff'),
-          fetch('/api/admin/analytics'),
+          authFetch('/api/dashboard/stats'),
+          authFetch('/api/dashboard/departures'),
+          authFetch('/api/admin/routes'),
+          authFetch('/api/admin/buses'),
+          authFetch('/api/admin/staff'),
+          authFetch('/api/admin/analytics'),
         ]);
       setStats(await statsRes.json());
       const depData = await depRes.json();
@@ -209,7 +215,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     setSubmittingRoute(true);
     try {
       const stationId = routes[0]?.stationId || staff[0]?.stationId || '';
-      const res = await fetch('/api/admin/routes', {
+      const res = await authFetch('/api/admin/routes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newRoute, stationId }),
@@ -234,7 +240,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     if (!newBus.plateNumber || !newBus.totalSeats || !newBus.rows || !newBus.cols) return;
     setSubmittingBus(true);
     try {
-      const res = await fetch('/api/admin/buses', {
+      const res = await authFetch('/api/admin/buses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newBus),
@@ -260,7 +266,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
     setSubmittingStaff(true);
     try {
       const stationId = staff[0]?.stationId || routes[0]?.stationId || '';
-      const res = await fetch('/api/admin/staff', {
+      const res = await authFetch('/api/admin/staff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newStaff, stationId }),
@@ -1291,7 +1297,7 @@ export function SuperadminInterface({ user, onLogout, toast }: SuperadminInterfa
   /* ─── Main render ─── */
   return (
     <div className="h-full flex flex-col bg-background animate-bt-fade-in">
-      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
+      <AppHeader user={user} authToken={authToken} onLogout={onLogout} isConnected={isConnected} />
 
       {/* Tab Navigation — Premium Pill Style */}
       <nav className="shrink-0 border-b border-border/60 bg-card/60 backdrop-blur-sm">

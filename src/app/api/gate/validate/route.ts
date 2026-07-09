@@ -1,17 +1,26 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthStaff } from '@/lib/auth-context';
+import { validateBody, validateTicketSchema } from '@/lib/validations';
 
 export async function POST(request: NextRequest) {
   try {
-    const { reference, scheduleId, staffId } = await request.json();
-
-    if (!reference || !scheduleId || !staffId) {
-      return NextResponse.json({ error: 'All fields required' }, { status: 400 });
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const parsed = validateBody(validateTicketSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    const { reference, scheduleId } = parsed.data;
 
     const booking = await db.booking.findUnique({
       where: { reference: reference.toUpperCase() },
-      include: { schedule: true, passenger: false },
+      include: { schedule: true },
     });
 
     if (!booking) {
@@ -19,7 +28,7 @@ export async function POST(request: NextRequest) {
         data: {
           bookingId: 'unknown',
           scheduleId,
-          staffId,
+          staffId: auth.staffId,
           result: 'INVALID',
           reason: 'Reference not found',
         },
@@ -29,14 +38,14 @@ export async function POST(request: NextRequest) {
 
     if (booking.status === 'CANCELLED') {
       await db.gateLog.create({
-        data: { bookingId: booking.id, scheduleId, staffId, result: 'CANCELLED', reason: 'Booking was cancelled' },
+        data: { bookingId: booking.id, scheduleId, staffId: auth.staffId, result: 'CANCELLED', reason: 'Booking was cancelled' },
       });
       return NextResponse.json({ result: 'CANCELLED', reason: 'This booking has been cancelled' });
     }
 
     if (booking.scheduleId !== scheduleId) {
       await db.gateLog.create({
-        data: { bookingId: booking.id, scheduleId, staffId, result: 'WRONG_GATE', reason: `Booking is for a different schedule` },
+        data: { bookingId: booking.id, scheduleId, staffId: auth.staffId, result: 'WRONG_GATE', reason: `Booking is for a different schedule` },
       });
       return NextResponse.json({ result: 'WRONG_GATE', reason: 'This ticket is for a different bus/route' });
     }
@@ -47,13 +56,13 @@ export async function POST(request: NextRequest) {
 
     if (existingLog || booking.status === 'BOARDED') {
       await db.gateLog.create({
-        data: { bookingId: booking.id, scheduleId, staffId, result: 'ALREADY_BOARDED', reason: 'Already boarded' },
+        data: { bookingId: booking.id, scheduleId, staffId: auth.staffId, result: 'ALREADY_BOARDED', reason: 'Already boarded' },
       });
       return NextResponse.json({ result: 'ALREADY_BOARDED', reason: 'Passenger has already boarded' });
     }
 
     await db.gateLog.create({
-      data: { bookingId: booking.id, scheduleId, staffId, result: 'VALID' },
+      data: { bookingId: booking.id, scheduleId, staffId: auth.staffId, result: 'VALID' },
     });
 
     await db.booking.update({

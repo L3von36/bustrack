@@ -1,13 +1,22 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthStaff } from '@/lib/auth-context';
+import { validateBody, createBookingSchema } from '@/lib/validations';
 
 export async function POST(request: NextRequest) {
   try {
-    const { scheduleId, staffId, passengerName, passengerPhone, seatNumber, fare } = await request.json();
-
-    if (!scheduleId || !staffId || !passengerName || !passengerPhone || !seatNumber || !fare) {
-      return NextResponse.json({ error: 'All fields required' }, { status: 400 });
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const parsed = validateBody(createBookingSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    const { scheduleId, passengerName, passengerPhone, seatNumber, fare } = parsed.data;
 
     const schedule = await db.schedule.findUnique({
       where: { id: scheduleId },
@@ -28,15 +37,17 @@ export async function POST(request: NextRequest) {
 
     const reference = `BT-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
+    const fareCents = Math.round(fare * 100);
+
     const booking = await db.booking.create({
       data: {
         reference,
         scheduleId,
-        staffId,
+        staffId: auth.staffId,
         passengerName,
         passengerPhone,
         seatNumber,
-        fare: parseFloat(fare),
+        fare: fareCents,
         status: 'PENDING_PAYMENT',
       },
       include: {
@@ -45,7 +56,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ booking });
+    return NextResponse.json({
+      booking: {
+        ...booking,
+        fare: booking.fare / 100,
+        schedule: {
+          ...booking.schedule,
+          fare: booking.schedule.fare / 100,
+        },
+      },
+    });
   } catch (error: any) {
     console.error('Booking error:', error);
     if (error.code === 'P2002') {
@@ -57,8 +77,20 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const where: any = { status: 'PENDING_PAYMENT' };
+
+    // Non-admin users only see their station's bookings
+    if (auth.role !== 'SUPERADMIN' && auth.stationId) {
+      where.schedule = { stationId: auth.stationId };
+    }
+
     const bookings = await db.booking.findMany({
-      where: { status: 'PENDING_PAYMENT' },
+      where,
       include: {
         schedule: { include: { route: true, bus: true } },
         staff: { select: { name: true } },
@@ -66,7 +98,17 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
-    return NextResponse.json({ bookings });
+
+    const result = bookings.map((b) => ({
+      ...b,
+      fare: b.fare / 100,
+      schedule: {
+        ...b.schedule,
+        fare: b.schedule.fare / 100,
+      },
+    }));
+
+    return NextResponse.json({ bookings: result });
   } catch (error) {
     console.error('Bookings error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

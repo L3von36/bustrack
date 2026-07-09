@@ -1,11 +1,17 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthStaff } from '@/lib/auth-context';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
 
     const schedule = await db.schedule.findUnique({
@@ -35,6 +41,11 @@ export async function GET(
 
     return NextResponse.json({
       ...schedule,
+      fare: schedule.fare / 100,
+      route: {
+        ...schedule.route,
+        baseFare: schedule.route.baseFare / 100,
+      },
       bookedSeats,
       availableSeats: schedule.bus.totalSeats - bookedSeats.length,
     });

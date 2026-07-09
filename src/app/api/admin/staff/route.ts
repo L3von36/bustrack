@@ -1,8 +1,16 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthStaff } from '@/lib/auth-context';
+import { validateBody, createStaffSchema } from '@/lib/validations';
+import { hashPassword } from '@/lib/auth';
 
 export async function GET() {
   try {
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const staff = await db.staff.findMany({
       include: {
         station: { select: { name: true } },
@@ -21,20 +29,28 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, role, phone, stationId } = await request.json();
-
-    if (!name || !email || !password || !role) {
-      return NextResponse.json({ error: 'All fields required' }, { status: 400 });
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const parsed = validateBody(createStaffSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    const { name, email, password, role, phone, stationId } = parsed.data;
+    const hashedPassword = await hashPassword(password);
 
     const staff = await db.staff.create({
       data: {
         name,
         email,
-        password,
+        password: hashedPassword,
         role,
         phone: phone || null,
-        stationId: stationId || null,
+        stationId,
       },
     });
 

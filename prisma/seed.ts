@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { hashSync } from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -13,47 +14,48 @@ async function main() {
   });
 
   // ─── STAFF ───────────────────────────────────────
+  const hashedPassword = hashSync("password", 12);
   const staff = await Promise.all([
     prisma.staff.create({
-      data: { name: "Abebech Bekele", email: "alice@bustrack.com", password: "password", role: "TICKETER", stationId: station.id },
+      data: { name: "Abebech Bekele", email: "alice@bustrack.com", password: hashedPassword, role: "TICKETER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Bereket Tadesse", email: "bob@bustrack.com", password: "password", role: "CASHIER", stationId: station.id },
+      data: { name: "Bereket Tadesse", email: "bob@bustrack.com", password: hashedPassword, role: "CASHIER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Chala Hailu", email: "charles@bustrack.com", password: "password", role: "GATEMAN", stationId: station.id },
+      data: { name: "Chala Hailu", email: "charles@bustrack.com", password: hashedPassword, role: "GATEMAN", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Dinknesh Girma", email: "diana@bustrack.com", password: "password", role: "MANAGER", stationId: station.id },
+      data: { name: "Dinknesh Girma", email: "diana@bustrack.com", password: hashedPassword, role: "MANAGER", stationId: station.id },
     }),
     prisma.staff.create({
-      data: { name: "Eyasu Tesfaye", email: "edward@bustrack.com", password: "password", role: "SUPERADMIN" },
+      data: { name: "Eyasu Tesfaye", email: "edward@bustrack.com", password: hashedPassword, role: "SUPERADMIN" },
     }),
   ]);
 
-  // ─── ROUTES ──────────────────────────────────────
+  // ─── ROUTES (fares in cents: ETB * 100) ─────────
   const routes = await Promise.all([
     prisma.route.create({
-      data: { origin: "Addis Ababa", destination: "Dire Dawa", distanceKm: 445, baseFare: 1800, estimatedMin: 420, stationId: station.id },
+      data: { origin: "Addis Ababa", destination: "Dire Dawa", distanceKm: 445, baseFare: 180000, estimatedMin: 420, stationId: station.id },
     }),
     prisma.route.create({
-      data: { origin: "Addis Ababa", destination: "Bahir Dar", distanceKm: 565, baseFare: 2200, estimatedMin: 540, stationId: station.id },
+      data: { origin: "Addis Ababa", destination: "Bahir Dar", distanceKm: 565, baseFare: 220000, estimatedMin: 540, stationId: station.id },
     }),
     prisma.route.create({
-      data: { origin: "Addis Ababa", destination: "Hawassa", distanceKm: 275, baseFare: 1200, estimatedMin: 270, stationId: station.id },
+      data: { origin: "Addis Ababa", destination: "Hawassa", distanceKm: 275, baseFare: 120000, estimatedMin: 270, stationId: station.id },
     }),
     prisma.route.create({
-      data: { origin: "Addis Ababa", destination: "Adama", distanceKm: 100, baseFare: 500, estimatedMin: 90, stationId: station.id },
+      data: { origin: "Addis Ababa", destination: "Adama", distanceKm: 100, baseFare: 50000, estimatedMin: 90, stationId: station.id },
     }),
   ]);
 
   // ─── BUSES ────────────────────────────────────────
   const buses = await Promise.all([
-    prisma.bus.create({ data: { plateNumber: "AA 2345", busType: "VIP", totalSeats: 33, rows: 11, cols: 3 } }),
-    prisma.bus.create({ data: { plateNumber: "AA 5678", busType: "EXECUTIVE", totalSeats: 40, rows: 10, cols: 4 } }),
-    prisma.bus.create({ data: { plateNumber: "AA 9012", busType: "STANDARD", totalSeats: 44, rows: 11, cols: 4 } }),
-    prisma.bus.create({ data: { plateNumber: "AA 3456", busType: "VIP", totalSeats: 33, rows: 11, cols: 3 } }),
-    prisma.bus.create({ data: { plateNumber: "AA 7890", busType: "EXECUTIVE", totalSeats: 40, rows: 10, cols: 4 } }),
+    prisma.bus.create({ data: { plateNumber: "AA2345AB", busType: "VIP", totalSeats: 33, rows: 11, cols: 3 } }),
+    prisma.bus.create({ data: { plateNumber: "AA5678CD", busType: "EXECUTIVE", totalSeats: 40, rows: 10, cols: 4 } }),
+    prisma.bus.create({ data: { plateNumber: "AA9012EF", busType: "STANDARD", totalSeats: 44, rows: 11, cols: 4 } }),
+    prisma.bus.create({ data: { plateNumber: "AA3456GH", busType: "VIP", totalSeats: 33, rows: 11, cols: 3 } }),
+    prisma.bus.create({ data: { plateNumber: "AA7890IJ", busType: "EXECUTIVE", totalSeats: 40, rows: 10, cols: 4 } }),
   ]);
 
   // ─── SCHEDULES (today and tomorrow) ───────────────
@@ -107,17 +109,19 @@ async function main() {
   });
 
   let bookingRef = 1000;
+  const passengerNames = ["Abebech Kebede", "Birtukan Mulugeta", "Chaltu Tadesse", "Dawit Assefa"];
+  let nameIdx = 0;
   for (const schedule of allSchedules.slice(0, 3)) {
     const seats = ["1A", "3B", "5C", "7A"];
     for (const seat of seats) {
       bookingRef++;
-      await prisma.booking.create({
+      const booking = await prisma.booking.create({
         data: {
           reference: `BK${bookingRef}`,
           scheduleId: schedule.id,
           staffId: staff[0].id,
-          passengerName: "John Doe",
-          passengerPhone: "+251912345678",
+          passengerName: passengerNames[nameIdx % passengerNames.length],
+          passengerPhone: "+25191234567" + String(nameIdx).padStart(2, "0"),
           seatNumber: seat,
           fare: schedule.fare,
           status: "CONFIRMED",
@@ -125,13 +129,13 @@ async function main() {
       });
       await prisma.payment.create({
         data: {
-          bookingId: (await prisma.booking.findFirst({ where: { reference: `BK${bookingRef}` } }))!.id,
+          bookingId: booking.id,
           staffId: staff[1].id,
           amount: schedule.fare,
           method: "CASH",
           status: "COMPLETED",
-          cashReceived: schedule.fare + 100,
-          changeGiven: 100,
+          cashReceived: schedule.fare + 10000, // 100 ETB extra in cents
+          changeGiven: 10000, // 100 ETB in cents
         },
       });
     }

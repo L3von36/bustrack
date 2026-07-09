@@ -1,0 +1,73 @@
+{
+  "common": {
+    "appName": "BusTrack",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try Again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "noData": "No data available",
+    "currency": "ETB"
+  },
+  "auth": {
+    "login": "Sign In",
+    "logout": "Log Out",
+    "email": "Email",
+    "password": "Password",
+    "invalidCredentials": "Invalid email or password",
+    "sessionExpired": "Session expired. Please sign in again."
+  },
+  "roles": {
+    "TICKETER": "Ticketer",
+    "CASHIER": "Cashier",
+    "GATEMAN": "Gateman",
+    "MANAGER": "Manager",
+    "SUPERADMIN": "Administrator"
+  },
+  "ticketer": {
+    "selectRoute": "Select a Route",
+    "selectSeat": "Choose Your Seat",
+    "passengerInfo": "Passenger Information",
+    "passengerName": "Passenger Name",
+    "passengerPhone": "Phone Number",
+    "bookTicket": "Book Ticket",
+    "available": "Available",
+    "occupied": "Occupied",
+    "selected": "Selected"
+  },
+  "cashier": {
+    "pendingPayments": "Pending Payments",
+    "processPayment": "Process Payment",
+    "todayRevenue": "Today's Revenue",
+    "paymentSuccess": "Payment processed successfully",
+    "cashReceived": "Cash Received",
+    "change": "Change"
+  },
+  "gateman": {
+    "scanTicket": "Scan Ticket",
+    "enterReference": "Enter booking reference",
+    "valid": "Valid Ticket",
+    "invalid": "Invalid Ticket",
+    "boarding": "Boarding Progress",
+    "manifest": "Passenger Manifest"
+  },
+  "manager": {
+    "dashboard": "Operations Dashboard",
+    "departures": "Today's Departures",
+    "insights": "Operational Insights",
+    "activity": "Recent Activity"
+  },
+  "admin": {
+    "staff": "Staff Management",
+    "routes": "Route Management",
+    "buses": "Fleet Management",
+    "analytics": "Analytics",
+    "addStaff": "Add Staff Member",
+    "addRoute": "Add Route",
+    "addBus": "Add Bus"
+  }
+}

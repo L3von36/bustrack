@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 import { LoginScreen } from '@/components/bus-track/login-screen';
@@ -15,23 +15,39 @@ const SuperadminInterface = dynamic(() => import('@/components/bus-track/superad
 
 export default function Home() {
   const [user, setUser] = useState<StaffUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const handleLogin = useCallback((userData: StaffUser) => {
+  // Load session on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('bustrack_session');
+    if (saved) {
+      try {
+        const { user: u, token: t } = JSON.parse(saved);
+        setUser(u);
+        setToken(t);
+      } catch { /* ignore */ }
+    }
+  }, []);
+
+  const handleLogin = useCallback((userData: StaffUser, authToken: string) => {
     setUser(userData);
+    setToken(authToken);
     setLoginEmail('');
     setLoginError('');
   }, []);
 
   const handleLogout = useCallback(() => {
     setUser(null);
+    setToken(null);
+    localStorage.removeItem('bustrack_session');
     toast.success('Logged out');
   }, []);
 
-  // ── Not logged in → show landing / login ──
-  if (!user) {
+  // Not logged in → show landing / login
+  if (!user || !token) {
     return (
       <LoginScreen
         onLogin={handleLogin}
@@ -46,7 +62,7 @@ export default function Home() {
     );
   }
 
-  // ── Logged in → show role-based dashboard (each dashboard renders its own header) ──
+  // Logged in → show role-based dashboard
   const Dashboard = {
     TICKETER: TicketerInterface,
     CASHIER: CashierInterface,
@@ -58,7 +74,7 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {Dashboard ? (
-        <Dashboard user={user} onLogout={handleLogout} toast={toast} />
+        <Dashboard user={user} onLogout={handleLogout} toast={toast} authToken={token} />
       ) : (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           Unknown role: {user.role}

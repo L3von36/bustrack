@@ -61,7 +61,7 @@ model Route {
   origin      String
   destination String
   distanceKm  Int      @map("distance_km")
-  baseFare    Float
+  baseFare    Int      // Stored in cents (ETB * 100)
   estimatedMin Int     @map("estimated_min")
   active      Boolean  @default(true)
   stationId   String
@@ -118,7 +118,7 @@ model Schedule {
   stationId   String
   departureDate String        @map("departure_date")
   departureTime String        @map("departure_time")
-  fare        Float
+  fare        Int      // Stored in cents
   status      ScheduleStatus  @default(SCHEDULED)
   gateNumber  String?
   actualDeparture String?     @map("actual_departure")
@@ -155,7 +155,7 @@ model Booking {
   passengerName String        @map("passenger_name")
   passengerPhone String       @map("passenger_phone")
   seatNumber    String        @map("seat_number")
-  fare          Float
+  fare          Int      // Stored in cents
   status        BookingStatus @default(PENDING_PAYMENT)
   boardedAt     DateTime?
   createdAt     DateTime      @default(now())
@@ -165,6 +165,7 @@ model Booking {
   staff    Staff    @relation(fields: [staffId], references: [id])
   payments Payment[]
   gateLogs GateLog[]
+  luggage  Luggage[]
 
   @@unique([scheduleId, seatNumber])
   @@index([reference])
@@ -193,12 +194,12 @@ model Payment {
   id           String        @id @default(cuid())
   bookingId    String
   staffId      String
-  amount       Float
+  amount       Int      // Stored in cents
   method       PaymentMethod
   status       PaymentStatus @default(PENDING)
   reference    String?       // External payment reference (Telebirr, etc.)
-  cashReceived Float?        @map("cash_received")
-  changeGiven  Float?        @map("change_given")
+  cashReceived Int?        @map("cash_received")
+  changeGiven  Int?        @map("change_given")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -238,4 +239,28 @@ model GateLog {
   @@index([bookingId])
   @@index([scheduleId])
   @@index([createdAt])
+}
+
+// ─── LUGGAGE ────────────────────────────────────────
+
+enum LuggageStatus {
+  CHECKED_IN
+  LOADED
+  UNCLAIMED
+}
+
+model Luggage {
+  id          String         @id @default(cuid())
+  tagNumber   String         @unique @map("tag_number")
+  bookingId   String
+  weightKg    Int            @map("weight_kg")
+  status      LuggageStatus  @default(CHECKED_IN)
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([status])
 }

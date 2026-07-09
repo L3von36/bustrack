@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   DollarSign, Users, Bus, TrendingUp, Activity, Sparkles,
   ArrowUpRight, ArrowDownRight, BarChart3,
-  Search, X, ChevronRight, AlertTriangle, Plus, Megaphone, FileText,
+  Search, X, ChevronRight, AlertTriangle, FileText,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +21,7 @@ import type { StaffUser } from './types';
 
 interface ManagerInterfaceProps {
   user: StaffUser;
+  authToken: string;
   onLogout: () => void;
   toast: any;
 }
@@ -51,56 +52,98 @@ interface DepartureRow {
   totalSeats?: number;
 }
 
-interface FakePassenger {
-  name: string;
-  seat: string;
-  status: string;
+// ─── Computed Insights type ──────────────────────────────────
+
+interface ComputedInsight {
+  accent: string;
+  accentText: string;
+  accentBg: string;
+  accentBorder: string;
+  issue: string;
+  insight: string;
+  action: string;
+  actionIcon: React.ReactNode;
 }
 
-// ─── AI Insights (Static) ───────────────────────────────────────
+function computeInsights(s: any): ComputedInsight[] {
+  const insights: ComputedInsight[] = [];
+  if (!s) return insights;
 
-const AI_INSIGHTS = [
-  {
-    accent: 'bg-amber-500',
-    accentText: 'text-amber-600 dark:text-amber-400',
-    accentBg: 'bg-amber-50 dark:bg-amber-900/10',
-    accentBorder: 'border-amber-500/20 hover:border-amber-500/40',
-    issue: 'High Demand',
-    insight: 'Addis Ababa → Dire Dawa shows 40% higher booking rate than usual',
-    action: 'Add 11:00 Bus',
-    actionIcon: <Plus className="h-3 w-3" />,
-  },
-  {
-    accent: 'bg-emerald-500',
-    accentText: 'text-emerald-600 dark:text-emerald-400',
-    accentBg: 'bg-emerald-50 dark:bg-emerald-900/10',
-    accentBorder: 'border-emerald-500/20 hover:border-emerald-500/40',
-    issue: 'Revenue Above Target',
-    insight: "Today's revenue tracking 12% above 7-day rolling average",
-    action: 'View Revenue Report',
-    actionIcon: <FileText className="h-3 w-3" />,
-  },
-  {
-    accent: 'bg-orange-500',
-    accentText: 'text-orange-600 dark:text-orange-400',
-    accentBg: 'bg-orange-50 dark:bg-orange-900/10',
-    accentBorder: 'border-orange-500/20 hover:border-orange-500/40',
-    issue: 'Delay Risk',
-    insight: '45% boarded with 12min to departure on 09:30 Bahir Dar',
-    action: 'Send PA Alert',
-    actionIcon: <Megaphone className="h-3 w-3" />,
-  },
-  {
-    accent: 'bg-zinc-400',
-    accentText: 'text-zinc-500 dark:text-zinc-400',
-    accentBg: 'bg-zinc-50 dark:bg-zinc-900/10',
-    accentBorder: 'border-zinc-400/20 hover:border-zinc-400/40',
-    issue: 'Staff Optimal',
-    insight: 'All 3 tills active with balanced queues (avg 2.3 waiting)',
-    action: 'Staff Overview',
-    actionIcon: <Users className="h-3 w-3" />,
-  },
-];
+  const revChg = s.revenueChange ?? 0;
+  const paxChg = s.passengersChange ?? 0;
+  const depChg = s.departuresChange ?? 0;
+  const otChg = s.onTimeChange ?? 0;
+
+  if (revChg > 0) {
+    insights.push({
+      accent: 'bg-emerald-500', accentText: 'text-emerald-600 dark:text-emerald-400',
+      accentBg: 'bg-emerald-50 dark:bg-emerald-900/10', accentBorder: 'border-emerald-500/20 hover:border-emerald-500/40',
+      issue: 'Revenue Trend',
+      insight: `Today's revenue is ${revChg}% higher than yesterday`,
+      action: 'View Report', actionIcon: <FileText className="h-3 w-3" />,
+    });
+  } else if (revChg < 0) {
+    insights.push({
+      accent: 'bg-orange-500', accentText: 'text-orange-600 dark:text-orange-400',
+      accentBg: 'bg-orange-50 dark:bg-orange-900/10', accentBorder: 'border-orange-500/20 hover:border-orange-500/40',
+      issue: 'Revenue Down',
+      insight: `Today's revenue is ${Math.abs(revChg)}% lower than yesterday`,
+      action: 'View Report', actionIcon: <FileText className="h-3 w-3" />,
+    });
+  }
+
+  if (paxChg !== 0) {
+    const dir = paxChg > 0 ? 'more' : 'fewer';
+    insights.push({
+      accent: 'bg-teal-500', accentText: 'text-teal-600 dark:text-teal-400',
+      accentBg: 'bg-teal-50 dark:bg-teal-900/10', accentBorder: 'border-teal-500/20 hover:border-teal-500/40',
+      issue: 'Passenger Trend',
+      insight: `${Math.abs(paxChg)}% ${dir} passengers boarded today vs yesterday`,
+      action: 'View Details', actionIcon: <BarChart3 className="h-3 w-3" />,
+    });
+  }
+
+  if (otChg < -5) {
+    insights.push({
+      accent: 'bg-orange-500', accentText: 'text-orange-600 dark:text-orange-400',
+      accentBg: 'bg-orange-50 dark:bg-orange-900/10', accentBorder: 'border-orange-500/20 hover:border-orange-500/40',
+      issue: 'On-Time Decline',
+      insight: `On-time rate dropped ${Math.abs(otChg)} points vs yesterday`,
+      action: 'Investigate', actionIcon: <AlertTriangle className="h-3 w-3" />,
+    });
+  } else if (s.onTimeRate < 80 && s.totalBuses > 0) {
+    insights.push({
+      accent: 'bg-orange-500', accentText: 'text-orange-600 dark:text-orange-400',
+      accentBg: 'bg-orange-50 dark:bg-orange-900/10', accentBorder: 'border-orange-500/20 hover:border-orange-500/40',
+      issue: 'Low On-Time Rate',
+      insight: `Only ${s.onTimeRate}% of departures were on time today`,
+      action: 'View Schedule', actionIcon: <AlertTriangle className="h-3 w-3" />,
+    });
+  }
+
+  if (depChg > 0) {
+    insights.push({
+      accent: 'bg-amber-500', accentText: 'text-amber-600 dark:text-amber-400',
+      accentBg: 'bg-amber-50 dark:bg-amber-900/10', accentBorder: 'border-amber-500/20 hover:border-amber-500/40',
+      issue: 'More Departures',
+      insight: `${Math.abs(depChg)}% more buses departed than yesterday`,
+      action: 'View All', actionIcon: <Bus className="h-3 w-3" />,
+    });
+  }
+
+  // Pad with neutral insights if fewer than 2
+  if (insights.length === 0) {
+    insights.push({
+      accent: 'bg-zinc-400', accentText: 'text-zinc-500 dark:text-zinc-400',
+      accentBg: 'bg-zinc-50 dark:bg-zinc-900/10', accentBorder: 'border-zinc-400/20 hover:border-zinc-400/40',
+      issue: 'Operations Normal',
+      insight: `${s.totalPassengers || 0} passengers, ${s.busesDeparted || 0} departures today`,
+      action: 'View All', actionIcon: <Activity className="h-3 w-3" />,
+    });
+  }
+
+  return insights;
+}
 
 // ─── Activity type dot colors ────────────────────────────────────
 
@@ -225,37 +268,12 @@ function Sparkline({ data, color, width = 80, height = 24 }: {
   );
 }
 
-// ─── Fake passenger manifest for drill-down ──────────────────────
-
-const FAKE_PASSENGER_NAMES = [
-  'Abebe Kebede', 'Tigist Mengistu', 'Dawit Assefa', 'Hana Tadesse',
-  'Yohannes Girma', 'Selamawit Hailu', 'Bereket Wolde', 'Meron Demeke',
-  'Fikadu Tadesse', 'Nardos Teklu', 'Abel Getachew', 'Sara Worku',
-  'Henok Zewdu', 'Mekdes Alemu', 'Teshome Bekele',
-];
-
-function generatePassengerManifest(departure: DepartureRow): FakePassenger[] {
-  const seed = departure.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const count = 3 + (seed % 2); // 3 or 4 passengers
-  const statuses = ['Boarded', 'Boarded', 'Checked In', 'Pending'];
-  const passengers: FakePassenger[] = [];
-  for (let i = 0; i < count; i++) {
-    const nameIdx = (seed + i * 7) % FAKE_PASSENGER_NAMES.length;
-    const seatNum = ((seed + i * 3) % (departure.totalSeats || 45)) + 1;
-    const statusIdx = Math.min(i, statuses.length - 1);
-    passengers.push({
-      name: FAKE_PASSENGER_NAMES[nameIdx],
-      seat: `${seatNum}A`,
-      status: statuses[statusIdx],
-    });
-  }
-  return passengers;
-}
+// ─── Passenger status dot colors ──────────────────────────────
 
 const PASSENGER_STATUS_DOT: Record<string, string> = {
-  Boarded: 'bg-emerald-500',
-  'Checked In': 'bg-amber-500',
-  Pending: 'bg-zinc-400',
+  BOARDED: 'bg-emerald-500',
+  CONFIRMED: 'bg-amber-500',
+  NO_SHOW: 'bg-zinc-400',
 };
 
 // ─── KPI Card Component ──────────────────────────────────────────
@@ -321,9 +339,14 @@ function KpiCard({ kpi, index }: { kpi: KpiData; index: number }) {
 
 // ─── Component ───────────────────────────────────────────────────
 
-export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProps) {
+export function ManagerInterface({ user, authToken, onLogout, toast }: ManagerInterfaceProps) {
   const { isConnected, on, joinDashboard } = useRealtimeSocket();
   const activities = useActivityFeed();
+
+  const authFetch = (url: string, options?: RequestInit) => fetch(url, {
+    ...options,
+    headers: { ...options?.headers, 'Authorization': `Bearer ${authToken}` },
+  });
 
   const [stats, setStats] = useState<any>(null);
   const [departures, setDepartures] = useState<DepartureRow[]>([]);
@@ -336,8 +359,8 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
   const fetchData = useCallback(async () => {
     try {
       const [statsRes, depRes] = await Promise.all([
-        fetch('/api/dashboard/stats'),
-        fetch('/api/dashboard/departures'),
+        authFetch('/api/dashboard/stats'),
+        authFetch('/api/dashboard/departures'),
       ]);
       setStats(await statsRes.json());
       const depData = await depRes.json();
@@ -377,73 +400,115 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
     );
   }, [departures, searchQuery]);
 
-  // ── Passenger manifest for selected departure ──
+  // ── Passenger manifest state for selected departure ──
 
-  const passengerManifest = useMemo(() => {
-    if (!selectedDeparture) return [];
-    return generatePassengerManifest(selectedDeparture);
+  const [manifestPassengers, setManifestPassengers] = useState<Array<{
+    name: string;
+    seat: string;
+    status: string;
+  }>>([]);
+  const [manifestLoading, setManifestLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedDeparture) {
+      setManifestPassengers([]);
+      return;
+    }
+    let cancelled = false;
+    setManifestLoading(true);
+    authFetch(`/api/gate/boarding?scheduleId=${selectedDeparture.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const entries: { name: string; seat: string; status: string }[] = [];
+        const passengers = data.passengers;
+        if (passengers) {
+          for (const p of passengers.boarded) {
+            entries.push({ name: p.passengerName, seat: p.seatNumber, status: 'BOARDED' });
+          }
+          for (const p of passengers.confirmed) {
+            entries.push({ name: p.passengerName, seat: p.seatNumber, status: 'CONFIRMED' });
+          }
+          for (const p of passengers.noShow) {
+            entries.push({ name: p.passengerName, seat: p.seatNumber, status: 'NO_SHOW' });
+          }
+        }
+        setManifestPassengers(entries);
+      })
+      .catch(() => { if (!cancelled) setManifestPassengers([]); })
+      .finally(() => { if (!cancelled) setManifestLoading(false); });
+    return () => { cancelled = true; };
   }, [selectedDeparture]);
 
-  // ── Derive KPIs ──
+  // ── Computed insights from stats ──
+  const computedInsights = useMemo(() => computeInsights(stats), [stats]);
+
+  // ── Derive KPIs (computed changes from API) ──
 
   const kpis: KpiData[] = stats
-    ? [
-        {
-          label: 'Revenue',
-          value: `ETB ${Math.round((stats.totalRevenue || 0) / 1000)}K`,
-          raw: stats.totalRevenue || 0,
-          icon: <DollarSign className="h-5 w-5 text-white" />,
-          iconGradient: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
-          iconBg: 'bg-emerald-500',
-          borderColor: 'bg-emerald-500',
-          change: '+8%',
-          changeDirection: 'up',
-          sparkColor: '#10b981',
-        },
-        {
-          label: 'Passengers',
-          value: `${stats.totalPassengers || 0}`,
-          raw: stats.totalPassengers || 0,
-          icon: <Users className="h-5 w-5 text-white" />,
-          iconGradient: 'bg-gradient-to-br from-teal-500 to-teal-600',
-          iconBg: 'bg-teal-500',
-          borderColor: 'bg-teal-500',
-          change: '+3',
-          changeDirection: 'up',
-          sparkColor: '#14b8a6',
-        },
-        {
-          label: 'Buses Departed',
-          value: `${stats.busesDeparted || 0}/${stats.totalBuses || 0}`,
-          raw: stats.busesDeparted || 0,
-          icon: <Bus className="h-5 w-5 text-white" />,
-          iconGradient: 'bg-gradient-to-br from-amber-500 to-amber-600',
-          iconBg: 'bg-amber-500',
-          borderColor: 'bg-amber-500',
-          change: null,
-          changeDirection: 'neutral',
-          sparkColor: '#f59e0b',
-        },
-        {
-          label: 'On-Time Rate',
-          value: `${stats.onTimeRate || 0}%`,
-          raw: stats.onTimeRate || 0,
-          icon: <TrendingUp className="h-5 w-5 text-white" />,
-          iconGradient: 'bg-gradient-to-br from-orange-500 to-orange-600',
-          iconBg: 'bg-orange-500',
-          borderColor: 'bg-orange-500',
-          change: '-1%',
-          changeDirection: 'down',
-          sparkColor: '#f97316',
-        },
-      ]
+    ? (() => {
+        const revChg = stats.revenueChange ?? 0;
+        const paxChg = stats.passengersChange ?? 0;
+        const depChg = stats.departuresChange ?? 0;
+        const otChg = stats.onTimeChange ?? 0;
+        return [
+          {
+            label: 'Revenue',
+            value: `ETB ${Math.round((stats.totalRevenue || 0) / 1000)}K`,
+            raw: stats.totalRevenue || 0,
+            icon: <DollarSign className="h-5 w-5 text-white" />,
+            iconGradient: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+            iconBg: 'bg-emerald-500',
+            borderColor: 'bg-emerald-500',
+            change: revChg !== 0 ? `${revChg > 0 ? '+' : ''}${revChg}%` : null,
+            changeDirection: revChg > 0 ? 'up' : revChg < 0 ? 'down' : 'neutral',
+            sparkColor: '#10b981',
+          },
+          {
+            label: 'Passengers',
+            value: `${stats.totalPassengers || 0}`,
+            raw: stats.totalPassengers || 0,
+            icon: <Users className="h-5 w-5 text-white" />,
+            iconGradient: 'bg-gradient-to-br from-teal-500 to-teal-600',
+            iconBg: 'bg-teal-500',
+            borderColor: 'bg-teal-500',
+            change: paxChg !== 0 ? `${paxChg > 0 ? '+' : ''}${paxChg}%` : null,
+            changeDirection: paxChg > 0 ? 'up' : paxChg < 0 ? 'down' : 'neutral',
+            sparkColor: '#14b8a6',
+          },
+          {
+            label: 'Buses Departed',
+            value: `${stats.busesDeparted || 0}/${stats.totalBuses || 0}`,
+            raw: stats.busesDeparted || 0,
+            icon: <Bus className="h-5 w-5 text-white" />,
+            iconGradient: 'bg-gradient-to-br from-amber-500 to-amber-600',
+            iconBg: 'bg-amber-500',
+            borderColor: 'bg-amber-500',
+            change: depChg !== 0 ? `${depChg > 0 ? '+' : ''}${depChg}%` : null,
+            changeDirection: depChg > 0 ? 'up' : depChg < 0 ? 'down' : 'neutral',
+            sparkColor: '#f59e0b',
+          },
+          {
+            label: 'On-Time Rate',
+            value: `${stats.onTimeRate || 0}%`,
+            raw: stats.onTimeRate || 0,
+            icon: <TrendingUp className="h-5 w-5 text-white" />,
+            iconGradient: 'bg-gradient-to-br from-orange-500 to-orange-600',
+            iconBg: 'bg-orange-500',
+            borderColor: 'bg-orange-500',
+            change: otChg !== 0 ? `${otChg > 0 ? '+' : ''}${otChg}pts` : null,
+            changeDirection: otChg > 0 ? 'up' : otChg < 0 ? 'down' : 'neutral',
+            sparkColor: '#f97316',
+          },
+        ];
+      })()
     : [];
 
   // ── Render ──
 
   return (
     <div className="h-full flex flex-col animate-bt-fade-in">
-      <AppHeader user={user} onLogout={onLogout} isConnected={isConnected} />
+      <AppHeader user={user} authToken={authToken} onLogout={onLogout} isConnected={isConnected} />
 
       <main className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto bt-scroll">
@@ -606,10 +671,19 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                           Passenger Manifest
                         </span>
                         <span className="text-[11px] text-muted-foreground tabular-nums font-medium">
-                          {passengerManifest.length} shown
+                          {manifestPassengers.length} shown
                         </span>
                       </div>
 
+                      {manifestLoading ? (
+                        <div className="py-6 flex justify-center">
+                          <div className="h-4 w-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+                        </div>
+                      ) : manifestPassengers.length === 0 ? (
+                        <div className="py-8 text-center text-xs text-muted-foreground">
+                          No passengers booked for this schedule
+                        </div>
+                      ) : (
                       <div className="rounded-lg border border-border/40 overflow-hidden">
                         <table className="w-full">
                           <thead>
@@ -620,7 +694,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                             </tr>
                           </thead>
                           <tbody>
-                            {passengerManifest.map((p, i) => (
+                            {manifestPassengers.map((p, i) => (
                               <tr
                                 key={`${p.seat}-${i}`}
                                 className={`border-b border-border/15 last:border-0 ${i % 2 === 1 ? 'bg-muted/20' : ''}`}
@@ -630,7 +704,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                                 <td className="px-3 py-2.5 text-right">
                                   <div className="flex items-center justify-end gap-1.5">
                                     <span className={`shrink-0 h-1.5 w-1.5 rounded-full ${PASSENGER_STATUS_DOT[p.status] || 'bg-zinc-400'}`} />
-                                    <span className="text-xs text-muted-foreground">{p.status}</span>
+                                    <span className="text-xs text-muted-foreground capitalize">{p.status.toLowerCase().replace('_', ' ')}</span>
                                   </div>
                                 </td>
                               </tr>
@@ -638,6 +712,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                           </tbody>
                         </table>
                       </div>
+                      )}
                     </div>
 
                     {/* Close button */}
@@ -782,12 +857,18 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                   </span>
                   <div className="flex-1 h-px bg-border/60" />
                   <span className="text-[11px] text-muted-foreground tabular-nums font-medium">
-                    4 active
+                    {computedInsights.length} active
                   </span>
                 </div>
 
+                {computedInsights.length === 0 ? (
+                  <div className="bg-card rounded-xl shadow-sm border border-border/50 p-8 flex flex-col items-center gap-2 text-muted-foreground">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-xs">Insights will appear as data comes in</span>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {AI_INSIGHTS.map((insight, i) => (
+                  {computedInsights.map((insight, i) => (
                     <div
                       key={insight.issue}
                       className={`bg-card rounded-xl shadow-sm border overflow-hidden group hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ease-out animate-bt-slide-up ${insight.accentBorder}`}
@@ -828,6 +909,7 @@ export function ManagerInterface({ user, onLogout, toast }: ManagerInterfaceProp
                     </div>
                   ))}
                 </div>
+                )}
               </section>
 
               {/* ─── Activity Feed — 40% (2/5) ─── */}

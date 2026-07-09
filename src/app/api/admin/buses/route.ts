@@ -1,8 +1,15 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthStaff } from '@/lib/auth-context';
+import { validateBody, createBusSchema } from '@/lib/validations';
 
 export async function GET() {
   try {
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const buses = await db.bus.findMany({
       include: {
         _count: { select: { schedules: true } },
@@ -18,19 +25,26 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { plateNumber, busType, totalSeats, rows, cols } = await request.json();
-
-    if (!plateNumber || !busType || !totalSeats || !rows || !cols) {
-      return NextResponse.json({ error: 'All fields required' }, { status: 400 });
+    const auth = await getAuthStaff();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const parsed = validateBody(createBusSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    const { plateNumber, busType, totalSeats, rows, cols } = parsed.data;
 
     const bus = await db.bus.create({
       data: {
         plateNumber,
         busType,
-        totalSeats: parseInt(totalSeats),
-        rows: parseInt(rows),
-        cols: parseInt(cols),
+        totalSeats,
+        rows,
+        cols,
       },
     });
 
